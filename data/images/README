@@ -1,0 +1,5 @@
+earth.jpg is NASA's "Blue Marble" Visible Earth imagery (equirectangular,
+2048x1024), taken from http://visibleearth.nasa.gov/cgi-bin/viewrecord?11612
+via nixpkgs' xplanet package (share/xplanet/images/earth.jpg). Per NASA's
+Visible Earth usage policy this imagery is not copyrighted and may be used
+freely, including in software.

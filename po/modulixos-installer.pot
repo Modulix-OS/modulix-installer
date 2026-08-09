@@ -1,0 +1,216 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: modulixos-installer\n"
+"Report-Msgid-Bugs-To: \n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+
+msgid "Narrator"
+msgstr ""
+
+msgid "Enable narrator"
+msgstr ""
+
+msgid "Reads each page aloud as you move through the installer"
+msgstr ""
+
+msgid "Turn this on now if you need speech feedback for the rest of the installer"
+msgstr ""
+
+msgid "Language"
+msgstr ""
+
+msgid "Used for the installer and the installed system"
+msgstr ""
+
+msgid "Timezone"
+msgstr ""
+
+msgid "Click the map or pick from the list"
+msgstr ""
+
+msgid "Keyboard"
+msgstr ""
+
+msgid "Layout"
+msgstr ""
+
+msgid "Variant"
+msgstr ""
+
+msgid "Typing test"
+msgstr ""
+
+msgid "Type here to test your layout"
+msgstr ""
+
+msgid "Accessibility"
+msgstr ""
+
+msgid "High contrast"
+msgstr ""
+
+msgid "Increase contrast between text and background"
+msgstr ""
+
+msgid "Large text"
+msgstr ""
+
+msgid "Increase the interface text size"
+msgstr ""
+
+msgid "Screen magnifier"
+msgstr ""
+
+msgid "Zoom in on the area around the cursor"
+msgstr ""
+
+msgid "Sticky keys"
+msgstr ""
+
+msgid "Press modifier keys one at a time instead of together"
+msgstr ""
+
+msgid "Network"
+msgstr ""
+
+msgid "Status"
+msgstr ""
+
+msgid "Checking…"
+msgstr ""
+
+msgid "Wi-Fi networks"
+msgstr ""
+
+msgid "Connected"
+msgstr ""
+
+msgid "Limited connectivity"
+msgstr ""
+
+msgid "Behind a captive portal"
+msgstr ""
+
+msgid "Not connected"
+msgstr ""
+
+msgid "Unknown"
+msgstr ""
+
+msgid "Partitioning"
+msgstr ""
+
+msgid "Target disk"
+msgstr ""
+
+msgid "Partitioning mode"
+msgstr ""
+
+msgid "Erase entire disk"
+msgstr ""
+
+msgid "Install alongside Windows"
+msgstr ""
+
+msgid "Use free space"
+msgstr ""
+
+msgid "Manual"
+msgstr ""
+
+msgid "Swap"
+msgstr ""
+
+msgid "No swap"
+msgstr ""
+
+msgid "Standard swap"
+msgstr ""
+
+msgid "Swap with hibernation support"
+msgstr ""
+
+msgid "Encrypt disk"
+msgstr ""
+
+msgid "LUKS2, unlocked via TPM2 when available"
+msgstr ""
+
+msgid "Use TPM2"
+msgstr ""
+
+msgid "Unlock automatically without a passphrase"
+msgstr ""
+
+msgid "User account"
+msgstr ""
+
+msgid "Username"
+msgstr ""
+
+msgid "Full name"
+msgstr ""
+
+msgid "Password"
+msgstr ""
+
+msgid "Confirm password"
+msgstr ""
+
+msgid "For a strong password, use one of (CNIL recommendation):\n - 12+ characters with uppercase, lowercase, digits and special characters\n - 14+ characters with uppercase, lowercase and digits\n - Passphrase of at least 7 words.\nOptional, but recommended."
+msgstr ""
+
+msgid "Passwords do not match."
+msgstr ""
+
+msgid "User"
+msgstr ""
+
+msgid "Enter a username"
+msgstr ""
+
+msgid "Passwords must match and not be empty"
+msgstr ""
+
+msgid "Desktop environment"
+msgstr ""
+
+msgid "Desktop"
+msgstr ""
+
+msgid "GNOME"
+msgstr ""
+
+msgid "KDE Plasma"
+msgstr ""
+
+msgid "LXQt"
+msgstr ""
+
+msgid "A clean, modern desktop focused on simplicity"
+msgstr ""
+
+msgid "A powerful, customizable desktop with a traditional layout"
+msgstr ""
+
+msgid "A lightweight desktop for older or low-resource hardware"
+msgstr ""
+
+msgid "Modulix OS Installer"
+msgstr ""
+
+msgid "Steps"
+msgstr ""
+
+msgid "Previous"
+msgstr ""
+
+msgid "Next"
+msgstr ""
+
+msgid "Couldn't save this step"
+msgstr ""
+
+msgid "Setup isn't implemented yet — that's iteration 2"
+msgstr ""

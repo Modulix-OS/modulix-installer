@@ -1,0 +1,219 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: modulixos-installer\n"
+"Report-Msgid-Bugs-To: \n"
+"Language: fr\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n > 1);\n"
+
+msgid "Narrator"
+msgstr "Narrateur"
+
+msgid "Enable narrator"
+msgstr "Activer le narrateur"
+
+msgid "Reads each page aloud as you move through the installer"
+msgstr "Lit chaque page à voix haute pendant la progression dans l'installateur"
+
+msgid "Turn this on now if you need speech feedback for the rest of the installer"
+msgstr "Activez ceci dès maintenant si vous avez besoin d'un retour vocal pour la suite de l'installation"
+
+msgid "Language"
+msgstr "Langue"
+
+msgid "Used for the installer and the installed system"
+msgstr "Utilisée pour l'installateur et le système installé"
+
+msgid "Timezone"
+msgstr "Fuseau horaire"
+
+msgid "Click the map or pick from the list"
+msgstr "Cliquez sur la carte ou choisissez dans la liste"
+
+msgid "Keyboard"
+msgstr "Clavier"
+
+msgid "Layout"
+msgstr "Disposition"
+
+msgid "Variant"
+msgstr "Variante"
+
+msgid "Typing test"
+msgstr "Test de frappe"
+
+msgid "Type here to test your layout"
+msgstr "Tapez ici pour tester votre disposition"
+
+msgid "Accessibility"
+msgstr "Accessibilité"
+
+msgid "High contrast"
+msgstr "Contraste élevé"
+
+msgid "Increase contrast between text and background"
+msgstr "Augmente le contraste entre le texte et l'arrière-plan"
+
+msgid "Large text"
+msgstr "Texte agrandi"
+
+msgid "Increase the interface text size"
+msgstr "Augmente la taille du texte de l'interface"
+
+msgid "Screen magnifier"
+msgstr "Loupe d'écran"
+
+msgid "Zoom in on the area around the cursor"
+msgstr "Zoome sur la zone autour du curseur"
+
+msgid "Sticky keys"
+msgstr "Touches rémanentes"
+
+msgid "Press modifier keys one at a time instead of together"
+msgstr "Appuyer sur les touches de modification une à la fois plutôt qu'ensemble"
+
+msgid "Network"
+msgstr "Réseau"
+
+msgid "Status"
+msgstr "État"
+
+msgid "Checking…"
+msgstr "Vérification…"
+
+msgid "Wi-Fi networks"
+msgstr "Réseaux Wi-Fi"
+
+msgid "Connected"
+msgstr "Connecté"
+
+msgid "Limited connectivity"
+msgstr "Connectivité limitée"
+
+msgid "Behind a captive portal"
+msgstr "Derrière un portail captif"
+
+msgid "Not connected"
+msgstr "Non connecté"
+
+msgid "Unknown"
+msgstr "Inconnu"
+
+msgid "Partitioning"
+msgstr "Partitionnement"
+
+msgid "Target disk"
+msgstr "Disque cible"
+
+msgid "Partitioning mode"
+msgstr "Mode de partitionnement"
+
+msgid "Erase entire disk"
+msgstr "Effacer tout le disque"
+
+msgid "Install alongside Windows"
+msgstr "Installer à côté de Windows"
+
+msgid "Use free space"
+msgstr "Utiliser l'espace libre"
+
+msgid "Manual"
+msgstr "Manuel"
+
+msgid "Swap"
+msgstr "Espace d'échange"
+
+msgid "No swap"
+msgstr "Pas d'espace d'échange"
+
+msgid "Standard swap"
+msgstr "Espace d'échange standard"
+
+msgid "Swap with hibernation support"
+msgstr "Espace d'échange avec prise en charge de l'hibernation"
+
+msgid "Encrypt disk"
+msgstr "Chiffrer le disque"
+
+msgid "LUKS2, unlocked via TPM2 when available"
+msgstr "LUKS2, déverrouillé via le TPM2 si disponible"
+
+msgid "Use TPM2"
+msgstr "Utiliser le TPM2"
+
+msgid "Unlock automatically without a passphrase"
+msgstr "Déverrouille automatiquement sans phrase secrète"
+
+msgid "User account"
+msgstr "Compte utilisateur"
+
+msgid "Username"
+msgstr "Nom d'utilisateur"
+
+msgid "Full name"
+msgstr "Nom complet"
+
+msgid "Password"
+msgstr "Mot de passe"
+
+msgid "Confirm password"
+msgstr "Confirmer le mot de passe"
+
+msgid "For a strong password, use one of (CNIL recommendation):\n - 12+ characters with uppercase, lowercase, digits and special characters\n - 14+ characters with uppercase, lowercase and digits\n - Passphrase of at least 7 words.\nOptional, but recommended."
+msgstr "Pour un mot de passe robuste, utilisez l'une de ces options (recommandation de la CNIL) :\n - 12 caractères minimum avec majuscules, minuscules, chiffres et caractères spéciaux.\n - 14 caractères minimum avec majuscules, minuscules et chiffres.\n - Une phrase de passe d'au moins 7 mots.\nFacultatif, mais recommandé."
+
+msgid "Passwords do not match."
+msgstr "Les mots de passe ne correspondent pas."
+
+msgid "User"
+msgstr "Utilisateur"
+
+msgid "Enter a username"
+msgstr "Saisissez un nom d'utilisateur"
+
+msgid "Passwords must match and not be empty"
+msgstr "Les mots de passe doivent correspondre et ne pas être vides"
+
+msgid "Desktop environment"
+msgstr "Environnement de bureau"
+
+msgid "Desktop"
+msgstr "Bureau"
+
+msgid "GNOME"
+msgstr "GNOME"
+
+msgid "KDE Plasma"
+msgstr "KDE Plasma"
+
+msgid "LXQt"
+msgstr "LXQt"
+
+msgid "A clean, modern desktop focused on simplicity"
+msgstr "Un bureau épuré et moderne, pensé pour la simplicité"
+
+msgid "A powerful, customizable desktop with a traditional layout"
+msgstr "Un bureau puissant et personnalisable, à la disposition traditionnelle"
+
+msgid "A lightweight desktop for older or low-resource hardware"
+msgstr "Un bureau léger, adapté à un matériel ancien ou aux ressources limitées"
+
+msgid "Modulix OS Installer"
+msgstr "Installateur Modulix OS"
+
+msgid "Steps"
+msgstr "Étapes"
+
+msgid "Previous"
+msgstr "Précédent"
+
+msgid "Next"
+msgstr "Suivant"
+
+msgid "Couldn't save this step"
+msgstr "Impossible d'enregistrer cette étape"
+
+msgid "Setup isn't implemented yet — that's iteration 2"
+msgstr "L'installation n'est pas encore implémentée — ce sera fait à l'itération 2"

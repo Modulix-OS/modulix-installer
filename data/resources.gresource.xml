@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<gresources>
+  <gresource prefix="/org/modulix/installer/icons/scalable/actions">
+    <file alias="narrator-symbolic.svg">icons/narrator-symbolic.svg</file>
+    <file alias="language-symbolic.svg">icons/language-symbolic.svg</file>
+    <file alias="timezone-symbolic.svg">icons/timezone-symbolic.svg</file>
+    <file alias="keyboard-symbolic.svg">icons/keyboard-symbolic.svg</file>
+    <file alias="accessibility-symbolic.svg">icons/accessibility-symbolic.svg</file>
+    <file alias="network-symbolic.svg">icons/network-symbolic.svg</file>
+    <file alias="partitioning-symbolic.svg">icons/partitioning-symbolic.svg</file>
+    <file alias="user-symbolic.svg">icons/user-symbolic.svg</file>
+    <file alias="desktop-symbolic.svg">icons/desktop-symbolic.svg</file>
+  </gresource>
+  <gresource prefix="/org/modulix/installer/images">
+    <file alias="earth.jpg">images/earth.jpg</file>
+  </gresource>
+</gresources>
