@@ -14,4 +14,9 @@
   <gresource prefix="/org/modulix/installer/images">
     <file alias="earth.jpg">images/earth.jpg</file>
   </gresource>
+  <gresource prefix="/org/modulix/installer/images/screenshots">
+    <file alias="gnome.svg">screenshots/gnome.svg</file>
+    <file alias="plasma.svg">screenshots/plasma.svg</file>
+    <file alias="lxqt.svg">screenshots/lxqt.svg</file>
+  </gresource>
 </gresources>

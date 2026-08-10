@@ -15,7 +15,7 @@ fn main() {
 /// Compiles every `po/<lang>.po` into `$OUT_DIR/locale/<lang>/LC_MESSAGES/modulixos-installer.mo`
 /// and points debug builds at that directory (see `src/i18n.rs`) — release
 /// builds bind to the system locale dir instead, same debug/release split as
-/// `modulix-core-utils`' `CONFIG_DIRECTORY` (see CLAUDE.md).
+/// `modulix-core-utils`' `CONFIG_DIRECTORY`.
 fn compile_translations() {
     println!("cargo:rerun-if-changed=po");
 
