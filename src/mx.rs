@@ -5,7 +5,12 @@ use std::fmt;
 
 #[derive(Debug)]
 pub enum Error {
-    /// A backend (D-Bus proxy, subprocess, file parsing) failed with a human-readable reason.
+    /// A backend (D-Bus proxy, subprocess, file parsing) failed with a
+    /// human-readable reason. Convention: backends put a bare gettext msgid
+    /// in here (untranslated); callers render it with
+    /// `match &e { Error::Backend(msgid) => tr(msgid), other => other.to_string() }`.
+    /// `tr()` returns the string unchanged if it isn't in the catalog, so
+    /// other backends that don't follow this convention don't regress.
     Backend(String),
     Io(std::io::Error),
     Utf8(std::string::FromUtf8Error),
