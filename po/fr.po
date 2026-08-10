@@ -483,7 +483,7 @@ msgid "Swap"
 msgstr "Espace d'échange"
 
 msgid "Swap with hibernation support"
-msgstr "Espace d'échange avec prise en charge de l'hibernation"
+msgstr "Espace d'échange avec l'hibernation"
 
 msgid "TPM2 PIN (optional)"
 msgstr "Code PIN TPM2 (facultatif)"
