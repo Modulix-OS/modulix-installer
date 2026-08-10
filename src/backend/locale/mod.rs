@@ -1,5 +1,5 @@
 mod catalog;
-mod display_name;
+pub(crate) mod display_name;
 mod evdev;
 mod fake;
 mod system;

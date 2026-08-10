@@ -4,10 +4,12 @@ use crate::config::InstallConfig;
 use crate::i18n::tr;
 use crate::mx;
 use crate::steps::{Step, StepId, ValidityTracker};
-use crate::widgets::TimezoneMap;
+use crate::widgets::{TimezoneMap, size_dropdown_to_widest};
 use adw::prelude::*;
 use std::cell::RefCell;
 use std::rc::Rc;
+
+const DEFAULT_TIMEZONE: &str = "Europe/Paris";
 
 /// Step 3 — clickable world map plus a plain dropdown fallback, kept in sync
 /// with each other.
@@ -21,11 +23,11 @@ pub struct TimezoneStep {
 
 impl TimezoneStep {
     pub fn new(backends: &Backends, runtime: &tokio::runtime::Handle) -> Self {
-        let selected = Rc::new(RefCell::new("UTC".to_string()));
+        let selected = Rc::new(RefCell::new(DEFAULT_TIMEZONE.to_string()));
 
         let map = TimezoneMap::new();
 
-        let dropdown = gtk::DropDown::from_strings(&["UTC"]);
+        let dropdown = gtk::DropDown::from_strings(&[DEFAULT_TIMEZONE]);
         let fallback_row = adw::ActionRow::builder()
             .title(tr("Timezone"))
             .subtitle(tr("Click the map or pick from the list"))
@@ -44,7 +46,8 @@ impl TimezoneStep {
         page.add(&group);
         container.append(&page);
 
-        let zone_names: Rc<RefCell<Vec<String>>> = Rc::new(RefCell::new(vec!["UTC".to_string()]));
+        let zone_names: Rc<RefCell<Vec<String>>> =
+            Rc::new(RefCell::new(vec![DEFAULT_TIMEZONE.to_string()]));
 
         {
             let locale_backend = backends.locale.clone();
@@ -61,9 +64,17 @@ impl TimezoneStep {
                         return;
                     }
                     let names: Vec<&str> = entries.iter().map(|e| e.name.as_str()).collect();
-                    dropdown.set_model(Some(&gtk::StringList::new(&names)));
+                    let model = gtk::StringList::new(&names);
+                    size_dropdown_to_widest(&dropdown, &model);
+                    dropdown.set_model(Some(&model));
                     *zone_names.borrow_mut() = entries.iter().map(|e| e.name.clone()).collect();
-                    *selected.borrow_mut() = entries[0].name.clone();
+                    let default_idx = entries.iter().position(|e| e.name == DEFAULT_TIMEZONE);
+                    *selected.borrow_mut() = default_idx
+                        .map(|i| entries[i].name.clone())
+                        .unwrap_or_else(|| entries[0].name.clone());
+                    if let Some(idx) = default_idx {
+                        dropdown.set_selected(idx as u32);
+                    }
                     map.set_entries(entries);
                     map.select_by_name(&selected.borrow());
                 },

@@ -5,6 +5,7 @@ use crate::config::InstallConfig;
 use crate::i18n::tr;
 use crate::mx;
 use crate::steps::{Step, StepId, ValidityTracker};
+use crate::widgets::size_dropdown_to_widest;
 use adw::prelude::*;
 use std::cell::RefCell;
 use std::rc::Rc;
@@ -81,7 +82,9 @@ impl KeyboardStep {
                         return;
                     }
                     let names: Vec<&str> = loaded.iter().map(|l| l.description.as_str()).collect();
-                    layout_dropdown.set_model(Some(&gtk::StringList::new(&names)));
+                    let model = gtk::StringList::new(&names);
+                    size_dropdown_to_widest(&layout_dropdown, &model);
+                    layout_dropdown.set_model(Some(&model));
                     *selected_layout.borrow_mut() = loaded[0].code.clone();
                     apply_layout(loaded[0].code.clone(), NO_VARIANT.to_string());
                     *layouts.borrow_mut() = loaded;
@@ -106,7 +109,9 @@ impl KeyboardStep {
 
                 let mut variant_names: Vec<&str> = vec!["Default"];
                 variant_names.extend(layout.variants.iter().map(|v| v.description.as_str()));
-                variant_dropdown.set_model(Some(&gtk::StringList::new(&variant_names)));
+                let variant_model = gtk::StringList::new(&variant_names);
+                size_dropdown_to_widest(&variant_dropdown, &variant_model);
+                variant_dropdown.set_model(Some(&variant_model));
                 variant_dropdown.set_selected(0);
 
                 apply_layout(layout.code.clone(), NO_VARIANT.to_string());

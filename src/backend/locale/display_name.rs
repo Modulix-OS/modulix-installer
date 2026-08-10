@@ -6,18 +6,24 @@
 //! never fabricated.
 
 /// Splits `"fr_BE.UTF-8"` / `"fr_BE"` / `"sr_RS@latin"` into
-/// (language, territory). Charset (`.UTF-8`) and modifier (`@latin`) are
-/// dropped; territory is `None` for language-only codes (e.g. `"eo"`).
-fn split_locale_code(code: &str) -> (&str, Option<&str>) {
-    let without_modifier = code.split('@').next().unwrap_or(code);
+/// (language, territory, modifier). Charset (`.UTF-8`) is dropped; territory
+/// and modifier are `None` when absent (e.g. `"eo"`). `pub(crate)` so
+/// `crate::i18n` can reuse the same split for `LANGUAGE`/`setlocale`
+/// cascades instead of re-parsing locale codes itself.
+pub(crate) fn split_locale_code(code: &str) -> (&str, Option<&str>, Option<&str>) {
+    let (without_modifier, modifier) = match code.split_once('@') {
+        Some((rest, modifier)) => (rest, Some(modifier)),
+        None => (code, None),
+    };
     let without_charset = without_modifier
         .split('.')
         .next()
         .unwrap_or(without_modifier);
-    match without_charset.split_once('_') {
+    let (lang, territory) = match without_charset.split_once('_') {
         Some((lang, territory)) if !territory.is_empty() => (lang, Some(territory)),
         _ => (without_charset, None),
-    }
+    };
+    (lang, territory, modifier)
 }
 
 /// The bare language portion of a locale code (`"fr_BE.UTF-8"` -> `"fr"`) —
@@ -31,7 +37,7 @@ pub fn language_code_of(code: &str) -> &str {
 /// only when this language has more than one territory variant in the list
 /// being displayed — a lone `ja_JP` doesn't need "(Japon)" tacked on.
 pub fn display_name(code: &str, show_territory: bool) -> String {
-    let (lang, territory) = split_locale_code(code);
+    let (lang, territory, _modifier) = split_locale_code(code);
 
     if lang.eq_ignore_ascii_case("C") || lang.eq_ignore_ascii_case("POSIX") {
         return "C (POSIX)".to_string();
@@ -396,17 +402,20 @@ mod tests {
 
     #[test]
     fn splits_language_territory_charset() {
-        assert_eq!(split_locale_code("fr_BE.UTF-8"), ("fr", Some("BE")));
+        assert_eq!(split_locale_code("fr_BE.UTF-8"), ("fr", Some("BE"), None));
     }
 
     #[test]
     fn splits_language_only() {
-        assert_eq!(split_locale_code("eo.UTF-8"), ("eo", None));
+        assert_eq!(split_locale_code("eo.UTF-8"), ("eo", None, None));
     }
 
     #[test]
-    fn strips_modifier() {
-        assert_eq!(split_locale_code("sr_RS@latin"), ("sr", Some("RS")));
+    fn extracts_modifier() {
+        assert_eq!(
+            split_locale_code("sr_RS@latin"),
+            ("sr", Some("RS"), Some("latin"))
+        );
     }
 
     #[test]
