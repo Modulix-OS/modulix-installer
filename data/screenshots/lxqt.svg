@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="900" viewBox="0 0 1600 900">
+  <rect width="1600" height="900" rx="24" fill="#3d3846"/>
+  <rect x="16" y="16" width="1568" height="868" rx="16" fill="#5e5c64" stroke="#77767b" stroke-width="2"/>
+  <text x="800" y="450" font-family="sans-serif" font-size="72" fill="#f6f5f4" text-anchor="middle" dominant-baseline="middle">LXQt</text>
+</svg>

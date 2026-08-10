@@ -5,9 +5,9 @@ use crate::steps::{Step, StepId, ValidityTracker};
 use crate::widgets::PasswordConfirmEntry;
 use adw::prelude::*;
 
-/// Step 8 — primary user; root receives the same password (see CLAUDE.md:
-/// both must end up `hashedPassword`, not `initialPassword`, once `init_all`
-/// lands in iteration 2).
+/// Step 8 — primary user; root receives the same password (both must end up
+/// `hashedPassword`, not `initialPassword`, once `init_all` lands in
+/// iteration 2).
 pub struct UserStep {
     widget: gtk::Widget,
     group: adw::PreferencesGroup,
@@ -28,13 +28,13 @@ impl UserStep {
             .build();
         group.add(&username_row);
         group.add(&fullname_row);
+        password_widget.attach_to_group(&group);
 
         let page = adw::PreferencesPage::new();
         page.add(&group);
 
         let container = gtk::Box::new(gtk::Orientation::Vertical, 12);
         container.append(&page);
-        container.append(&password_widget.widget());
 
         let validity = ValidityTracker::blocked(tr("Enter a username"));
 
