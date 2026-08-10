@@ -1,7 +1,8 @@
-//! Password + confirmation pair with live strength/mismatch feedback (user
-//! step). Wrapped in its own `PreferencesPage` so it gets the same clamped
-//! reading width as every other step — a bare `PreferencesGroup` dropped
-//! straight into a `gtk::Box` has no width clamp and stretches full-window.
+//! Password + confirmation pair with live strength/mismatch feedback, shared
+//! by the user step and step 7's encryption passphrase. Exposes only the raw
+//! rows/labels — no `PreferencesGroup`/`PreferencesPage` of its own, since
+//! where those rows need to live (a plain group, or an `AdwExpanderRow`)
+//! differs per caller; see `attach_to_group`/`attach_to_expander`.
 
 use super::password_strength;
 use crate::i18n::tr;
@@ -11,7 +12,6 @@ use std::rc::Rc;
 
 #[derive(Clone)]
 pub struct PasswordConfirmEntry {
-    widget: gtk::Widget,
     password_row: adw::PasswordEntryRow,
     confirm_row: adw::PasswordEntryRow,
     strength_label: gtk::Label,
@@ -43,21 +43,33 @@ fn refresh_hints(
     let password = password_row.text();
     let confirm = confirm_row.text();
 
-    if password.is_empty() || password_strength::is_strong_enough(&password) {
-        strength_label.set_label("");
+    let show_strength = !password.is_empty() && !password_strength::is_strong_enough(&password);
+    let strength_text = if show_strength {
+        strength_hint()
     } else {
-        strength_label.set_label(&strength_hint());
-    }
+        String::new()
+    };
+    strength_label.set_label(&strength_text);
+    strength_label.set_visible(show_strength);
 
     let is_match = password == confirm || confirm.is_empty();
     matches.set(is_match);
-    if !confirm.is_empty() && !is_match {
+    let show_error = !confirm.is_empty() && !is_match;
+    if show_error {
         error_label.set_label(&mismatch_error());
         confirm_row.add_css_class("error");
+        confirm_row.update_state(&[gtk::accessible::State::Invalid(
+            gtk::AccessibleInvalidState::True,
+        )]);
     } else {
         error_label.set_label("");
         confirm_row.remove_css_class("error");
+        confirm_row.update_state(&[gtk::accessible::State::Invalid(
+            gtk::AccessibleInvalidState::False,
+        )]);
     }
+    error_label.set_visible(show_error);
+    strength_label.update_property(&[gtk::accessible::Property::Label(&strength_label.text())]);
 }
 
 impl PasswordConfirmEntry {
@@ -71,15 +83,9 @@ impl PasswordConfirmEntry {
 
         let strength_label = hint_label(&["warning", "caption"]);
         let error_label = hint_label(&["error", "caption"]);
-
-        let group = adw::PreferencesGroup::new();
-        group.add(&password_row);
-        group.add(&confirm_row);
-        group.add(&strength_label);
-        group.add(&error_label);
-
-        let page = adw::PreferencesPage::new();
-        page.add(&group);
+        confirm_row.update_relation(&[gtk::accessible::Relation::DescribedBy(&[
+            error_label.upcast_ref()
+        ])]);
 
         let matches = Rc::new(Cell::new(true));
 
@@ -107,7 +113,6 @@ impl PasswordConfirmEntry {
         confirm_row.connect_changed(move |_| update());
 
         Self {
-            widget: page.upcast(),
             password_row,
             confirm_row,
             strength_label,
@@ -116,8 +121,26 @@ impl PasswordConfirmEntry {
         }
     }
 
-    pub fn widget(&self) -> gtk::Widget {
-        self.widget.clone()
+    /// Adds the password/confirm rows and their hint labels to a plain
+    /// `AdwPreferencesGroup` — the user step's case.
+    pub fn attach_to_group(&self, group: &adw::PreferencesGroup) {
+        group.add(&self.password_row);
+        group.add(&self.strength_label);
+        group.add(&self.confirm_row);
+        group.add(&self.error_label);
+    }
+
+    /// Adds the same rows as child rows of an `AdwExpanderRow` — step 7's
+    /// encryption toggle, so the passphrase fields expand/collapse in place
+    /// instead of living behind a separate `GtkRevealer`. Each hint sits
+    /// directly under the field it describes (strength under the password,
+    /// mismatch under the confirmation) and is hidden entirely — not shown
+    /// as an empty row — while there's nothing to say (see `refresh_hints`).
+    pub fn attach_to_expander(&self, row: &adw::ExpanderRow) {
+        row.add_row(&self.password_row);
+        row.add_row(&self.strength_label);
+        row.add_row(&self.confirm_row);
+        row.add_row(&self.error_label);
     }
 
     pub fn password(&self) -> String {
@@ -162,6 +185,7 @@ fn hint_label(css_classes: &[&str]) -> gtk::Label {
         .margin_bottom(2)
         .margin_start(12)
         .margin_end(12)
+        .visible(false)
         .build();
     for class in css_classes {
         label.add_css_class(class);

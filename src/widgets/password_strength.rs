@@ -8,9 +8,21 @@
 //!
 //! This is advisory only — the wizard never blocks on it.
 
+use regex::Regex;
+use std::sync::LazyLock;
+
 const EXAMPLE_1_MIN_LEN: usize = 12;
 const EXAMPLE_2_MIN_LEN: usize = 14;
 const PASSPHRASE_MIN_WORDS: usize = 7;
+
+// `regex` has no lookahead, so each character class is matched by its own
+// pattern and combined below — rather than a single "contains all classes"
+// regex.
+static LOWER_RE: LazyLock<Regex> = LazyLock::new(|| Regex::new(r"\p{Ll}").unwrap());
+static UPPER_RE: LazyLock<Regex> = LazyLock::new(|| Regex::new(r"\p{Lu}").unwrap());
+static DIGIT_RE: LazyLock<Regex> = LazyLock::new(|| Regex::new(r"[0-9]").unwrap());
+static SPECIAL_RE: LazyLock<Regex> = LazyLock::new(|| Regex::new(r"[^\p{L}\p{N}]").unwrap());
+static WORD_RE: LazyLock<Regex> = LazyLock::new(|| Regex::new(r"\S+").unwrap());
 
 pub fn is_strong_enough(password: &str) -> bool {
     matches_example_1(password)
@@ -27,10 +39,10 @@ struct CharClasses {
 
 fn char_classes(password: &str) -> CharClasses {
     CharClasses {
-        lower: password.chars().any(|c| c.is_lowercase()),
-        upper: password.chars().any(|c| c.is_uppercase()),
-        digit: password.chars().any(|c| c.is_ascii_digit()),
-        special: password.chars().any(|c| !c.is_alphanumeric()),
+        lower: LOWER_RE.is_match(password),
+        upper: UPPER_RE.is_match(password),
+        digit: DIGIT_RE.is_match(password),
+        special: SPECIAL_RE.is_match(password),
     }
 }
 
@@ -54,7 +66,7 @@ fn matches_example_2(password: &str) -> bool {
 
 /// A passphrase of 7+ words.
 fn matches_example_3_passphrase(password: &str) -> bool {
-    password.split_whitespace().count() >= PASSPHRASE_MIN_WORDS
+    WORD_RE.find_iter(password).count() >= PASSPHRASE_MIN_WORDS
 }
 
 #[cfg(test)]
