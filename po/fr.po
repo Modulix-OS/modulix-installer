@@ -8,143 +8,625 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=(n > 1);\n"
 
-msgid "Narrator"
-msgstr "Narrateur"
+msgid "A clean, modern desktop focused on simplicity"
+msgstr "Un bureau épuré et moderne, pensé pour la simplicité"
 
-msgid "Enable narrator"
-msgstr "Activer le narrateur"
+msgid "A lightweight desktop for older or low-resource hardware"
+msgstr ""
+"Un bureau léger, adapté à un matériel ancien ou aux ressources limitées"
 
-msgid "Reads each page aloud as you move through the installer"
-msgstr "Lit chaque page à voix haute pendant la progression dans l'installateur"
-
-msgid "Turn this on now if you need speech feedback for the rest of the installer"
-msgstr "Activez ceci dès maintenant si vous avez besoin d'un retour vocal pour la suite de l'installation"
-
-msgid "Language"
-msgstr "Langue"
-
-msgid "Used for the installer and the installed system"
-msgstr "Utilisée pour l'installateur et le système installé"
-
-msgid "Timezone"
-msgstr "Fuseau horaire"
-
-msgid "Click the map or pick from the list"
-msgstr "Cliquez sur la carte ou choisissez dans la liste"
-
-msgid "Keyboard"
-msgstr "Clavier"
-
-msgid "Layout"
-msgstr "Disposition"
-
-msgid "Variant"
-msgstr "Variante"
-
-msgid "Typing test"
-msgstr "Test de frappe"
-
-msgid "Type here to test your layout"
-msgstr "Tapez ici pour tester votre disposition"
+msgid "A powerful, customizable desktop with a traditional layout"
+msgstr ""
+"Un bureau puissant et personnalisable, à la disposition traditionnelle"
 
 msgid "Accessibility"
 msgstr "Accessibilité"
 
-msgid "High contrast"
-msgstr "Contraste élevé"
+msgid "Add"
+msgstr "Ajouter"
 
-msgid "Increase contrast between text and background"
-msgstr "Augmente le contraste entre le texte et l'arrière-plan"
+msgid "After installation"
+msgstr "Après l'installation"
 
-msgid "Large text"
-msgstr "Texte agrandi"
+msgid "An EFI System Partition of at least 100 MiB is required"
+msgstr "Une partition système EFI d'au moins 100 Mio est requise"
 
-msgid "Increase the interface text size"
-msgstr "Augmente la taille du texte de l'interface"
+msgid "Applied now"
+msgstr "Appliqué maintenant"
 
-msgid "Screen magnifier"
-msgstr "Loupe d'écran"
+msgid "Applied to the installed system"
+msgstr "Appliqué au système installé"
 
-msgid "Zoom in on the area around the cursor"
-msgstr "Zoome sur la zone autour du curseur"
+msgid "Assign exactly one partition as the root (/) filesystem"
+msgstr "Attribuez exactement une partition au système de fichiers racine (/)"
 
-msgid "Sticky keys"
-msgstr "Touches rémanentes"
+msgid ""
+"Assign existing partitions or create new ones in free space below. To resize "
+"or delete an existing partition, use GParted."
+msgstr ""
+"Assignez les partitions existantes ou créez-en de nouvelles dans l'espace "
+"libre ci-dessous. Pour redimensionner ou supprimer une partition existante, "
+"utilisez GParted."
 
-msgid "Press modifier keys one at a time instead of together"
-msgstr "Appuyer sur les touches de modification une à la fois plutôt qu'ensemble"
+msgid "Boot (/boot, EFI)"
+msgstr "Démarrage (/boot, EFI)"
 
-msgid "Network"
-msgstr "Réseau"
+msgid "Calculator"
+msgstr "Calculatrice"
 
-msgid "Status"
-msgstr "État"
+msgid "Can't install alongside Windows"
+msgstr "Impossible d'installer à côté de Windows"
+
+msgid "Cancel"
+msgstr "Annuler"
 
 msgid "Checking…"
 msgstr "Vérification…"
 
-msgid "Wi-Fi networks"
-msgstr "Réseaux Wi-Fi"
+msgid "Classic"
+msgstr "Classique"
+
+msgid ""
+"Click anywhere on the map, or use arrow keys to move to a neighboring "
+"timezone and Enter to confirm; the region and city lists below offer the "
+"same choice without the map."
+msgstr ""
+"Cliquez n'importe où sur la carte, ou utilisez les flèches pour vous "
+"déplacer vers un fuseau horaire voisin et Entrée pour valider ; les listes "
+"de région et de ville ci-dessous offrent le même choix sans la carte."
+
+msgid "Click the map or pick from the list"
+msgstr "Cliquez sur la carte ou choisissez dans la liste"
+
+msgid "Close"
+msgstr "Fermer"
+
+msgid "Confirm password"
+msgstr "Confirmer le mot de passe"
+
+msgid "Confirm the encryption passphrase"
+msgstr "Confirmez la phrase secrète de chiffrement"
+
+msgid "Connect"
+msgstr "Se connecter"
+
+msgid "Connect to a hidden network"
+msgstr "Se connecter à un réseau masqué"
+
+msgid "Connect to a network to continue"
+msgstr "Connectez-vous à un réseau pour continuer"
 
 msgid "Connected"
 msgstr "Connecté"
 
-msgid "Limited connectivity"
-msgstr "Connectivité limitée"
+msgid "Continue"
+msgstr "Continuer"
 
-msgid "Behind a captive portal"
-msgstr "Derrière un portail captif"
+msgid "Continue anyway"
+msgstr "Continuer quand même"
 
-msgid "Not connected"
-msgstr "Non connecté"
+msgid "Couldn't save this step"
+msgstr "Impossible d'enregistrer cette étape"
 
-msgid "Unknown"
-msgstr "Inconnu"
+msgid "Create a partition here"
+msgstr "Créer une partition ici"
 
-msgid "Partitioning"
-msgstr "Partitionnement"
+msgid "Create partition"
+msgstr "Créer une partition"
 
-msgid "Target disk"
-msgstr "Disque cible"
+msgid "Current layout"
+msgstr "Disposition actuelle"
 
-msgid "Partitioning mode"
-msgstr "Mode de partitionnement"
+msgid "Delete"
+msgstr "Supprimer"
 
-msgid "Erase entire disk"
-msgstr "Effacer tout le disque"
+msgid "Desktop"
+msgstr "Bureau"
 
-msgid "Install alongside Windows"
-msgstr "Installer à côté de Windows"
+msgid "Desktop environment"
+msgstr "Environnement de bureau"
 
-msgid "Use free space"
-msgstr "Utiliser l'espace libre"
+msgid "Disabled"
+msgstr "Désactivé"
 
-msgid "Manual"
-msgstr "Manuel"
+msgid "Disk space used as extra memory when RAM is full. Hibernation also needs it to save the session to disk."
+msgstr "Espace disque utilisé comme mémoire supplémentaire quand la RAM est pleine. L'hibernation s'en sert aussi pour enregistrer la session sur le disque."
 
-msgid "Swap"
-msgstr "Espace d'échange"
+msgid "Don't use"
+msgstr "Ne pas utiliser"
 
-msgid "No swap"
-msgstr "Pas d'espace d'échange"
+msgid "EFI System Partition"
+msgstr "Partition système EFI"
 
-msgid "Standard swap"
-msgstr "Espace d'échange standard"
+msgid "Edit partition"
+msgstr "Modifier la partition"
 
-msgid "Swap with hibernation support"
-msgstr "Espace d'échange avec prise en charge de l'hibernation"
+msgid "Enable narrator"
+msgstr "Activer le narrateur"
 
 msgid "Encrypt disk"
 msgstr "Chiffrer le disque"
 
+msgid "Encryption"
+msgstr "Chiffrement"
+
+msgid "Encrypts the whole disk with LUKS2. A passphrase is required at every boot unless TPM2 unlocking is enabled."
+msgstr "Chiffre tout le disque avec LUKS2. Une phrase secrète est demandée à chaque démarrage, sauf si le déverrouillage TPM2 est activé."
+
+msgid "Enter a username"
+msgstr "Saisissez un nom d'utilisateur"
+
+msgid "Enter an encryption passphrase"
+msgstr "Saisissez une phrase de passe de chiffrement"
+
+msgid "Enter the password for this Wi-Fi network"
+msgstr "Saisissez le mot de passe de ce réseau Wi-Fi"
+
+msgid "Enterprise network, signal {level} of 4"
+msgstr "Réseau d'entreprise, signal {level} sur 4"
+
+msgid "Enterprise networks aren't supported by the installer"
+msgstr "Les réseaux d'entreprise ne sont pas pris en charge par l'installateur"
+
+msgid "Erase and Install"
+msgstr "Effacer et installer"
+
+msgid "Erase disk and install Modulix OS?"
+msgstr "Effacer le disque et installer Modulix OS ?"
+
+msgid "Erase entire disk"
+msgstr "Effacer tout le disque"
+
+msgid ""
+"Existing data in /home is kept — make sure it already holds a Linux "
+"filesystem."
+msgstr ""
+"Les données existantes dans /home sont conservées — assurez-vous qu'elle "
+"contient déjà un système de fichiers Linux."
+
+msgid "Filesystem"
+msgstr "Système de fichiers"
+
+msgid ""
+"For a strong password, use one of (CNIL recommendation):\n"
+" - 12+ characters with uppercase, lowercase, digits and special characters\n"
+" - 14+ characters with uppercase, lowercase and digits\n"
+" - Passphrase of at least 7 words.\n"
+"Optional, but recommended."
+msgstr ""
+"Pour un mot de passe robuste, utilisez l'une de ces options (recommandation "
+"de la CNIL) :\n"
+" - 12 caractères minimum avec majuscules, minuscules, chiffres et caractères "
+"spéciaux.\n"
+" - 14 caractères minimum avec majuscules, minuscules et chiffres.\n"
+" - Une phrase de passe d'au moins 7 mots.\n"
+"Facultatif, mais recommandé."
+
+msgid "Format"
+msgstr "Formater"
+
+msgid "Free space"
+msgstr "Espace libre"
+
+msgid "Free space region"
+msgstr "Zone d'espace libre"
+
+msgid "Free space:"
+msgstr "Espace libre :"
+
+msgid "Full name"
+msgstr "Nom complet"
+
+msgid "Hibernation swap doesn't fit — using standard swap instead"
+msgstr ""
+"La partition d'échange pour l'hibernation ne tient pas — utilisation de "
+"l'échange standard à la place"
+
+msgid "High contrast"
+msgstr "Contraste élevé"
+
+msgid "Home"
+msgstr "Home"
+
+msgid "Home (/home)"
+msgstr "Home (/home)"
+
+msgid "Increase contrast between text and background"
+msgstr "Augmente le contraste entre le texte et l'arrière-plan"
+
+msgid "Increase the interface text size"
+msgstr "Augmente la taille du texte de l'interface"
+
+msgid "Install"
+msgstr "Installer"
+
+msgid "Install alongside Windows"
+msgstr "Installer à côté de Windows"
+
+msgid "Installation complete"
+msgstr "Installation terminée"
+
+msgid "Installation failed"
+msgstr "Échec de l'installation"
+
+msgid "Installation type"
+msgstr "Type d'installation"
+
+msgid "Installing"
+msgstr "Installation en cours"
+
+msgid "Kept"
+msgstr "Conservé"
+
+msgid "Keyboard"
+msgstr "Clavier"
+
+msgid "LUKS2, passphrase required at boot"
+msgstr "LUKS2, phrase de passe requise au démarrage"
+
+msgid "LUKS2, unlocked via TPM2"
+msgstr "LUKS2, déverrouillé via le TPM2"
+
 msgid "LUKS2, unlocked via TPM2 when available"
 msgstr "LUKS2, déverrouillé via le TPM2 si disponible"
+
+msgid "Language"
+msgstr "Langue"
+
+msgid "Large text"
+msgstr "Texte agrandi"
+
+msgid "Layout"
+msgstr "Disposition"
+
+msgid "Lightweight"
+msgstr "Léger"
+
+msgid "Manual"
+msgstr "Manuel"
+
+msgid "Mode"
+msgstr "Mode"
+
+msgid "Modern"
+msgstr "Moderne"
+
+msgid "Modulix"
+msgstr "Modulix"
+
+msgid "Modulix OS Installer"
+msgstr "Installateur Modulix OS"
+
+msgid "Modulix OS is ready. You can restart into it now."
+msgstr "Modulix OS est prêt. Vous pouvez maintenant redémarrer dessus."
+
+msgid "Modulix demo captive portal"
+msgstr "Portail captif de démonstration Modulix"
+
+msgid "Mount point"
+msgstr "Point de montage"
+
+msgid "Narrator"
+msgstr "Narrateur"
+
+msgid "Network"
+msgstr "Réseau"
+
+msgid "Network name (SSID)"
+msgstr "Nom du réseau (SSID)"
+
+msgid "New partition"
+msgstr "Nouvelle partition"
+
+msgid "Next"
+msgstr "Suivant"
+
+msgid "No TPM2 chip detected"
+msgstr "Aucune puce TPM2 détectée"
+
+msgid "No Wi-Fi networks found"
+msgstr "Aucun réseau Wi-Fi trouvé"
+
+msgid "No Windows installation was found on this disk"
+msgstr "Aucune installation Windows n'a été trouvée sur ce disque"
+
+msgid "No disk selected"
+msgstr "Aucun disque sélectionné"
+
+msgid "No existing partitions will be deleted."
+msgstr "Aucune partition existante ne sera supprimée."
+
+msgid "No partitions"
+msgstr "Aucune partition"
+
+msgid "No swap"
+msgstr "Pas d'espace d'échange"
+
+msgid "Not connected"
+msgstr "Non connecté"
+
+msgid "Not enough space would be freed up to install Modulix OS"
+msgstr "L'espace libéré serait insuffisant pour installer Modulix OS"
+
+msgid "Only one partition can be assigned as root (/)"
+msgstr "Une seule partition peut être attribuée à la racine (/)"
+
+msgid "Only one partition can be assigned to /boot, /home, or swap"
+msgstr "Une seule partition peut être assignée à /boot, /home ou au swap"
+
+msgid "Open (no password)"
+msgstr "Ouvert (sans mot de passe)"
+
+msgid "Open network, signal {level} of 4"
+msgstr "Réseau ouvert, signal {level} sur 4"
+
+msgid "Options"
+msgstr "Options"
+
+msgid "Other"
+msgstr "Autre"
+
+msgid "Other networks"
+msgstr "Autres réseaux"
+
+msgid "Overview"
+msgstr "Vue d'ensemble"
+
+msgid "Partition with GParted…"
+msgstr "Partitionner avec GParted…"
+
+msgid "Partitioning"
+msgstr "Partitionnement"
+
+msgid "Password"
+msgstr "Mot de passe"
+
+msgid "Passwords do not match."
+msgstr "Les mots de passe ne correspondent pas."
+
+msgid "Passwords must match and not be empty"
+msgstr "Les mots de passe doivent correspondre et ne pas être vides"
+
+msgid "Press modifier keys one at a time instead of together"
+msgstr ""
+"Appuyer sur les touches de modification une à la fois plutôt qu'ensemble"
+
+msgid "Preview"
+msgstr "Aperçu"
+
+msgid "Preview text"
+msgstr "Exemple de texte"
+
+msgid "Previous"
+msgstr "Précédent"
+
+msgid "Reads each page aloud as you move through the installer"
+msgstr ""
+"Lit chaque page à voix haute pendant la progression dans l'installateur"
+
+msgid "Ready to install"
+msgstr "Prêt à installer"
+
+msgid "Refresh"
+msgstr "Actualiser"
+
+msgid "Reload"
+msgstr "Recharger"
+
+msgid "Remove"
+msgstr "Supprimer"
+
+msgid "Rescan"
+msgstr "Actualiser"
+
+msgid "Resize the Windows partition?"
+msgstr "Redimensionner la partition Windows ?"
+
+msgid ""
+"Resizing Windows may make it ask for your password or BitLocker recovery "
+"key on the next boot. Make sure you have them before continuing. Back up "
+"anything important first."
+msgstr ""
+"Redimensionner Windows peut lui faire demander votre mot de passe ou votre "
+"clé de récupération BitLocker au prochain démarrage. Assurez-vous de les "
+"avoir avant de continuer. Sauvegardez d'abord tout ce qui est important."
+
+msgid "Root"
+msgstr "Racine"
+
+msgid "Root (/)"
+msgstr "Racine (/)"
+
+msgid "Save"
+msgstr "Enregistrer"
+
+msgid "Scanning…"
+msgstr "Recherche en cours…"
+
+msgid "Screen magnifier"
+msgstr "Loupe d'écran"
+
+msgid "Secured network, signal {level} of 4"
+msgstr "Réseau sécurisé, signal {level} sur 4"
+
+msgid "Security"
+msgstr "Sécurité"
+
+msgid "Select a free space region to install into"
+msgstr "Sélectionnez une zone d'espace libre où installer"
+
+msgid "Select a target disk"
+msgstr "Sélectionnez un disque cible"
+
+msgid "Sign in"
+msgstr "Se connecter"
+
+msgid "Size (MiB)"
+msgstr "Taille (Mio)"
+
+msgid "Standard swap"
+msgstr "Espace d'échange standard"
+
+msgid "Starting installation…"
+msgstr "Démarrage de l'installation…"
+
+msgid "Status"
+msgstr "État"
+
+msgid "Steps"
+msgstr "Étapes"
+
+msgid "Sticky keys"
+msgstr "Touches rémanentes"
+
+msgid "Swap"
+msgstr "Espace d'échange"
+
+msgid "Swap with hibernation support"
+msgstr "Espace d'échange avec prise en charge de l'hibernation"
+
+msgid "TPM2 PIN (optional)"
+msgstr "Code PIN TPM2 (facultatif)"
+
+msgid "Target disk"
+msgstr "Disque cible"
+
+msgid "The TPM2 chip stores the key and unlocks the disk automatically at boot. Add a PIN to require a code as well."
+msgstr "La puce TPM2 conserve la clé et déverrouille le disque automatiquement au démarrage. Ajoutez un code PIN pour exiger aussi un code."
+
+msgid "The disk layout changed — refresh the disk and try again"
+msgstr "La disposition du disque a changé — actualisez le disque et réessayez"
+
+msgid "The following partitions will be permanently erased"
+msgstr "Les partitions suivantes seront définitivement effacées"
+
+msgid "The installer stopped unexpectedly"
+msgstr "L'installateur s'est arrêté de manière inattendue"
+
+msgid ""
+"The swap partition must be at least as large as this machine's RAM for "
+"hibernation"
+msgstr ""
+"La partition swap doit être au moins aussi grande que la RAM de cette "
+"machine pour l'hibernation"
+
+msgid "These take effect after installation, not in the installer"
+msgstr ""
+"Ces réglages prennent effet après l'installation, pas dans l'installateur"
+
+msgid "These take effect immediately in the installer itself"
+msgstr "Ces réglages prennent effet immédiatement dans l'installateur lui-même"
+
+msgid ""
+"This Windows partition can't be resized, so dual-boot with Windows isn't "
+"possible"
+msgstr ""
+"Cette partition Windows ne peut pas être redimensionnée, le dual-boot avec "
+"Windows n'est donc pas possible"
+
+msgid ""
+"To dual-boot with Windows, restart Windows fully first (not just sign out) "
+"and try again"
+msgstr ""
+"Pour un dual-boot avec Windows, redémarrez d'abord complètement Windows "
+"(pas seulement une déconnexion) puis réessayez"
+
+msgid ""
+"To dual-boot with Windows, this partition needs BitLocker suspended "
+"first: suspend it in Windows, or shrink the partition from Windows Disk "
+"Management, then restart the installer."
+msgstr ""
+"Pour un dual-boot avec Windows, cette partition nécessite de suspendre "
+"BitLocker au préalable : suspendez-le dans Windows, ou réduisez la "
+"partition depuis la Gestion des disques de Windows, puis redémarrez "
+"l'installateur."
+
+msgid ""
+"To dual-boot with Windows, this partition needs a disk check first — boot "
+"into Windows and run \"chkdsk\""
+msgstr ""
+"Pour un dual-boot avec Windows, cette partition nécessite d'abord une "
+"vérification de disque — démarrez sous Windows et exécutez « chkdsk »"
+
+msgid "This Windows partition needs a preflight check"
+msgstr "Cette partition Windows nécessite une vérification préalable"
+
+msgid "This cannot be undone."
+msgstr "Cette action est irréversible."
+
+msgid "This disk is removable — make sure it isn't your install medium"
+msgstr ""
+"Ce disque est amovible — assurez-vous qu'il ne s'agit pas de votre support "
+"d'installation"
+
+msgid "This disk is too small for Modulix OS"
+msgstr "Ce disque est trop petit pour Modulix OS"
+
+msgid ""
+"This disk uses an old MBR partition table — convert it to GPT to use free "
+"space"
+msgstr ""
+"Ce disque utilise une ancienne table de partitions MBR — convertissez-la en "
+"GPT pour utiliser l'espace libre"
+
+msgid "This free space region is too small"
+msgstr "Cette zone d'espace libre est trop petite"
+
+msgid ""
+"This is an offline demo page simulating a Wi-Fi captive portal login screen. "
+"Click the button below to simulate signing in and continue the installation."
+msgstr ""
+"Ceci est une page de démonstration hors ligne simulant l'écran de connexion "
+"d'un portail captif Wi-Fi. Cliquez sur le bouton ci-dessous pour simuler la "
+"connexion et poursuivre l'installation."
+
+msgid ""
+"This partition will be reformatted as FAT32. Modulix uses its own 1024 MiB "
+"EFI partition — if this is Windows' EFI partition, Windows will no longer "
+"boot. Create a separate partition instead."
+msgstr ""
+"Cette partition sera reformatée en FAT32. Modulix utilise sa propre "
+"partition EFI de 1024 Mio — s'il s'agit de la partition EFI de Windows, "
+"celui-ci ne démarrera plus. Créez plutôt une partition séparée."
+
+msgid "This will permanently erase"
+msgstr "Ceci effacera définitivement"
+
+msgid "Timezone"
+msgstr "Fuseau horaire"
+
+msgid ""
+"Turn this on now if you need speech feedback for the rest of the installer"
+msgstr ""
+"Activez ceci dès maintenant si vous avez besoin d'un retour vocal pour la "
+"suite de l'installation"
+
+msgid "Type here to test your layout"
+msgstr "Tapez ici pour tester votre disposition"
+
+msgid "Typing test"
+msgstr "Test de frappe"
+
+msgid "Unavailable with simulated disks"
+msgstr "Indisponible avec des disques simulés"
+
+msgid "Unavailable: orca wasn't found on this system"
+msgstr "Indisponible : orca est introuvable sur ce système"
+
+msgid "Unlock automatically without a passphrase"
+msgstr "Déverrouille automatiquement sans phrase secrète"
 
 msgid "Use TPM2"
 msgstr "Utiliser le TPM2"
 
-msgid "Unlock automatically without a passphrase"
-msgstr "Déverrouille automatiquement sans phrase secrète"
+msgid "Use free space"
+msgstr "Utiliser l'espace libre"
+
+msgid "Used for the installer and the installed system"
+msgstr "Utilisée pour l'installateur et le système installé"
+
+msgid "User"
+msgstr "Utilisateur"
 
 msgid "User account"
 msgstr "Compte utilisateur"
@@ -152,68 +634,117 @@ msgstr "Compte utilisateur"
 msgid "Username"
 msgstr "Nom d'utilisateur"
 
-msgid "Full name"
-msgstr "Nom complet"
+msgid "Variant"
+msgstr "Variante"
 
-msgid "Password"
-msgstr "Mot de passe"
+msgid "WPA/WPA2 Personal"
+msgstr "WPA/WPA2 personnel"
 
-msgid "Confirm password"
-msgstr "Confirmer le mot de passe"
+msgid "WPA3 Personal"
+msgstr "WPA3 personnel"
 
-msgid "For a strong password, use one of (CNIL recommendation):\n - 12+ characters with uppercase, lowercase, digits and special characters\n - 14+ characters with uppercase, lowercase and digits\n - Passphrase of at least 7 words.\nOptional, but recommended."
-msgstr "Pour un mot de passe robuste, utilisez l'une de ces options (recommandation de la CNIL) :\n - 12 caractères minimum avec majuscules, minuscules, chiffres et caractères spéciaux.\n - 14 caractères minimum avec majuscules, minuscules et chiffres.\n - Une phrase de passe d'au moins 7 mots.\nFacultatif, mais recommandé."
+msgid "Wi-Fi networks"
+msgstr "Réseaux Wi-Fi"
 
-msgid "Passwords do not match."
-msgstr "Les mots de passe ne correspondent pas."
+msgid "Wi-Fi sign-in"
+msgstr "Connexion Wi-Fi"
 
-msgid "User"
-msgstr "Utilisateur"
+msgid "Windows"
+msgstr "Windows"
 
-msgid "Enter a username"
-msgstr "Saisissez un nom d'utilisateur"
+msgid "Wired connection"
+msgstr "Connexion filaire"
 
-msgid "Passwords must match and not be empty"
-msgstr "Les mots de passe doivent correspondre et ne pas être vides"
+msgid "World map"
+msgstr "Carte du monde"
 
-msgid "Desktop environment"
-msgstr "Environnement de bureau"
+msgid "Zoom in on the area around the cursor"
+msgstr "Zoome sur la zone autour du curseur"
 
-msgid "Desktop"
-msgstr "Bureau"
+msgid "boot"
+msgstr "démarrage"
 
-msgid "GNOME"
-msgstr "GNOME"
+msgid "encrypted"
+msgstr "chiffré"
 
-msgid "KDE Plasma"
-msgstr "KDE Plasma"
+msgid "free at"
+msgstr "libre à"
 
-msgid "LXQt"
-msgstr "LXQt"
+msgid "from the start of the disk"
+msgstr "depuis le début du disque"
 
-msgid "A clean, modern desktop focused on simplicity"
-msgstr "Un bureau épuré et moderne, pensé pour la simplicité"
+msgid "removable"
+msgstr "amovible"
 
-msgid "A powerful, customizable desktop with a traditional layout"
-msgstr "Un bureau puissant et personnalisable, à la disposition traditionnelle"
+msgid "root"
+msgstr "racine"
 
-msgid "A lightweight desktop for older or low-resource hardware"
-msgstr "Un bureau léger, adapté à un matériel ancien ou aux ressources limitées"
+msgid "swap"
+msgstr "échange"
 
-msgid "Modulix OS Installer"
-msgstr "Installateur Modulix OS"
+msgid "unformatted"
+msgstr "non formaté"
 
-msgid "Steps"
-msgstr "Étapes"
+msgid "used"
+msgstr "utilisé"
 
-msgid "Previous"
-msgstr "Précédent"
+#~ msgid "Behind a captive portal"
+#~ msgstr "Derrière un portail captif"
 
-msgid "Next"
-msgstr "Suivant"
+#~ msgid "Couldn't connect to this Wi-Fi network"
+#~ msgstr "Impossible de se connecter à ce réseau Wi-Fi"
 
-msgid "Couldn't save this step"
-msgstr "Impossible d'enregistrer cette étape"
+#~ msgid "Couldn't determine whether this machine has Internet access"
+#~ msgstr "Impossible de déterminer si cette machine a accès à Internet"
 
-msgid "Setup isn't implemented yet — that's iteration 2"
-msgstr "L'installation n'est pas encore implémentée — ce sera fait à l'itération 2"
+#~ msgid "Couldn't get an IP address from this network"
+#~ msgstr "Impossible d'obtenir une adresse IP depuis ce réseau"
+
+#~ msgid "GNOME"
+#~ msgstr "GNOME"
+
+#~ msgid "Incorrect Wi-Fi password"
+#~ msgstr "Mot de passe Wi-Fi incorrect"
+
+#~ msgid "KDE Plasma"
+#~ msgstr "KDE Plasma"
+
+#~ msgid "LXQt"
+#~ msgstr "LXQt"
+
+#~ msgid "Limited connectivity"
+#~ msgstr "Connectivité limitée"
+
+#~ msgid "No Internet access detected — the installation may fail"
+#~ msgstr "Aucun accès Internet détecté — l'installation risque d'échouer"
+
+#~ msgid "No Wi-Fi device found"
+#~ msgstr "Aucun périphérique Wi-Fi détecté"
+
+#~ msgid "Partitioning mode"
+#~ msgstr "Mode de partitionnement"
+
+#~ msgid "Setup isn't implemented yet — that's iteration 2"
+#~ msgstr ""
+#~ "L'installation n'est pas encore implémentée — ce sera fait à l'itération 2"
+
+#~ msgid "Sign in to the Wi-Fi portal to continue"
+#~ msgstr "Connectez-vous au portail Wi-Fi pour continuer"
+
+#~ msgid "The Wi-Fi connection was dropped"
+#~ msgstr "La connexion Wi-Fi a été interrompue"
+
+#~ msgid "The Wi-Fi device was disconnected"
+#~ msgstr "Le périphérique Wi-Fi a été déconnecté"
+
+#~ msgid "Timed out while connecting to the Wi-Fi network"
+#~ msgstr "Délai dépassé lors de la connexion au réseau Wi-Fi"
+
+#~ msgid "Unknown"
+#~ msgstr "Inconnu"
+
+#~ msgid "Wi-Fi authentication failed"
+#~ msgstr "Échec de l'authentification Wi-Fi"
+
+#~ msgid "Wi-Fi network not found"
+#~ msgstr "Réseau Wi-Fi introuvable"

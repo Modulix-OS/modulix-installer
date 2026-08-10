@@ -1,16 +1,10 @@
+mod a11y;
 mod app;
-// `backend`'s trait catalogue is deliberately broader than what the wizard's
-// UI exercises today (e.g. `CryptBackend`, most of `DiskBackend`), and
-// `engine` (the install `Task` pipeline) isn't wired to any UI action yet —
-// both are iteration-1 scaffolding for `init_all`/real installs in
-// iteration 2 (see CLAUDE.md). Suppress dead_code for that reason rather
-// than scattering per-item allows.
-#[allow(dead_code)]
 mod backend;
 mod bridge;
 mod config;
-#[allow(dead_code)]
 mod engine;
+mod finish;
 mod i18n;
 mod mx;
 mod steps;
@@ -22,8 +16,27 @@ fn main() -> glib::ExitCode {
     i18n::init();
 
     let args: Vec<String> = std::env::args().collect();
-    let fake = args.iter().any(|a| a == "--fake");
+    let fake_disk_arg = args.iter().find_map(|a| a.strip_prefix("--fake-disk="));
+    let fake = args.iter().any(|a| a == "--fake") || fake_disk_arg.is_some();
     let windowed = args.iter().any(|a| a == "--windowed");
+
+    let fake_disk_scenario = match fake_disk_arg {
+        Some(name) => match backend::disk::DiskScenario::parse(name) {
+            Some(scenario) => scenario,
+            None => {
+                let valid: Vec<&str> = backend::disk::DiskScenario::ALL
+                    .iter()
+                    .map(|s| s.name())
+                    .collect();
+                eprintln!(
+                    "unknown --fake-disk scenario {name:?}, expected one of: {}",
+                    valid.join(", ")
+                );
+                std::process::exit(1);
+            }
+        },
+        None => backend::disk::DiskScenario::Linux,
+    };
 
     let runtime = tokio::runtime::Builder::new_multi_thread()
         .enable_all()
@@ -31,7 +44,7 @@ fn main() -> glib::ExitCode {
         .expect("failed to start the tokio runtime");
 
     let backends = if fake {
-        backend::Backends::fake()
+        backend::Backends::fake_with(fake_disk_scenario)
     } else {
         match runtime.block_on(backend::Backends::real()) {
             Ok(backends) => backends,

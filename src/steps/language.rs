@@ -5,6 +5,7 @@ use crate::config::InstallConfig;
 use crate::i18n::{self, tr};
 use crate::mx;
 use crate::steps::{RetranslateHook, Step, StepId, ValidityTracker};
+use crate::widgets::size_dropdown_to_widest;
 use adw::prelude::*;
 use std::cell::{Cell, RefCell};
 use std::collections::HashMap;
@@ -27,10 +28,10 @@ impl LanguageStep {
         retranslate_hook: RetranslateHook,
     ) -> Self {
         let codes: Rc<RefCell<Vec<String>>> = Rc::new(RefCell::new(Vec::new()));
-        // `i18n::init()` already applied the process locale (from $LANG) before
-        // any widget was built, so this starts out matching reality — updated
-        // below once we know the real code, not left at a fake placeholder.
-        let selected = Rc::new(RefCell::new(std::env::var("LANG").unwrap_or_default()));
+        // `i18n::init()` already resolved the startup message language (see
+        // `i18n.rs`) before any widget was built, so this starts out matching
+        // reality — updated below once the dropdown model is populated.
+        let selected = Rc::new(RefCell::new(i18n::current_language_code()));
         // Set while `set_model`/`set_selected` run below: replacing the model
         // fires `notify::selected` synchronously, and without this guard that
         // spurious event would immediately overwrite the already-correct
@@ -63,8 +64,12 @@ impl LanguageStep {
                 runtime,
                 async move { locale_backend.list_locales().await },
                 move |result| {
-                    let Ok(locales) = result else { return };
+                    let Ok(locales) = result else {
+                        populating.set(false);
+                        return;
+                    };
                     if locales.is_empty() {
+                        populating.set(false);
                         return;
                     }
 
@@ -89,13 +94,23 @@ impl LanguageStep {
                     entries.sort_by(|a, b| a.0.cmp(&b.0));
 
                     let names: Vec<&str> = entries.iter().map(|(name, _)| name.as_str()).collect();
-                    dropdown.set_model(Some(&gtk::StringList::new(&names)));
+                    let model = gtk::StringList::new(&names);
+                    size_dropdown_to_widest(&dropdown, &model);
+                    dropdown.set_model(Some(&model));
 
                     // Reflect the already-active startup language in the
                     // dropdown instead of leaving it on whatever the model
-                    // defaulted to.
+                    // defaulted to. Compared normalized (charset stripped,
+                    // case-folded): codes here come from `list_locales()`
+                    // (SUPPORTED-derived, e.g. `fr_FR.UTF-8`) while `current`
+                    // may come from `locale -a` (e.g. `fr_FR.utf8`) on a
+                    // system without `/usr/share/i18n/SUPPORTED` — a naive
+                    // string compare misses that match.
                     let current = selected.borrow().clone();
-                    if let Some(idx) = entries.iter().position(|(_, code)| *code == current) {
+                    if let Some(idx) = entries
+                        .iter()
+                        .position(|(_, code)| i18n::normalized_eq(code, &current))
+                    {
                         dropdown.set_selected(idx as u32);
                     }
 
@@ -114,7 +129,17 @@ impl LanguageStep {
             let idx = dd.selected() as usize;
             if let Some(code) = codes_for_signal.borrow().get(idx) {
                 *selected_state.borrow_mut() = code.clone();
-                i18n::set_language(code);
+                // The UI language always switches (`LANGUAGE`-driven, see
+                // i18n.rs); `MessagesOnly` only means `setlocale` couldn't
+                // land on `code` for date/number formatting because it isn't
+                // generated on this machine — not worth a toast, but worth
+                // tracing.
+                if i18n::set_language(code) == i18n::LanguageOutcome::MessagesOnly {
+                    eprintln!(
+                        "i18n: switched messages to {code:?} but setlocale() couldn't apply it \
+                         (not generated on this machine) — formatting stays on the previous locale"
+                    );
+                }
                 (retranslate_hook.borrow())();
             }
         });

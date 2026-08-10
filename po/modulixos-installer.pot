@@ -5,142 +5,575 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 
-msgid "Narrator"
+msgid "A clean, modern desktop focused on simplicity"
 msgstr ""
 
-msgid "Enable narrator"
+msgid "A lightweight desktop for older or low-resource hardware"
 msgstr ""
 
-msgid "Reads each page aloud as you move through the installer"
-msgstr ""
-
-msgid "Turn this on now if you need speech feedback for the rest of the installer"
-msgstr ""
-
-msgid "Language"
-msgstr ""
-
-msgid "Used for the installer and the installed system"
-msgstr ""
-
-msgid "Timezone"
-msgstr ""
-
-msgid "Click the map or pick from the list"
-msgstr ""
-
-msgid "Keyboard"
-msgstr ""
-
-msgid "Layout"
-msgstr ""
-
-msgid "Variant"
-msgstr ""
-
-msgid "Typing test"
-msgstr ""
-
-msgid "Type here to test your layout"
+msgid "A powerful, customizable desktop with a traditional layout"
 msgstr ""
 
 msgid "Accessibility"
 msgstr ""
 
-msgid "High contrast"
+msgid "Add"
 msgstr ""
 
-msgid "Increase contrast between text and background"
+msgid "After installation"
 msgstr ""
 
-msgid "Large text"
+msgid "An EFI System Partition of at least 100 MiB is required"
 msgstr ""
 
-msgid "Increase the interface text size"
+msgid "Applied now"
 msgstr ""
 
-msgid "Screen magnifier"
+msgid "Applied to the installed system"
 msgstr ""
 
-msgid "Zoom in on the area around the cursor"
+msgid "Assign exactly one partition as the root (/) filesystem"
 msgstr ""
 
-msgid "Sticky keys"
+msgid ""
+"Assign existing partitions or create new ones in free space below. To resize "
+"or delete an existing partition, use GParted."
 msgstr ""
 
-msgid "Press modifier keys one at a time instead of together"
+msgid "Boot (/boot, EFI)"
 msgstr ""
 
-msgid "Network"
+msgid "Calculator"
 msgstr ""
 
-msgid "Status"
+msgid "Can't install alongside Windows"
+msgstr ""
+
+msgid "Cancel"
 msgstr ""
 
 msgid "Checking…"
 msgstr ""
 
-msgid "Wi-Fi networks"
+msgid "Classic"
+msgstr ""
+
+msgid ""
+"Click anywhere on the map, or use arrow keys to move to a neighboring "
+"timezone and Enter to confirm; the region and city lists below offer the "
+"same choice without the map."
+msgstr ""
+
+msgid "Click the map or pick from the list"
+msgstr ""
+
+msgid "Close"
+msgstr ""
+
+msgid "Confirm password"
+msgstr ""
+
+msgid "Confirm the encryption passphrase"
+msgstr ""
+
+msgid "Connect"
+msgstr ""
+
+msgid "Connect to a hidden network"
+msgstr ""
+
+msgid "Connect to a network to continue"
 msgstr ""
 
 msgid "Connected"
 msgstr ""
 
-msgid "Limited connectivity"
+msgid "Continue"
 msgstr ""
 
-msgid "Behind a captive portal"
+msgid "Continue anyway"
 msgstr ""
 
-msgid "Not connected"
+msgid "Couldn't save this step"
 msgstr ""
 
-msgid "Unknown"
+msgid "Create a partition here"
 msgstr ""
 
-msgid "Partitioning"
+msgid "Create partition"
 msgstr ""
 
-msgid "Target disk"
+msgid "Current layout"
 msgstr ""
 
-msgid "Partitioning mode"
+msgid "Delete"
 msgstr ""
 
-msgid "Erase entire disk"
+msgid "Desktop"
 msgstr ""
 
-msgid "Install alongside Windows"
+msgid "Desktop environment"
 msgstr ""
 
-msgid "Use free space"
+msgid "Disabled"
 msgstr ""
 
-msgid "Manual"
+msgid "Disk space used as extra memory when RAM is full. Hibernation also needs it to save the session to disk."
 msgstr ""
 
-msgid "Swap"
+msgid "Don't use"
 msgstr ""
 
-msgid "No swap"
+msgid "EFI System Partition"
 msgstr ""
 
-msgid "Standard swap"
+msgid "Edit partition"
 msgstr ""
 
-msgid "Swap with hibernation support"
+msgid "Enable narrator"
 msgstr ""
 
 msgid "Encrypt disk"
 msgstr ""
 
+msgid "Encryption"
+msgstr ""
+
+msgid "Encrypts the whole disk with LUKS2. A passphrase is required at every boot unless TPM2 unlocking is enabled."
+msgstr ""
+
+msgid "Enter a username"
+msgstr ""
+
+msgid "Enter an encryption passphrase"
+msgstr ""
+
+msgid "Enter the password for this Wi-Fi network"
+msgstr ""
+
+msgid "Enterprise network, signal {level} of 4"
+msgstr ""
+
+msgid "Enterprise networks aren't supported by the installer"
+msgstr ""
+
+msgid "Erase and Install"
+msgstr ""
+
+msgid "Erase disk and install Modulix OS?"
+msgstr ""
+
+msgid "Erase entire disk"
+msgstr ""
+
+msgid ""
+"Existing data in /home is kept — make sure it already holds a Linux "
+"filesystem."
+msgstr ""
+
+msgid "Filesystem"
+msgstr ""
+
+msgid ""
+"For a strong password, use one of (CNIL recommendation):\n"
+" - 12+ characters with uppercase, lowercase, digits and special characters\n"
+" - 14+ characters with uppercase, lowercase and digits\n"
+" - Passphrase of at least 7 words.\n"
+"Optional, but recommended."
+msgstr ""
+
+msgid "Format"
+msgstr ""
+
+msgid "Free space"
+msgstr ""
+
+msgid "Free space region"
+msgstr ""
+
+msgid "Free space:"
+msgstr ""
+
+msgid "Full name"
+msgstr ""
+
+msgid "Hibernation swap doesn't fit — using standard swap instead"
+msgstr ""
+
+msgid "High contrast"
+msgstr ""
+
+msgid "Home"
+msgstr ""
+
+msgid "Home (/home)"
+msgstr ""
+
+msgid "Increase contrast between text and background"
+msgstr ""
+
+msgid "Increase the interface text size"
+msgstr ""
+
+msgid "Install"
+msgstr ""
+
+msgid "Install alongside Windows"
+msgstr ""
+
+msgid "Installation complete"
+msgstr ""
+
+msgid "Installation failed"
+msgstr ""
+
+msgid "Installation type"
+msgstr ""
+
+msgid "Installing"
+msgstr ""
+
+msgid "Kept"
+msgstr ""
+
+msgid "Keyboard"
+msgstr ""
+
+msgid "LUKS2, passphrase required at boot"
+msgstr ""
+
+msgid "LUKS2, unlocked via TPM2"
+msgstr ""
+
 msgid "LUKS2, unlocked via TPM2 when available"
+msgstr ""
+
+msgid "Language"
+msgstr ""
+
+msgid "Large text"
+msgstr ""
+
+msgid "Layout"
+msgstr ""
+
+msgid "Lightweight"
+msgstr ""
+
+msgid "Manual"
+msgstr ""
+
+msgid "Mode"
+msgstr ""
+
+msgid "Modern"
+msgstr ""
+
+msgid "Modulix"
+msgstr ""
+
+msgid "Modulix OS Installer"
+msgstr ""
+
+msgid "Modulix OS is ready. You can restart into it now."
+msgstr ""
+
+msgid "Modulix demo captive portal"
+msgstr ""
+
+msgid "Mount point"
+msgstr ""
+
+msgid "Narrator"
+msgstr ""
+
+msgid "Network"
+msgstr ""
+
+msgid "Network name (SSID)"
+msgstr ""
+
+msgid "New partition"
+msgstr ""
+
+msgid "Next"
+msgstr ""
+
+msgid "No TPM2 chip detected"
+msgstr ""
+
+msgid "No Wi-Fi networks found"
+msgstr ""
+
+msgid "No Windows installation was found on this disk"
+msgstr ""
+
+msgid "No disk selected"
+msgstr ""
+
+msgid "No existing partitions will be deleted."
+msgstr ""
+
+msgid "No partitions"
+msgstr ""
+
+msgid "No swap"
+msgstr ""
+
+msgid "Not connected"
+msgstr ""
+
+msgid "Not enough space would be freed up to install Modulix OS"
+msgstr ""
+
+msgid "Only one partition can be assigned as root (/)"
+msgstr ""
+
+msgid "Only one partition can be assigned to /boot, /home, or swap"
+msgstr ""
+
+msgid "Open (no password)"
+msgstr ""
+
+msgid "Open network, signal {level} of 4"
+msgstr ""
+
+msgid "Options"
+msgstr ""
+
+msgid "Other"
+msgstr ""
+
+msgid "Other networks"
+msgstr ""
+
+msgid "Overview"
+msgstr ""
+
+msgid "Partition with GParted…"
+msgstr ""
+
+msgid "Partitioning"
+msgstr ""
+
+msgid "Password"
+msgstr ""
+
+msgid "Passwords do not match."
+msgstr ""
+
+msgid "Passwords must match and not be empty"
+msgstr ""
+
+msgid "Press modifier keys one at a time instead of together"
+msgstr ""
+
+msgid "Preview"
+msgstr ""
+
+msgid "Preview text"
+msgstr ""
+
+msgid "Previous"
+msgstr ""
+
+msgid "Reads each page aloud as you move through the installer"
+msgstr ""
+
+msgid "Ready to install"
+msgstr ""
+
+msgid "Refresh"
+msgstr ""
+
+msgid "Reload"
+msgstr ""
+
+msgid "Remove"
+msgstr ""
+
+msgid "Rescan"
+msgstr ""
+
+msgid "Resize the Windows partition?"
+msgstr ""
+
+msgid ""
+"Resizing Windows may make it ask for your password or BitLocker recovery "
+"key on the next boot. Make sure you have them before continuing. Back up "
+"anything important first."
+msgstr ""
+
+msgid "Root"
+msgstr ""
+
+msgid "Root (/)"
+msgstr ""
+
+msgid "Save"
+msgstr ""
+
+msgid "Scanning…"
+msgstr ""
+
+msgid "Screen magnifier"
+msgstr ""
+
+msgid "Secured network, signal {level} of 4"
+msgstr ""
+
+msgid "Security"
+msgstr ""
+
+msgid "Select a free space region to install into"
+msgstr ""
+
+msgid "Select a target disk"
+msgstr ""
+
+msgid "Sign in"
+msgstr ""
+
+msgid "Size (MiB)"
+msgstr ""
+
+msgid "Standard swap"
+msgstr ""
+
+msgid "Starting installation…"
+msgstr ""
+
+msgid "Status"
+msgstr ""
+
+msgid "Steps"
+msgstr ""
+
+msgid "Sticky keys"
+msgstr ""
+
+msgid "Swap"
+msgstr ""
+
+msgid "Swap with hibernation support"
+msgstr ""
+
+msgid "TPM2 PIN (optional)"
+msgstr ""
+
+msgid "Target disk"
+msgstr ""
+
+msgid "The TPM2 chip stores the key and unlocks the disk automatically at boot. Add a PIN to require a code as well."
+msgstr ""
+
+msgid "The disk layout changed — refresh the disk and try again"
+msgstr ""
+
+msgid "The following partitions will be permanently erased"
+msgstr ""
+
+msgid "The installer stopped unexpectedly"
+msgstr ""
+
+msgid ""
+"The swap partition must be at least as large as this machine's RAM for "
+"hibernation"
+msgstr ""
+
+msgid "These take effect after installation, not in the installer"
+msgstr ""
+
+msgid "These take effect immediately in the installer itself"
+msgstr ""
+
+msgid ""
+"This Windows partition can't be resized, so dual-boot with Windows isn't "
+"possible"
+msgstr ""
+
+msgid ""
+"To dual-boot with Windows, restart Windows fully first (not just sign out) "
+"and try again"
+msgstr ""
+
+msgid ""
+"To dual-boot with Windows, this partition needs BitLocker suspended "
+"first: suspend it in Windows, or shrink the partition from Windows Disk "
+"Management, then restart the installer."
+msgstr ""
+
+msgid ""
+"To dual-boot with Windows, this partition needs a disk check first — boot "
+"into Windows and run \"chkdsk\""
+msgstr ""
+
+msgid "This Windows partition needs a preflight check"
+msgstr ""
+
+msgid "This cannot be undone."
+msgstr ""
+
+msgid "This disk is removable — make sure it isn't your install medium"
+msgstr ""
+
+msgid "This disk is too small for Modulix OS"
+msgstr ""
+
+msgid ""
+"This disk uses an old MBR partition table — convert it to GPT to use free "
+"space"
+msgstr ""
+
+msgid "This free space region is too small"
+msgstr ""
+
+msgid ""
+"This is an offline demo page simulating a Wi-Fi captive portal login screen. "
+"Click the button below to simulate signing in and continue the installation."
+msgstr ""
+
+msgid ""
+"This partition will be reformatted as FAT32. Modulix uses its own 1024 MiB "
+"EFI partition — if this is Windows' EFI partition, Windows will no longer "
+"boot. Create a separate partition instead."
+msgstr ""
+
+msgid "This will permanently erase"
+msgstr ""
+
+msgid "Timezone"
+msgstr ""
+
+msgid ""
+"Turn this on now if you need speech feedback for the rest of the installer"
+msgstr ""
+
+msgid "Type here to test your layout"
+msgstr ""
+
+msgid "Typing test"
+msgstr ""
+
+msgid "Unavailable with simulated disks"
+msgstr ""
+
+msgid "Unavailable: orca wasn't found on this system"
+msgstr ""
+
+msgid "Unlock automatically without a passphrase"
 msgstr ""
 
 msgid "Use TPM2"
 msgstr ""
 
-msgid "Unlock automatically without a passphrase"
+msgid "Use free space"
+msgstr ""
+
+msgid "Used for the installer and the installed system"
+msgstr ""
+
+msgid "User"
 msgstr ""
 
 msgid "User account"
@@ -149,68 +582,56 @@ msgstr ""
 msgid "Username"
 msgstr ""
 
-msgid "Full name"
+msgid "Variant"
 msgstr ""
 
-msgid "Password"
+msgid "WPA/WPA2 Personal"
 msgstr ""
 
-msgid "Confirm password"
+msgid "WPA3 Personal"
 msgstr ""
 
-msgid "For a strong password, use one of (CNIL recommendation):\n - 12+ characters with uppercase, lowercase, digits and special characters\n - 14+ characters with uppercase, lowercase and digits\n - Passphrase of at least 7 words.\nOptional, but recommended."
+msgid "Wi-Fi networks"
 msgstr ""
 
-msgid "Passwords do not match."
+msgid "Wi-Fi sign-in"
 msgstr ""
 
-msgid "User"
+msgid "Windows"
 msgstr ""
 
-msgid "Enter a username"
+msgid "Wired connection"
 msgstr ""
 
-msgid "Passwords must match and not be empty"
+msgid "World map"
 msgstr ""
 
-msgid "Desktop environment"
+msgid "Zoom in on the area around the cursor"
 msgstr ""
 
-msgid "Desktop"
+msgid "boot"
 msgstr ""
 
-msgid "GNOME"
+msgid "encrypted"
 msgstr ""
 
-msgid "KDE Plasma"
+msgid "free at"
 msgstr ""
 
-msgid "LXQt"
+msgid "from the start of the disk"
 msgstr ""
 
-msgid "A clean, modern desktop focused on simplicity"
+msgid "removable"
 msgstr ""
 
-msgid "A powerful, customizable desktop with a traditional layout"
+msgid "root"
 msgstr ""
 
-msgid "A lightweight desktop for older or low-resource hardware"
+msgid "swap"
 msgstr ""
 
-msgid "Modulix OS Installer"
+msgid "unformatted"
 msgstr ""
 
-msgid "Steps"
-msgstr ""
-
-msgid "Previous"
-msgstr ""
-
-msgid "Next"
-msgstr ""
-
-msgid "Couldn't save this step"
-msgstr ""
-
-msgid "Setup isn't implemented yet — that's iteration 2"
+msgid "used"
 msgstr ""
