@@ -43,6 +43,9 @@ pub struct NetworkConfig {
     pub connected: bool,
     pub connection_name: Option<String>,
     pub behind_captive_portal: bool,
+    /// Set when the user hit "Continue anyway" on `Limited`/`Unknown`
+    /// connectivity — the summary screen should flag this explicitly.
+    pub proceeded_without_internet: bool,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
@@ -62,16 +65,11 @@ pub enum SwapMode {
     Hibernation,
 }
 
-// `shrink_to_bytes`/`selected_free_space_id` are only meaningful once the
-// `AlongsideWindows`/`FreeSpace` planners exist (iteration 2); `encryption_passphrase`/
-// `tpm2_pin` are read by `engine::tasks::EnrollTpmTask`, which nothing calls
-// yet since the pipeline itself isn't wired to the UI (see CLAUDE.md).
-#[allow(dead_code)]
 #[derive(Debug, Clone, Default)]
 pub struct PartitioningConfig {
     pub mode: PartitionMode,
     pub target_disk: Option<String>,
-    /// Bytes to reclaim from the Windows partition, `AlongsideWindows` mode only.
+    /// New size the Windows partition should shrink to, `AlongsideWindows` mode only.
     pub shrink_to_bytes: Option<u64>,
     pub selected_free_space_id: Option<String>,
     pub swap_mode: SwapMode,
@@ -81,6 +79,11 @@ pub struct PartitioningConfig {
     pub encryption_passphrase: String,
     pub tpm2_enabled: bool,
     pub tpm2_pin: Option<String>,
+    /// `Manual` mode only — one entry per existing partition the user
+    /// touched, or new partition carved out of free space, in disk order.
+    /// Validated entirely inside `engine::plan::plan`, see
+    /// `engine::plan::ManualItem`.
+    pub manual: Vec<crate::engine::plan::ManualItem>,
 }
 
 #[derive(Debug, Clone, Default)]
@@ -116,11 +119,20 @@ impl DesktopEnvironment {
         }
     }
 
-    pub fn screenshot_file(self) -> &'static str {
+    pub fn screenshot_resource(self) -> &'static str {
         match self {
-            DesktopEnvironment::Gnome => "gnome.webp",
-            DesktopEnvironment::Plasma => "plasma.webp",
-            DesktopEnvironment::Lxqt => "lxqt.webp",
+            DesktopEnvironment::Gnome => "/org/modulix/installer/images/screenshots/gnome.svg",
+            DesktopEnvironment::Plasma => "/org/modulix/installer/images/screenshots/plasma.svg",
+            DesktopEnvironment::Lxqt => "/org/modulix/installer/images/screenshots/lxqt.svg",
+        }
+    }
+
+    /// Proper display name of the desktop environment — never passed to `tr()`.
+    pub fn de_name(self) -> &'static str {
+        match self {
+            DesktopEnvironment::Gnome => "GNOME",
+            DesktopEnvironment::Plasma => "KDE Plasma",
+            DesktopEnvironment::Lxqt => "LXQt",
         }
     }
 }

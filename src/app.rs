@@ -3,8 +3,11 @@
 //! that push/pops between the 9 step pages already built by
 //! [`crate::steps::build_registry`].
 
+use crate::a11y::A11ySettings;
 use crate::backend::Backends;
 use crate::config::InstallConfig;
+use crate::finish::progress::ProgressPage;
+use crate::finish::summary::SummaryPage;
 use crate::i18n::tr;
 use crate::steps::{self, Step};
 use adw::prelude::*;
@@ -14,6 +17,20 @@ use std::rc::Rc;
 const RAIL_CSS: &str = "
 .step-rail-row { padding: 6px 10px; border-radius: 6px; }
 .step-rail-row.current-step { font-weight: bold; background-color: alpha(currentColor, 0.08); }
+.mx-warning-strip {
+  background-color: var(--warning-bg-color);
+  color: var(--warning-fg-color);
+  border-radius: 12px;
+  padding: 12px;
+}
+.de-card { padding: 12px; }
+flowboxchild { background: transparent; box-shadow: none; padding: 0; }
+flowboxchild:selected, flowboxchild:hover, flowboxchild:focus {
+  background: transparent;
+  box-shadow: none;
+  outline: none;
+}
+flowboxchild:selected .de-card { outline: 2px solid var(--accent-bg-color); outline-offset: -2px; }
 ";
 
 pub fn build_window(
@@ -34,11 +51,15 @@ pub fn build_window(
 
     let config = InstallConfig::new_shared();
 
+    let a11y = A11ySettings::new();
+    a11y.connect_live_effects(&backends, &runtime);
+
     let retranslate_hook = steps::new_retranslate_hook();
     let step_list: Rc<Vec<Box<dyn Step>>> = Rc::new(steps::build_registry(
         &backends,
         &runtime,
         retranslate_hook.clone(),
+        &a11y,
     ));
 
     // Pages are pushed/popped directly by index below (never by tag), so they
@@ -52,6 +73,19 @@ pub fn build_window(
         .collect();
     let pages = Rc::new(pages);
 
+    // Pushed only once the wizard runs past the 9 indexed steps — outside
+    // `StepId::ALL`/the step rail entirely. Each carries its own
+    // `HeaderBar`, so libadwaita gives it a
+    // back chevron for free; the outer prev/next buttons are hidden while
+    // either is showing (see the `connect_popped` handler below).
+    let progress_page = ProgressPage::new();
+    let summary_page = SummaryPage::new(
+        backends.clone(),
+        runtime.clone(),
+        nav_view.clone(),
+        progress_page.clone(),
+    );
+
     let rail = gtk::Box::new(gtk::Orientation::Vertical, 4);
     rail.set_margin_top(12);
     rail.set_margin_bottom(12);
@@ -60,11 +94,16 @@ pub fn build_window(
     let mut rail_rows = Vec::with_capacity(step_list.len());
     let mut rail_labels = Vec::with_capacity(step_list.len());
     for step in step_list.iter() {
-        let row = gtk::Box::new(gtk::Orientation::Horizontal, 8);
+        let row = gtk::Box::builder()
+            .orientation(gtk::Orientation::Horizontal)
+            .spacing(8)
+            .accessible_role(gtk::AccessibleRole::ListItem)
+            .build();
         row.add_css_class("step-rail-row");
         row.append(&gtk::Image::from_icon_name(step.icon_name()));
         let label = gtk::Label::new(Some(&step.title()));
         row.append(&label);
+        row.update_property(&[gtk::accessible::Property::Label(&step.title())]);
         rail.append(&row);
         rail_rows.push(row);
         rail_labels.push(label);
@@ -76,9 +115,27 @@ pub fn build_window(
     let prev_button = gtk::Button::with_label(&tr("Previous"));
     let next_button = gtk::Button::with_label(&tr("Next"));
 
+    let (a11y_button, a11y_rows) = build_a11y_popover(&a11y);
+
+    // Step 7 only — sizing swap/partitions by hand benefits from a
+    // calculator at hand; every other step has no use for it. Launched
+    // fire-and-forget: `spawn()` just forks+execs, it doesn't block waiting
+    // on the child like `run_gparted`'s `.status().await` does, so there's
+    // no need to route this through the tokio runtime.
+    let calc_button = gtk::Button::from_icon_name("accessories-calculator-symbolic");
+    calc_button.set_tooltip_text(Some(&tr("Calculator")));
+    calc_button.set_visible(false);
+    calc_button.connect_clicked(|_| {
+        if let Err(e) = std::process::Command::new("gnome-calculator").spawn() {
+            eprintln!("gnome-calculator: failed to launch: {e}");
+        }
+    });
+
     let header = adw::HeaderBar::new();
     header.pack_start(&prev_button);
     header.pack_end(&next_button);
+    header.pack_end(&a11y_button);
+    header.pack_end(&calc_button);
 
     let toolbar_view = adw::ToolbarView::new();
     toolbar_view.add_top_bar(&header);
@@ -101,20 +158,42 @@ pub fn build_window(
         .build();
 
     {
+        let toggle_action = gio::SimpleAction::new("toggle-a11y-popover", None);
+        let a11y_button = a11y_button.clone();
+        toggle_action.connect_activate(move |_, _| {
+            a11y_button.popup();
+        });
+        window.add_action(&toggle_action);
+        app.set_accels_for_action("win.toggle-a11y-popover", &["<Ctrl><Alt>a"]);
+    }
+
+    {
         let step_list = step_list.clone();
         let rail_labels = rail_labels.clone();
+        let rail_rows = rail_rows.clone();
         let sidebar_page = sidebar_page.clone();
         let prev_button = prev_button.clone();
         let next_button = next_button.clone();
         let window = window.clone();
+        let a11y_button = a11y_button.clone();
+        let a11y_rows = a11y_rows.clone();
+        let calc_button = calc_button.clone();
         *retranslate_hook.borrow_mut() = Box::new(move || {
-            for (step, label) in step_list.iter().zip(rail_labels.iter()) {
+            for ((step, label), row) in step_list
+                .iter()
+                .zip(rail_labels.iter())
+                .zip(rail_rows.iter())
+            {
                 step.retranslate();
                 label.set_label(&step.title());
+                row.update_property(&[gtk::accessible::Property::Label(&step.title())]);
             }
             sidebar_page.set_title(&tr("Steps"));
             prev_button.set_label(&tr("Previous"));
             next_button.set_label(&tr("Next"));
+            a11y_button.set_tooltip_text(Some(&tr("Accessibility")));
+            calc_button.set_tooltip_text(Some(&tr("Calculator")));
+            retranslate_a11y_popover(&a11y_rows);
             window.set_title(Some(&tr("Modulix OS Installer")));
         });
     }
@@ -146,22 +225,34 @@ pub fn build_window(
             for (i, row) in rail_rows.iter().enumerate() {
                 if i == idx {
                     row.add_css_class("current-step");
+                    row.update_state(&[gtk::accessible::State::Selected(Some(true))]);
                 } else {
                     row.remove_css_class("current-step");
+                    row.update_state(&[gtk::accessible::State::Selected(Some(false))]);
                 }
             }
             prev_button.set_sensitive(idx > 0);
         }
     };
 
+    let update_calc_button = {
+        let step_list = step_list.clone();
+        let calc_button = calc_button.clone();
+        move |idx: usize| {
+            calc_button.set_visible(step_list[idx].id() == steps::StepId::Partitioning);
+        }
+    };
+
     nav_view.push(&pages[0]);
     rebind_validity(0);
     update_rail(0);
+    update_calc_button(0);
 
     {
         let current_index = current_index.clone();
         let rebind_validity = rebind_validity.clone();
         let update_rail = update_rail.clone();
+        let update_calc_button = update_calc_button.clone();
         let nav_view = nav_view.clone();
         prev_button.connect_clicked(move |_| {
             let idx = current_index.get();
@@ -173,6 +264,7 @@ pub fn build_window(
                 current_index.set(new_idx);
                 rebind_validity(new_idx);
                 update_rail(new_idx);
+                update_calc_button(new_idx);
             }
         });
     }
@@ -181,11 +273,16 @@ pub fn build_window(
         let current_index = current_index.clone();
         let rebind_validity = rebind_validity.clone();
         let update_rail = update_rail.clone();
+        let update_calc_button = update_calc_button.clone();
         let nav_view = nav_view.clone();
         let pages = pages.clone();
         let step_list = step_list.clone();
         let config = config.clone();
         let toast_overlay = toast_overlay.clone();
+        let summary_page = summary_page.clone();
+        let prev_button = prev_button.clone();
+        let next_button_for_hide = next_button.clone();
+        let calc_button = calc_button.clone();
         next_button.connect_clicked(move |_| {
             let idx = current_index.get();
             if let Err(e) = step_list[idx].commit(&mut config.borrow_mut()) {
@@ -202,9 +299,11 @@ pub fn build_window(
             }
 
             if next_idx >= step_list.len() {
-                toast_overlay.add_toast(adw::Toast::new(&tr(
-                    "Setup isn't implemented yet — that's iteration 2",
-                )));
+                summary_page.refresh(&config.borrow());
+                nav_view.push(&summary_page.page());
+                prev_button.set_visible(false);
+                next_button_for_hide.set_visible(false);
+                calc_button.set_visible(false);
                 return;
             }
 
@@ -212,6 +311,26 @@ pub fn build_window(
             current_index.set(next_idx);
             rebind_validity(next_idx);
             update_rail(next_idx);
+            update_calc_button(next_idx);
+        });
+    }
+
+    {
+        // Untagged pages (`summary`/`progress`) manage their own forward
+        // navigation; only step pages (built `with_tag`) use the outer
+        // prev/next buttons.
+        let prev_button = prev_button.clone();
+        let next_button = next_button.clone();
+        let calc_button = calc_button.clone();
+        let step_list = step_list.clone();
+        let current_index = current_index.clone();
+        nav_view.connect_popped(move |nav_view, _popped| {
+            let is_step_page = nav_view.visible_page().is_some_and(|p| p.tag().is_some());
+            prev_button.set_visible(is_step_page);
+            next_button.set_visible(is_step_page);
+            calc_button.set_visible(
+                is_step_page && step_list[current_index.get()].id() == steps::StepId::Partitioning,
+            );
         });
     }
 
@@ -219,4 +338,69 @@ pub fn build_window(
         window.fullscreen();
     }
     window.present();
+}
+
+/// Rows bound to the same [`A11ySettings`] instance as the accessibility
+/// step (step 5) and the narrator step (step 1) — toggling one here or
+/// there stays in sync everywhere, no manual resynchronization needed.
+#[derive(Clone)]
+struct A11yPopoverRows {
+    narrator: adw::SwitchRow,
+    high_contrast: adw::SwitchRow,
+    large_text: adw::SwitchRow,
+    screen_magnifier: adw::SwitchRow,
+    sticky_keys: adw::SwitchRow,
+}
+
+fn popover_row(title: String, settings: &A11ySettings, property: &str) -> adw::SwitchRow {
+    let row = adw::SwitchRow::builder().title(title).build();
+    row.bind_property("active", settings, property)
+        .bidirectional()
+        .sync_create()
+        .build();
+    row
+}
+
+/// Header-bar `MenuButton` reachable from every page — the only place the
+/// accessibility toggles are reachable from once the user has moved past
+/// step 5 without navigating back.
+fn build_a11y_popover(a11y: &A11ySettings) -> (gtk::MenuButton, A11yPopoverRows) {
+    let rows = A11yPopoverRows {
+        narrator: popover_row(tr("Enable narrator"), a11y, "narrator"),
+        high_contrast: popover_row(tr("High contrast"), a11y, "high-contrast"),
+        large_text: popover_row(tr("Large text"), a11y, "large-text"),
+        screen_magnifier: popover_row(tr("Screen magnifier"), a11y, "screen-magnifier"),
+        sticky_keys: popover_row(tr("Sticky keys"), a11y, "sticky-keys"),
+    };
+
+    let list = gtk::ListBox::new();
+    list.add_css_class("boxed-list");
+    list.set_selection_mode(gtk::SelectionMode::None);
+    list.append(&rows.narrator);
+    list.append(&rows.high_contrast);
+    list.append(&rows.large_text);
+    list.append(&rows.screen_magnifier);
+    list.append(&rows.sticky_keys);
+    list.set_margin_top(6);
+    list.set_margin_bottom(6);
+    list.set_margin_start(6);
+    list.set_margin_end(6);
+
+    let popover = gtk::Popover::builder().child(&list).build();
+
+    let button = gtk::MenuButton::builder()
+        .icon_name("accessibility-symbolic")
+        .tooltip_text(tr("Accessibility"))
+        .popover(&popover)
+        .build();
+
+    (button, rows)
+}
+
+fn retranslate_a11y_popover(rows: &A11yPopoverRows) {
+    rows.narrator.set_title(&tr("Enable narrator"));
+    rows.high_contrast.set_title(&tr("High contrast"));
+    rows.large_text.set_title(&tr("Large text"));
+    rows.screen_magnifier.set_title(&tr("Screen magnifier"));
+    rows.sticky_keys.set_title(&tr("Sticky keys"));
 }

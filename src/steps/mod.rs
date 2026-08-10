@@ -12,6 +12,7 @@ pub mod user;
 
 pub use validity::ValidityTracker;
 
+use crate::a11y::A11ySettings;
 use crate::backend::Backends;
 use crate::config::InstallConfig;
 use crate::mx;
@@ -94,9 +95,10 @@ pub fn build_registry(
     backends: &Backends,
     runtime: &tokio::runtime::Handle,
     retranslate_hook: RetranslateHook,
+    a11y: &A11ySettings,
 ) -> Vec<Box<dyn Step>> {
     let registry: Vec<Box<dyn Step>> = vec![
-        Box::new(narrator::NarratorStep::new(backends, runtime)) as Box<dyn Step>,
+        Box::new(narrator::NarratorStep::new(backends, runtime, a11y)) as Box<dyn Step>,
         Box::new(language::LanguageStep::new(
             backends,
             runtime,
@@ -104,9 +106,9 @@ pub fn build_registry(
         )) as Box<dyn Step>,
         Box::new(timezone::TimezoneStep::new(backends, runtime)) as Box<dyn Step>,
         Box::new(keyboard::KeyboardStep::new(backends, runtime)) as Box<dyn Step>,
-        Box::new(accessibility::AccessibilityStep::new(backends, runtime)) as Box<dyn Step>,
+        Box::new(accessibility::AccessibilityStep::new(a11y)) as Box<dyn Step>,
         Box::new(network::NetworkStep::new(backends, runtime)) as Box<dyn Step>,
-        Box::new(partitioning::PartitioningStep::new(backends, runtime)) as Box<dyn Step>,
+        Box::new(partitioning::PartitioningStep::new(backends, runtime, a11y)) as Box<dyn Step>,
         Box::new(user::UserStep::new()) as Box<dyn Step>,
         Box::new(desktop_environment::DesktopEnvironmentStep::new()) as Box<dyn Step>,
     ];
