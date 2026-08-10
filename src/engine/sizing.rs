@@ -3,13 +3,17 @@ use crate::config::SwapMode;
 const GIB: u64 = 1024 * 1024 * 1024;
 
 /// Swap size for the chosen mode. `Hibernation` must be able to hold a full
-/// RAM image (plus the encryption caveat in CLAUDE.md: it must then live
-/// inside the LUKS container).
+/// RAM image *plus* some margin — the resume image includes non-RAM state
+/// (compression bookkeeping, in-flight I/O) so sizing it at exactly RAM
+/// leaves no slack — hence `ram + min(ram/2, 4 GiB)`, comfortably above
+/// the minimum requirement that swap size be at least RAM (and, when
+/// encryption is enabled, that swap must then live inside the LUKS
+/// container).
 pub fn compute_swap_bytes(mode: SwapMode, ram_bytes: u64) -> u64 {
     match mode {
         SwapMode::None => 0,
         SwapMode::Standard => standard_swap_bytes(ram_bytes),
-        SwapMode::Hibernation => ram_bytes,
+        SwapMode::Hibernation => ram_bytes + (ram_bytes / 2).min(4 * GIB),
     }
 }
 
@@ -49,7 +53,7 @@ mod tests {
 
     #[test]
     fn standard_swap_doubles_small_ram() {
-        assert_eq!(compute_swap_bytes(SwapMode::Standard, 1 * GIB), 2 * GIB);
+        assert_eq!(compute_swap_bytes(SwapMode::Standard, GIB), 2 * GIB);
     }
 
     #[test]
@@ -63,11 +67,21 @@ mod tests {
     }
 
     #[test]
-    fn hibernation_swap_matches_ram_exactly() {
+    fn hibernation_swap_adds_margin_capped_at_4gib() {
         assert_eq!(
             compute_swap_bytes(SwapMode::Hibernation, 16 * GIB),
-            16 * GIB
+            20 * GIB
         );
+    }
+
+    #[test]
+    fn hibernation_swap_adds_half_ram_margin_below_8gib() {
+        assert_eq!(compute_swap_bytes(SwapMode::Hibernation, 4 * GIB), 6 * GIB);
+    }
+
+    #[test]
+    fn hibernation_swap_is_always_at_least_ram() {
+        assert!(compute_swap_bytes(SwapMode::Hibernation, 64 * GIB) >= 64 * GIB);
     }
 
     #[test]
