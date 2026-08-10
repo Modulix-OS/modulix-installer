@@ -2,8 +2,8 @@ use crate::engine::{ProgressEvent, ProgressSink, Task, TaskCtx};
 use crate::mx;
 use async_trait::async_trait;
 
-/// modulix-core-utils' `rebuild_config` hardcodes `--root /mnt` (see
-/// CLAUDE.md), so the target must be mounted here, not a configurable path.
+/// modulix-core-utils' `rebuild_config` hardcodes `--root /mnt`, so the
+/// target must be mounted here, not a configurable path.
 const INSTALL_ROOT: &str = "/mnt";
 
 pub struct MountTask;
@@ -34,6 +34,28 @@ impl Task for MountTask {
             ctx.backends.disk.mount(efi, &boot_dir).await?;
             let _ = tx
                 .send(ProgressEvent::Log(format!("mounted {efi} at {boot_dir}")))
+                .await;
+        }
+        if let Some(home) = &state.home_partition {
+            let home_dir = format!("{INSTALL_ROOT}/home");
+            ctx.backends.disk.mount(home, &home_dir).await?;
+            let _ = tx
+                .send(ProgressEvent::Log(format!("mounted {home} at {home_dir}")))
+                .await;
+        }
+        if let Some(swap) = &state.swap_partition {
+            let device = ctx.backends.disk.device_node(swap).await?;
+            let status = tokio::process::Command::new("swapon")
+                .arg(&device)
+                .status()
+                .await?;
+            if !status.success() {
+                return Err(mx::Error::Backend(format!(
+                    "swapon {device} failed: {status}"
+                )));
+            }
+            let _ = tx
+                .send(ProgressEvent::Log(format!("activated swap on {device}")))
                 .await;
         }
         Ok(())

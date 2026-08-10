@@ -3,8 +3,8 @@ use crate::mx;
 use async_trait::async_trait;
 
 /// Stub: `modulix_core_utils::init::init_all` doesn't exist yet — it's an
-/// iteration-2 change to `modulix-core-utils` (see CLAUDE.md). This task is
-/// scaffolded now so wiring the real call in is a one-line change later.
+/// iteration-2 change to `modulix-core-utils`. This task is scaffolded now
+/// so wiring the real call in is a one-line change later.
 pub struct InitConfigTask;
 
 #[async_trait]

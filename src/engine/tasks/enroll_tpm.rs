@@ -2,41 +2,40 @@ use crate::engine::{ProgressEvent, ProgressSink, Task, TaskCtx};
 use crate::mx;
 use async_trait::async_trait;
 
+/// TPM2 enrollment only — `luksFormat`/`luksOpen` now live in `EncryptTask`,
+/// which runs earlier (right after `PartitionTask`, before `FormatTask`
+/// mkfs's the decrypted mapper device). Enrolling here, after `MountTask`,
+/// is fine: `systemd-cryptenroll` operates on the raw LUKS container
+/// (`PipelineState::luks_device`), which doesn't change once opened.
 pub struct EnrollTpmTask;
 
 #[async_trait]
 impl Task for EnrollTpmTask {
     fn label(&self) -> String {
-        "Setting up encryption".to_string()
+        "Enrolling TPM2".to_string()
     }
 
     fn weight(&self) -> u32 {
-        3
+        2
     }
 
     async fn run(&self, ctx: &TaskCtx, tx: &ProgressSink) -> mx::Result<()> {
-        if !ctx.config.partitioning.encryption_enabled {
+        if !ctx.config.partitioning.encryption_enabled || !ctx.config.partitioning.tpm2_enabled {
             return Ok(());
         }
 
-        let root = ctx.state.lock().await.root_partition.clone();
-        let root = root.ok_or_else(|| mx::Error::Backend("no root partition to encrypt".into()))?;
+        let device =
+            ctx.state.lock().await.luks_device.clone().ok_or_else(|| {
+                mx::Error::Backend("no LUKS device to enroll TPM2 against".into())
+            })?;
 
         ctx.backends
             .crypt
-            .luks_format(&root, &ctx.config.partitioning.encryption_passphrase)
+            .enroll_tpm2(&device, ctx.config.partitioning.tpm2_pin.as_deref())
             .await?;
         let _ = tx
-            .send(ProgressEvent::Log(format!("LUKS2-formatted {root}")))
+            .send(ProgressEvent::Log(format!("enrolled TPM2 on {device}")))
             .await;
-
-        if ctx.config.partitioning.tpm2_enabled {
-            ctx.backends
-                .crypt
-                .enroll_tpm2(&root, ctx.config.partitioning.tpm2_pin.as_deref())
-                .await?;
-            let _ = tx.send(ProgressEvent::Log("enrolled TPM2".into())).await;
-        }
         Ok(())
     }
 }

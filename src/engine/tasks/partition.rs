@@ -1,11 +1,39 @@
-use crate::config::PartitionMode;
-use crate::engine::sizing::{compute_swap_bytes, detect_ram_bytes};
+use crate::engine::PipelineState;
+use crate::engine::live_input::gather_plan_input;
+use crate::engine::plan::{self, PartitionRole, PlanOp};
 use crate::engine::{ProgressEvent, ProgressSink, Task, TaskCtx};
 use crate::mx;
 use async_trait::async_trait;
 
-const EFI_SIZE_BYTES: u64 = 512 * 1024 * 1024;
+fn assign_role(
+    state: &mut PipelineState,
+    role: PartitionRole,
+    path: String,
+    format: Option<crate::backend::disk::FormatFs>,
+) {
+    match role {
+        PartitionRole::Esp => {
+            state.efi_partition = Some(path);
+            state.esp_is_new = format.is_some();
+        }
+        PartitionRole::Root => {
+            state.root_partition = Some(path);
+            state.root_format = format;
+        }
+        PartitionRole::Swap => {
+            state.swap_partition = Some(path);
+            state.swap_format = format;
+        }
+        PartitionRole::Home => {
+            state.home_partition = Some(path);
+            state.home_format = format;
+        }
+    }
+}
 
+/// Executes `engine::plan::plan`'s output op by op — this task computes
+/// nothing itself, so the plan the UI showed as a preview (`steps::partitioning`)
+/// and the plan actually written to disk can never diverge.
 pub struct PartitionTask;
 
 #[async_trait]
@@ -19,78 +47,77 @@ impl Task for PartitionTask {
     }
 
     async fn run(&self, ctx: &TaskCtx, tx: &ProgressSink) -> mx::Result<()> {
-        if ctx.config.partitioning.mode == PartitionMode::Manual {
-            let _ = tx
-                .send(ProgressEvent::Log(
-                    "manual partitioning selected, skipping".into(),
-                ))
-                .await;
-            return Ok(());
-        }
-
-        let disk = ctx
+        let disk_path = ctx
             .config
             .partitioning
             .target_disk
-            .as_deref()
+            .clone()
             .ok_or_else(|| mx::Error::Backend("no target disk selected".into()))?;
 
-        let disk_info = ctx
-            .backends
-            .disk
-            .list_disks()
-            .await?
-            .into_iter()
-            .find(|d| d.path == disk)
-            .ok_or_else(|| mx::Error::Backend(format!("unknown disk: {disk}")))?;
-
-        let ram_bytes = detect_ram_bytes().await.unwrap_or(0);
-        let swap_bytes = compute_swap_bytes(ctx.config.partitioning.swap_mode, ram_bytes);
-
-        let efi_path = ctx
-            .backends
-            .disk
-            .create_partition(disk, 0, EFI_SIZE_BYTES)
-            .await?;
-        let _ = tx
-            .send(ProgressEvent::Log(format!(
-                "created EFI partition {efi_path}"
-            )))
-            .await;
-
-        let root_size = disk_info
-            .size_bytes
-            .saturating_sub(EFI_SIZE_BYTES)
-            .saturating_sub(swap_bytes);
-        let root_path = ctx
-            .backends
-            .disk
-            .create_partition(disk, EFI_SIZE_BYTES, root_size)
-            .await?;
-        let _ = tx
-            .send(ProgressEvent::Log(format!(
-                "created root partition {root_path}"
-            )))
-            .await;
-
-        let mut swap_path = None;
-        if swap_bytes > 0 {
-            let start = EFI_SIZE_BYTES + root_size;
-            let path = ctx
-                .backends
-                .disk
-                .create_partition(disk, start, swap_bytes)
-                .await?;
-            let _ = tx
-                .send(ProgressEvent::Log(format!("created swap partition {path}")))
-                .await;
-            swap_path = Some(path);
+        // Best-effort: the disk must not have any of its own partitions
+        // mounted before we rewrite its partition table.
+        for p in ctx.backends.disk.list_partitions(&disk_path).await? {
+            let _ = ctx.backends.disk.unmount(&p.path).await;
         }
 
+        let input = gather_plan_input(
+            &ctx.backends.disk,
+            &disk_path,
+            ctx.config.partitioning.clone(),
+        )
+        .await?;
+        let result = plan::plan(&input).map_err(|e| mx::Error::Backend(e.msgid()))?;
+
         let mut state = ctx.state.lock().await;
-        state.efi_partition = Some(efi_path);
-        state.root_partition = Some(root_path);
-        state.swap_partition = swap_path;
+        for op in &result.ops {
+            match op {
+                PlanOp::CreateTable { disk, table } => {
+                    ctx.backends.disk.create_table(disk, *table).await?;
+                    let _ = tx
+                        .send(ProgressEvent::Log(format!(
+                            "created a {table:?} partition table on {disk}"
+                        )))
+                        .await;
+                }
+                PlanOp::ShrinkNtfs {
+                    path,
+                    new_size_bytes,
+                } => {
+                    ctx.backends
+                        .disk
+                        .resize_partition(path, *new_size_bytes)
+                        .await?;
+                    let _ = tx
+                        .send(ProgressEvent::Log(format!(
+                            "shrank Windows partition {path} to {new_size_bytes} bytes"
+                        )))
+                        .await;
+                }
+                PlanOp::Create {
+                    role,
+                    start_bytes,
+                    size_bytes,
+                    kind,
+                    fs,
+                } => {
+                    let path = ctx
+                        .backends
+                        .disk
+                        .create_partition(&disk_path, *start_bytes, *size_bytes, *kind)
+                        .await?;
+                    let _ = tx
+                        .send(ProgressEvent::Log(format!("created {path} ({role:?})")))
+                        .await;
+                    assign_role(&mut state, *role, path, Some(*fs));
+                }
+                PlanOp::UseExisting { path, role, format } => {
+                    let _ = tx
+                        .send(ProgressEvent::Log(format!("reusing {path} as {role:?}")))
+                        .await;
+                    assign_role(&mut state, *role, path.clone(), *format);
+                }
+            }
+        }
         Ok(())
     }
 }
