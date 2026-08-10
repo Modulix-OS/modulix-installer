@@ -1,3 +1,4 @@
+use crate::a11y::A11ySettings;
 use crate::backend::Backends;
 use crate::bridge;
 use crate::config::InstallConfig;
@@ -5,8 +6,14 @@ use crate::i18n::tr;
 use crate::mx;
 use crate::steps::{Step, StepId, ValidityTracker};
 use adw::prelude::*;
-use std::cell::Cell;
-use std::rc::Rc;
+
+fn subtitle_available() -> String {
+    tr("Reads each page aloud as you move through the installer")
+}
+
+fn subtitle_unavailable() -> String {
+    tr("Unavailable: orca wasn't found on this system")
+}
 
 /// First page — narrator toggle, so speech feedback is available before
 /// anything else in the wizard needs to be read aloud.
@@ -14,19 +21,15 @@ pub struct NarratorStep {
     widget: gtk::Widget,
     group: adw::PreferencesGroup,
     switch_row: adw::SwitchRow,
-    enabled: Rc<Cell<bool>>,
+    a11y: A11ySettings,
     validity: ValidityTracker,
 }
 
 impl NarratorStep {
-    pub fn new(backends: &Backends, runtime: &tokio::runtime::Handle) -> Self {
-        let enabled = Rc::new(Cell::new(false));
-
+    pub fn new(backends: &Backends, runtime: &tokio::runtime::Handle, a11y: &A11ySettings) -> Self {
         let switch_row = adw::SwitchRow::builder()
             .title(tr("Enable narrator"))
-            .subtitle(tr(
-                "Reads each page aloud as you move through the installer",
-            ))
+            .subtitle(subtitle_available())
             .build();
 
         let group = adw::PreferencesGroup::builder()
@@ -40,29 +43,33 @@ impl NarratorStep {
         let page = adw::PreferencesPage::new();
         page.add(&group);
 
-        let a11y = backends.a11y.clone();
-        let runtime_handle = runtime.clone();
-        let enabled_state = enabled.clone();
-        switch_row.connect_active_notify(move |row| {
-            let is_active = row.is_active();
-            enabled_state.set(is_active);
-            let a11y = a11y.clone();
+        switch_row
+            .bind_property("active", a11y, "narrator")
+            .bidirectional()
+            .sync_create()
+            .build();
+
+        {
+            let a11y_backend = backends.a11y.clone();
+            let switch_row = switch_row.clone();
             bridge::spawn(
-                &runtime_handle,
-                async move { a11y.set_narrator_enabled(is_active).await },
-                |result| {
-                    if let Err(e) = result {
-                        eprintln!("failed to toggle narrator: {e}");
+                runtime,
+                async move { a11y_backend.narrator_available().await },
+                move |available| {
+                    if !available {
+                        switch_row.set_active(false);
+                        switch_row.set_sensitive(false);
+                        switch_row.set_subtitle(&subtitle_unavailable());
                     }
                 },
             );
-        });
+        }
 
         Self {
             widget: page.upcast(),
             group,
             switch_row,
-            enabled,
+            a11y: a11y.clone(),
             validity: ValidityTracker::ready(),
         }
     }
@@ -90,7 +97,7 @@ impl Step for NarratorStep {
     }
 
     fn commit(&self, cfg: &mut InstallConfig) -> mx::Result<()> {
-        cfg.narrator_enabled = self.enabled.get();
+        cfg.narrator_enabled = self.a11y.narrator();
         Ok(())
     }
 
@@ -100,8 +107,11 @@ impl Step for NarratorStep {
             "Turn this on now if you need speech feedback for the rest of the installer",
         )));
         self.switch_row.set_title(&tr("Enable narrator"));
-        self.switch_row.set_subtitle(&tr(
-            "Reads each page aloud as you move through the installer",
-        ));
+        self.switch_row
+            .set_subtitle(&if self.switch_row.is_sensitive() {
+                subtitle_available()
+            } else {
+                subtitle_unavailable()
+            });
     }
 }
