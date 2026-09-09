@@ -1,12 +1,27 @@
 use crate::a11y::A11ySettings;
+use crate::backend::Backends;
+use crate::bridge;
 use crate::config::InstallConfig;
 use crate::i18n::tr;
 use crate::mx;
 use crate::steps::{Step, StepId, ValidityTracker};
 use adw::prelude::*;
 
+fn narrator_subtitle_available() -> String {
+    tr("Reads each page aloud as you move through the installer")
+}
+
+fn narrator_subtitle_unavailable() -> String {
+    tr("Unavailable: orca wasn't found on this system")
+}
+
+/// First page — accessibility toggles, including the narrator, so speech
+/// feedback and every other assistive setting is available before anything
+/// else in the wizard needs to be read aloud.
 pub struct AccessibilityStep {
     widget: gtk::Widget,
+    narrator_group: adw::PreferencesGroup,
+    narrator_row: adw::SwitchRow,
     applied_now_group: adw::PreferencesGroup,
     applied_installed_group: adw::PreferencesGroup,
     high_contrast_row: adw::SwitchRow,
@@ -33,11 +48,23 @@ fn bind(row: &adw::SwitchRow, settings: &A11ySettings, property: &str) {
 }
 
 impl AccessibilityStep {
-    pub fn new(a11y: &A11ySettings) -> Self {
+    pub fn new(backends: &Backends, runtime: &tokio::runtime::Handle, a11y: &A11ySettings) -> Self {
         let header_image = gtk::Image::from_icon_name("accessibility-symbolic");
         header_image.set_pixel_size(96);
         header_image.set_margin_top(12);
         header_image.set_margin_bottom(12);
+
+        let narrator_row = adw::SwitchRow::builder()
+            .title(tr("Enable narrator"))
+            .subtitle(narrator_subtitle_available())
+            .build();
+        let narrator_group = adw::PreferencesGroup::builder()
+            .title(tr("Narrator"))
+            .description(tr(
+                "Turn this on now if you need speech feedback for the rest of the installer",
+            ))
+            .build();
+        narrator_group.add(&narrator_row);
 
         let high_contrast_row = toggle_row(
             tr("High contrast"),
@@ -75,6 +102,7 @@ impl AccessibilityStep {
         applied_installed_group.add(&sticky_keys_row);
 
         let page = adw::PreferencesPage::new();
+        page.add(&narrator_group);
         page.add(&applied_now_group);
         page.add(&applied_installed_group);
 
@@ -84,13 +112,32 @@ impl AccessibilityStep {
         outer.set_vexpand(true);
         header_image.set_halign(gtk::Align::Center);
 
+        bind(&narrator_row, a11y, "narrator");
         bind(&high_contrast_row, a11y, "high-contrast");
         bind(&large_text_row, a11y, "large-text");
         bind(&magnifier_row, a11y, "screen-magnifier");
         bind(&sticky_keys_row, a11y, "sticky-keys");
 
+        {
+            let a11y_backend = backends.a11y.clone();
+            let narrator_row = narrator_row.clone();
+            bridge::spawn(
+                runtime,
+                async move { a11y_backend.narrator_available().await },
+                move |available| {
+                    if !available {
+                        narrator_row.set_active(false);
+                        narrator_row.set_sensitive(false);
+                        narrator_row.set_subtitle(&narrator_subtitle_unavailable());
+                    }
+                },
+            );
+        }
+
         Self {
             widget: outer.upcast(),
+            narrator_group,
+            narrator_row,
             applied_now_group,
             applied_installed_group,
             high_contrast_row,
@@ -126,6 +173,7 @@ impl Step for AccessibilityStep {
     }
 
     fn commit(&self, cfg: &mut InstallConfig) -> mx::Result<()> {
+        cfg.narrator_enabled = self.a11y.narrator();
         cfg.accessibility.high_contrast = self.a11y.high_contrast();
         cfg.accessibility.large_text = self.a11y.large_text();
         cfg.accessibility.screen_magnifier = self.a11y.screen_magnifier();
@@ -134,6 +182,17 @@ impl Step for AccessibilityStep {
     }
 
     fn retranslate(&self) {
+        self.narrator_group.set_title(&tr("Narrator"));
+        self.narrator_group.set_description(Some(&tr(
+            "Turn this on now if you need speech feedback for the rest of the installer",
+        )));
+        self.narrator_row.set_title(&tr("Enable narrator"));
+        self.narrator_row
+            .set_subtitle(&if self.narrator_row.is_sensitive() {
+                narrator_subtitle_available()
+            } else {
+                narrator_subtitle_unavailable()
+            });
         self.applied_now_group.set_title(&tr("Applied now"));
         self.applied_now_group.set_description(Some(&tr(
             "These take effect immediately in the installer itself",

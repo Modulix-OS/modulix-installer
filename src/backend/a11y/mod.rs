@@ -7,7 +7,7 @@ pub use orca::OrcaBackend;
 use crate::mx;
 use async_trait::async_trait;
 
-/// Narrator + visual/keyboard accessibility toggles (steps 1 and 5).
+/// Narrator + visual/keyboard accessibility toggles (step 1).
 /// `set_narrator_enabled` is the one method that actually does something
 /// under `cage` (spawns/kills orca). The other four are best-effort
 /// `gsettings` calls against the GNOME a11y schemas: on a dev machine under
