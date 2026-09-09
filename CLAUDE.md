@@ -6,7 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 `modulixos-installer` is the future installer for Modulix OS (NixOS-based distro): a single **fullscreen Rust + GTK4/libadwaita app** running as root inside a minimal invisible `cage` kiosk session (Windows-installer style), replacing the current Calamares-based flow (`mxpkgs/installer/default.nix`, patched QML network page + `modulixnixos` job running `mx-init` + `nixos-install`).
 
-**Current state: steps 1-7 are real and fully wired**, including a genuinely destructive install pipeline (partition → encrypt → format → mount → TPM2 enroll) gated behind the summary page's confirmation dialog. Steps 8-9 (user, desktop environment) are still typed stubs. The ISO module stays on Calamares until steps 1-9 are real.
+**Current state: steps 1-6 are real and fully wired**, including a genuinely destructive install pipeline (partition → encrypt → format → mount → TPM2 enroll) gated behind the summary page's confirmation dialog. Steps 7-9 (user, desktop environment, application pack) are still typed stubs. The ISO module stays on Calamares until steps 1-9 are real.
 
 ## Commands (once scaffolding lands)
 
@@ -129,20 +129,20 @@ collation). Two consequences to keep in mind when touching this code:
 
 ### The 9 steps, fixed order
 
-1. **Narrator** — first page, before anything else; toggle starts orca immediately.
-2. **Language** — triggers `retranslate()` on every already-built page.
-3. **Timezone** — `gtk::DrawingArea` world map, equirectangular projection of `zone.tab` coordinates, click → nearest zone (same approach as Calamares) + region/city fallback list.
-4. **Keyboard** — layout + variant from `evdev.xml`, live typing test area, applies the layout immediately.
-5. **Accessibility** — two groups: "Applied now" (high contrast, large text — take effect
+1. **Accessibility** — first page, before anything else. Carries the narrator toggle
+   (`Enable narrator`, starts orca immediately — merged in from the former standalone
+   narrator step) plus two groups: "Applied now" (high contrast, large text — take effect
    immediately in the installer itself via `src/a11y.rs`) and "Applied to the installed
    system" (screen magnifier, sticky keys — compositor-level settings `cage` doesn't expose
    to the app, so these are only recorded into `InstallConfig` and best-effort forwarded to
-   `gsettings`, not applied live). All five toggles (plus narrator) are also reachable from
-   every other page via a header-bar accessibility `MenuButton` popover (`<Ctrl><Alt>a`),
-   bound to the same shared `A11ySettings` instance so step 5 and the popover never drift
-   out of sync.
-6. **Network** — ethernet/Wi-Fi via NetworkManager; if `Connectivity == Portal`, opens an `adw::Dialog` with embedded WebKitGTK, auto-closed once `Connectivity == Full`. Fully implemented (real NM backend in `backend/net/network_manager.rs`, fake state machine in `backend/net/fake.rs`): open/secured/hidden Wi-Fi, WPA2/WPA3 (transition-safe), live connectivity watch, "Next" gated on `Connectivity` (`Full` → ready, `Limited`/`Unknown` → blocked with a "Continue anyway" override, `Portal`/`None` → hard block). In `--fake`, the backend starts disconnected and exposes five demo SSIDs: `Modulix-Fake-Open` (no password), `Modulix-Fake-WPA2`/`-WPA3`/`-Hidden` (password `modulix`), and `Modulix-Fake-Portal` (routes through the offline demo captive-portal page). `--fake`'s scan also returns two undeduplicated duplicate entries to exercise `dedup_access_points`.
-7. **Partitioning** — Fully implemented. `engine::plan::plan` is the single pure function
+   `gsettings`, not applied live). All five toggles are also reachable from every other page
+   via a header-bar accessibility `MenuButton` popover (`<Ctrl><Alt>a`), bound to the same
+   shared `A11ySettings` instance so step 1 and the popover never drift out of sync.
+2. **Language** — triggers `retranslate()` on every already-built page.
+3. **Timezone** — `gtk::DrawingArea` world map, equirectangular projection of `zone.tab` coordinates, click → nearest zone (same approach as Calamares) + region/city fallback list.
+4. **Keyboard** — layout + variant from `evdev.xml`, live typing test area, applies the layout immediately.
+5. **Network** — ethernet/Wi-Fi via NetworkManager; if `Connectivity == Portal`, opens an `adw::Dialog` with embedded WebKitGTK, auto-closed once `Connectivity == Full`. Fully implemented (real NM backend in `backend/net/network_manager.rs`, fake state machine in `backend/net/fake.rs`): open/secured/hidden Wi-Fi, WPA2/WPA3 (transition-safe), live connectivity watch, "Next" gated on `Connectivity` (`Full` → ready, `Limited`/`Unknown` → blocked with a "Continue anyway" override, `Portal`/`None` → hard block). In `--fake`, the backend starts disconnected and exposes five demo SSIDs: `Modulix-Fake-Open` (no password), `Modulix-Fake-WPA2`/`-WPA3`/`-Hidden` (password `modulix`), and `Modulix-Fake-Portal` (routes through the offline demo captive-portal page). `--fake`'s scan also returns two undeduplicated duplicate entries to exercise `dedup_access_points`.
+6. **Partitioning** — Fully implemented. `engine::plan::plan` is the single pure function
    both the UI (live "before"/"after" `DiskBar` preview + blocked-reason row subtitles)
    and the install pipeline (`engine::tasks::PartitionTask`) go through, so the preview
    and what actually gets written can never diverge. 4 modes: erase entire disk / install
@@ -167,14 +167,27 @@ collation). Two consequences to keep in mind when touching this code:
    / hibernation, sized via `engine::sizing`) + LUKS2 encryption + TPM2 (with or without
    PIN). `--fake-disk=<scenario>` (see `backend::disk::scenario::DiskScenario`) seeds the
    fake disk backend so every mode/blocker combination can be clicked through by hand.
-8. **User** — primary user; root gets the same password.
-9. **Desktop environment** — gnome / plasma / lxqt, with description and screenshot.
+7. **User** — primary user; root gets the same password.
+8. **Desktop environment** — gnome / plasma / lxqt, with description and screenshot. No
+   outer "Next" button on this page (`Step::shows_next` returns `false`): picking a card
+   opens a zoom dialog whose own "Choose this desktop environment" button both commits the
+   selection and advances straight to the **application pack** step, via the `AdvanceHook`
+   the app wires up (`steps::new_advance_hook`) — see `src/app.rs`.
+9. **Application pack** — two big cards: "No applications" (bare system) vs "Base pack"
+   (browser, file manager, printing, PDF reader, image viewer, archive manager, text
+   editor, media player — the package list is per-DE, hardcoded in `config.rs`, no office
+   suite). Same pattern as step 8: no outer "Next" button (`Step::shows_next` returns
+   `false`), a card click commits `InstallConfig::app_pack` and advances straight to the
+   summary via the same `AdvanceHook`.
 
-Then a summary → progress screen (live log) → done.
+Then a summary (its "Install" button uses `suggested-action`, not `destructive-action` — the
+confirmation dialog it opens stays destructive) → install-progress screen (an auto-advancing
+`widgets::slideshow::Slideshow` fills the main area, collapsed-by-default log in a
+`gtk::Expander`, progress bar pinned to the bottom) → done.
 
-**Iteration 1 scope**: steps 1-7 are fully functional — including a real, destructive
+**Iteration 1 scope**: steps 1-6 are fully functional — including a real, destructive
 install pipeline (partition → encrypt → format → mount → TPM2 enroll) reachable from the
-summary page's "Install" button, behind a confirmation dialog. Steps 8-9 are still typed
+summary page's "Install" button, behind a confirmation dialog. Steps 7-9 are still typed
 stubs (page present, `InstallConfig` already carries the fields, `commit()` implemented,
 minimal UI). `init_all` itself remains out of scope for iteration 1 — `InitConfigTask`/
 `PostInstallTask` stay fake no-ops, so the pipeline partitions/encrypts/formats/mounts a
