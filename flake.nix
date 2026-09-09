@@ -60,6 +60,10 @@
                       # deleting partitions is delegated to it entirely
               gnome-calculator # step 7's header-bar calculator button (app.rs)
 
+              papirus-icon-theme # step 9's app-pack card icons — build.rs points
+                                  # glib-compile-resources straight at this
+                                  # package, see PAPIRUS_ICON_THEME_48 below
+
               # locale/timezone/keyboard catalogs (src/backend/locale/catalog.rs) —
               # on the real NixOS ISO these are reachable at plain FHS-ish paths;
               # a bare `nix develop` shell has no such profile, so shellHook below
@@ -70,6 +74,7 @@
             ];
             RUST_SRC_PATH = "${pkgs.rust.packages.stable.rustPlatform.rustLibSrc}";
             TZDIR = "${pkgs.tzdata}/share/zoneinfo";
+            PAPIRUS_ICON_THEME_48 = "${pkgs.papirus-icon-theme}/share/icons/Papirus/48x48";
             MODULIX_DEV_EVDEV_XML = "${pkgs.xkeyboard_config}/share/X11/xkb/rules/evdev.xml";
             MODULIX_DEV_LOCALE_SUPPORTED = "${pkgs.glibcLocales}/share/i18n/SUPPORTED";
             # So `setlocale(LC_ALL, "fr_FR.UTF-8")` (formatting only — message

@@ -4,8 +4,15 @@ use std::path::Path;
 use std::process::Command;
 
 fn main() {
+    // App-pack card icons (see data/resources.gresource.xml) resolve against
+    // this extra sourcedir instead of a vendored copy — set by flake.nix's
+    // devShell to `${pkgs.papirus-icon-theme}/share/icons/Papirus/48x48`.
+    let papirus_48 = env::var("PAPIRUS_ICON_THEME_48")
+        .expect("PAPIRUS_ICON_THEME_48 must be set (see flake.nix devShell)");
+    println!("cargo:rerun-if-env-changed=PAPIRUS_ICON_THEME_48");
+
     glib_build_tools::compile_resources(
-        &["data"],
+        &["data", &papirus_48],
         "data/resources.gresource.xml",
         "modulixos-installer.gresource",
     );
