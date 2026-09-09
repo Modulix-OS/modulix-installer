@@ -5,6 +5,7 @@ pub mod partition_editor;
 pub mod password_entry;
 mod password_strength;
 pub mod portal_window;
+pub mod slideshow;
 pub mod timezone_map;
 pub mod wifi_dialog;
 

@@ -1,10 +1,10 @@
 pub mod validity;
 
 pub mod accessibility;
+pub mod app_pack;
 pub mod desktop_environment;
 pub mod keyboard;
 pub mod language;
-pub mod narrator;
 pub mod network;
 pub mod partitioning;
 pub mod timezone;
@@ -27,43 +27,53 @@ pub fn new_retranslate_hook() -> RetranslateHook {
     Rc::new(RefCell::new(Box::new(|| {})))
 }
 
+/// Fired by a step that supplies its own advancement control instead of the
+/// outer "Next" button (see [`Step::shows_next`]) — currently just the
+/// desktop-environment step's zoom-dialog "Choose this desktop environment"
+/// button.
+pub type AdvanceHook = Rc<RefCell<Box<dyn Fn()>>>;
+
+pub fn new_advance_hook() -> AdvanceHook {
+    Rc::new(RefCell::new(Box::new(|| {})))
+}
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum StepId {
-    Narrator,
+    Accessibility,
     Language,
     Timezone,
     Keyboard,
-    Accessibility,
     Network,
     Partitioning,
     User,
     DesktopEnvironment,
+    AppPack,
 }
 
 impl StepId {
     pub const ALL: [StepId; 9] = [
-        StepId::Narrator,
+        StepId::Accessibility,
         StepId::Language,
         StepId::Timezone,
         StepId::Keyboard,
-        StepId::Accessibility,
         StepId::Network,
         StepId::Partitioning,
         StepId::User,
         StepId::DesktopEnvironment,
+        StepId::AppPack,
     ];
 
     pub fn tag(self) -> &'static str {
         match self {
-            StepId::Narrator => "narrator",
+            StepId::Accessibility => "accessibility",
             StepId::Language => "language",
             StepId::Timezone => "timezone",
             StepId::Keyboard => "keyboard",
-            StepId::Accessibility => "accessibility",
             StepId::Network => "network",
             StepId::Partitioning => "partitioning",
             StepId::User => "user",
             StepId::DesktopEnvironment => "desktop-environment",
+            StepId::AppPack => "app-pack",
         }
     }
 }
@@ -85,20 +95,29 @@ pub trait Step {
     fn commit(&self, cfg: &mut InstallConfig) -> mx::Result<()>;
     /// Called after a language change on every already-built step.
     fn retranslate(&self);
+    /// `false` when the page supplies its own advancement control instead of
+    /// the outer "Next" button — currently only the desktop-environment step
+    /// (the zoom dialog's "Choose this desktop environment" button).
+    fn shows_next(&self) -> bool {
+        true
+    }
 }
 
 /// Builds the 9 steps in their fixed order. `runtime` is the tokio handle
 /// backend calls are dispatched onto (see `src/bridge.rs`). `retranslate_hook`
 /// is empty until the caller fills it in once every step is built (see
-/// [`new_retranslate_hook`]).
+/// [`new_retranslate_hook`]); `advance_hook` likewise (see [`new_advance_hook`]).
 pub fn build_registry(
     backends: &Backends,
     runtime: &tokio::runtime::Handle,
     retranslate_hook: RetranslateHook,
+    advance_hook: AdvanceHook,
     a11y: &A11ySettings,
 ) -> Vec<Box<dyn Step>> {
     let registry: Vec<Box<dyn Step>> = vec![
-        Box::new(narrator::NarratorStep::new(backends, runtime, a11y)) as Box<dyn Step>,
+        Box::new(accessibility::AccessibilityStep::new(
+            backends, runtime, a11y,
+        )) as Box<dyn Step>,
         Box::new(language::LanguageStep::new(
             backends,
             runtime,
@@ -106,11 +125,13 @@ pub fn build_registry(
         )) as Box<dyn Step>,
         Box::new(timezone::TimezoneStep::new(backends, runtime)) as Box<dyn Step>,
         Box::new(keyboard::KeyboardStep::new(backends, runtime)) as Box<dyn Step>,
-        Box::new(accessibility::AccessibilityStep::new(a11y)) as Box<dyn Step>,
         Box::new(network::NetworkStep::new(backends, runtime)) as Box<dyn Step>,
         Box::new(partitioning::PartitioningStep::new(backends, runtime, a11y)) as Box<dyn Step>,
         Box::new(user::UserStep::new()) as Box<dyn Step>,
-        Box::new(desktop_environment::DesktopEnvironmentStep::new()) as Box<dyn Step>,
+        Box::new(desktop_environment::DesktopEnvironmentStep::new(
+            advance_hook.clone(),
+        )) as Box<dyn Step>,
+        Box::new(app_pack::AppPackStep::new(advance_hook)) as Box<dyn Step>,
     ];
     debug_assert!(
         registry.iter().map(|s| s.id()).eq(StepId::ALL),

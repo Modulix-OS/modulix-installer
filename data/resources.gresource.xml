@@ -10,6 +10,22 @@
     <file alias="partitioning-symbolic.svg">icons/partitioning-symbolic.svg</file>
     <file alias="user-symbolic.svg">icons/user-symbolic.svg</file>
     <file alias="desktop-symbolic.svg">icons/desktop-symbolic.svg</file>
+    <file alias="apps-symbolic.svg">icons/apps-symbolic.svg</file>
+  </gresource>
+  <!-- App-pack card icons, resolved straight out of the `papirus-icon-theme`
+       nixpkgs derivation (GPL-3.0) via the extra --sourcedir build.rs adds
+       from $PAPIRUS_ICON_THEME_48 — not vendored into this repo. Paths below
+       are relative to that theme's 48x48/ directory. Filed under
+       icons/scalable/apps so `IconTheme::lookup_icon` (already registered on
+       "/org/modulix/installer/icons" in src/main.rs) re-rasterizes them at
+       whatever pixel size is requested instead of stretching a fixed-size
+       bitmap — see `icon_widget_for` in src/steps/app_pack/mod.rs. -->
+  <gresource prefix="/org/modulix/installer/icons/scalable/apps">
+    <file alias="modulix-app-pack-store.svg">apps/org.gnome.Software.svg</file>
+    <file alias="modulix-app-pack-firefox.svg">apps/firefox.svg</file>
+    <file alias="modulix-app-pack-nautilus.svg">apps/org.gnome.Nautilus.svg</file>
+    <file alias="modulix-app-pack-papers.svg">apps/org.gnome.Papers.svg</file>
+    <file alias="modulix-app-pack-printer.svg">devices/printer.svg</file>
   </gresource>
   <gresource prefix="/org/modulix/installer/images">
     <file alias="earth.jpg">images/earth.jpg</file>
@@ -17,6 +33,13 @@
   <gresource prefix="/org/modulix/installer/images/screenshots">
     <file alias="gnome.svg">screenshots/gnome.svg</file>
     <file alias="plasma.svg">screenshots/plasma.svg</file>
+    <file alias="xfce.svg">screenshots/xfce.svg</file>
     <file alias="lxqt.svg">screenshots/lxqt.svg</file>
+  </gresource>
+  <gresource prefix="/org/modulix/installer/images/slides">
+    <file alias="slide-1.svg">slides/slide-1.svg</file>
+    <file alias="slide-2.svg">slides/slide-2.svg</file>
+    <file alias="slide-3.svg">slides/slide-3.svg</file>
+    <file alias="slide-4.svg">slides/slide-4.svg</file>
   </gresource>
 </gresources>

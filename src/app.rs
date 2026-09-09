@@ -24,13 +24,13 @@ const RAIL_CSS: &str = "
   padding: 12px;
 }
 .de-card { padding: 12px; }
+.de-card-selected { outline: 2px solid var(--accent-bg-color); outline-offset: -2px; }
 flowboxchild { background: transparent; box-shadow: none; padding: 0; }
-flowboxchild:selected, flowboxchild:hover, flowboxchild:focus {
+flowboxchild:hover, flowboxchild:focus {
   background: transparent;
   box-shadow: none;
   outline: none;
 }
-flowboxchild:selected .de-card { outline: 2px solid var(--accent-bg-color); outline-offset: -2px; }
 ";
 
 pub fn build_window(
@@ -55,10 +55,12 @@ pub fn build_window(
     a11y.connect_live_effects(&backends, &runtime);
 
     let retranslate_hook = steps::new_retranslate_hook();
+    let advance_hook = steps::new_advance_hook();
     let step_list: Rc<Vec<Box<dyn Step>>> = Rc::new(steps::build_registry(
         &backends,
         &runtime,
         retranslate_hook.clone(),
+        advance_hook.clone(),
         &a11y,
     ));
 
@@ -243,95 +245,96 @@ pub fn build_window(
         }
     };
 
-    nav_view.push(&pages[0]);
-    rebind_validity(0);
-    update_rail(0);
-    update_calc_button(0);
-
-    {
-        let current_index = current_index.clone();
-        let rebind_validity = rebind_validity.clone();
-        let update_rail = update_rail.clone();
-        let update_calc_button = update_calc_button.clone();
-        let nav_view = nav_view.clone();
-        prev_button.connect_clicked(move |_| {
-            let idx = current_index.get();
-            if idx == 0 {
-                return;
-            }
-            if nav_view.pop() {
-                let new_idx = idx - 1;
-                current_index.set(new_idx);
-                rebind_validity(new_idx);
-                update_rail(new_idx);
-                update_calc_button(new_idx);
-            }
-        });
+    fn index_for_tag(step_list: &[Box<dyn Step>], tag: &str) -> Option<usize> {
+        step_list.iter().position(|step| step.id().tag() == tag)
     }
 
     {
-        let current_index = current_index.clone();
-        let rebind_validity = rebind_validity.clone();
-        let update_rail = update_rail.clone();
-        let update_calc_button = update_calc_button.clone();
-        let nav_view = nav_view.clone();
-        let pages = pages.clone();
+        // Visible page is authoritative for rail/prev/next/calc state — this
+        // one handler covers push, pop, Escape, Alt+Left and swipe-back, so
+        // `current_index` can never drift from what's actually on screen.
         let step_list = step_list.clone();
-        let config = config.clone();
-        let toast_overlay = toast_overlay.clone();
-        let summary_page = summary_page.clone();
-        let prev_button = prev_button.clone();
-        let next_button_for_hide = next_button.clone();
-        let calc_button = calc_button.clone();
-        next_button.connect_clicked(move |_| {
-            let idx = current_index.get();
-            if let Err(e) = step_list[idx].commit(&mut config.borrow_mut()) {
-                toast_overlay.add_toast(adw::Toast::new(&format!(
-                    "{}: {e}",
-                    tr("Couldn't save this step")
-                )));
-                return;
-            }
-
-            let mut next_idx = idx + 1;
-            while next_idx < step_list.len() && !step_list[next_idx].is_relevant(&config.borrow()) {
-                next_idx += 1;
-            }
-
-            if next_idx >= step_list.len() {
-                summary_page.refresh(&config.borrow());
-                nav_view.push(&summary_page.page());
-                prev_button.set_visible(false);
-                next_button_for_hide.set_visible(false);
-                calc_button.set_visible(false);
-                return;
-            }
-
-            nav_view.push(&pages[next_idx]);
-            current_index.set(next_idx);
-            rebind_validity(next_idx);
-            update_rail(next_idx);
-            update_calc_button(next_idx);
-        });
-    }
-
-    {
-        // Untagged pages (`summary`/`progress`) manage their own forward
-        // navigation; only step pages (built `with_tag`) use the outer
-        // prev/next buttons.
+        let current_index = current_index.clone();
+        let rebind_validity = rebind_validity.clone();
+        let update_rail = update_rail.clone();
+        let update_calc_button = update_calc_button.clone();
         let prev_button = prev_button.clone();
         let next_button = next_button.clone();
         let calc_button = calc_button.clone();
-        let step_list = step_list.clone();
-        let current_index = current_index.clone();
-        nav_view.connect_popped(move |nav_view, _popped| {
-            let is_step_page = nav_view.visible_page().is_some_and(|p| p.tag().is_some());
-            prev_button.set_visible(is_step_page);
-            next_button.set_visible(is_step_page);
-            calc_button.set_visible(
-                is_step_page && step_list[current_index.get()].id() == steps::StepId::Partitioning,
-            );
+        nav_view.connect_notify_local(Some("visible-page"), move |nav_view, _| {
+            let Some(visible) = nav_view.visible_page() else {
+                return;
+            };
+            match visible
+                .tag()
+                .and_then(|tag| index_for_tag(&step_list, &tag))
+            {
+                Some(idx) => {
+                    current_index.set(idx);
+                    rebind_validity(idx);
+                    update_rail(idx);
+                    update_calc_button(idx);
+                    prev_button.set_visible(true);
+                    next_button.set_visible(step_list[idx].shows_next());
+                }
+                None => {
+                    prev_button.set_visible(false);
+                    next_button.set_visible(false);
+                    calc_button.set_visible(false);
+                }
+            }
         });
+    }
+
+    nav_view.push(&pages[0]);
+
+    {
+        let nav_view = nav_view.clone();
+        prev_button.connect_clicked(move |_| {
+            nav_view.pop();
+        });
+    }
+
+    {
+        let advance: Rc<dyn Fn()> = Rc::new({
+            let current_index = current_index.clone();
+            let nav_view = nav_view.clone();
+            let pages = pages.clone();
+            let step_list = step_list.clone();
+            let config = config.clone();
+            let toast_overlay = toast_overlay.clone();
+            let summary_page = summary_page.clone();
+            move || {
+                let idx = current_index.get();
+                if let Err(e) = step_list[idx].commit(&mut config.borrow_mut()) {
+                    toast_overlay.add_toast(adw::Toast::new(&format!(
+                        "{}: {e}",
+                        tr("Couldn't save this step")
+                    )));
+                    return;
+                }
+
+                let mut next_idx = idx + 1;
+                while next_idx < step_list.len()
+                    && !step_list[next_idx].is_relevant(&config.borrow())
+                {
+                    next_idx += 1;
+                }
+
+                if next_idx >= step_list.len() {
+                    summary_page.refresh(&config.borrow());
+                    nav_view.push(&summary_page.page());
+                    return;
+                }
+
+                nav_view.push(&pages[next_idx]);
+            }
+        });
+        next_button.connect_clicked({
+            let advance = advance.clone();
+            move |_| advance()
+        });
+        *advance_hook.borrow_mut() = Box::new(move || advance());
     }
 
     if !windowed {
@@ -341,8 +344,8 @@ pub fn build_window(
 }
 
 /// Rows bound to the same [`A11ySettings`] instance as the accessibility
-/// step (step 5) and the narrator step (step 1) — toggling one here or
-/// there stays in sync everywhere, no manual resynchronization needed.
+/// step (step 1, which also carries the narrator toggle) — toggling one
+/// here or there stays in sync everywhere, no manual resynchronization needed.
 #[derive(Clone)]
 struct A11yPopoverRows {
     narrator: adw::SwitchRow,
@@ -363,7 +366,7 @@ fn popover_row(title: String, settings: &A11ySettings, property: &str) -> adw::S
 
 /// Header-bar `MenuButton` reachable from every page — the only place the
 /// accessibility toggles are reachable from once the user has moved past
-/// step 5 without navigating back.
+/// step 1 without navigating back.
 fn build_a11y_popover(a11y: &A11ySettings) -> (gtk::MenuButton, A11yPopoverRows) {
     let rows = A11yPopoverRows {
         narrator: popover_row(tr("Enable narrator"), a11y, "narrator"),

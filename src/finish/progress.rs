@@ -1,13 +1,16 @@
-//! Install progress screen — live log + progress bar fed from the
-//! `Task`/`Pipeline` machinery in `engine`, then an inline success/failure
-//! state once the pipeline finishes. Pushed by `SummaryPage` once the user
-//! confirms the destructive-action dialog.
+//! Install progress screen — an auto-advancing slideshow fills the main
+//! area while `Task`/`Pipeline` (see `engine`) runs in the background, log
+//! tucked away in a collapsed `Expander` and the progress bar pinned to the
+//! bottom. Pushed by `SummaryPage` once the user confirms the
+//! destructive-action dialog.
 
 use crate::backend::Backends;
 use crate::config::InstallConfig;
 use crate::engine::{self, ProgressEvent, TaskCtx};
+use crate::finish::slides::INSTALL_SLIDES;
 use crate::i18n::tr;
 use crate::mx;
+use crate::widgets::slideshow::Slideshow;
 use adw::prelude::*;
 
 fn render_backend_error(e: &mx::Error) -> String {
@@ -23,13 +26,17 @@ pub struct ProgressPage {
     progress_bar: gtk::ProgressBar,
     status_label: gtk::Label,
     log_buffer: gtk::TextBuffer,
+    log_expander: gtk::Expander,
     result_box: gtk::Box,
     result_icon: gtk::Image,
     result_label: gtk::Label,
+    slideshow: std::rc::Rc<Slideshow>,
 }
 
 impl ProgressPage {
     pub fn new() -> Self {
+        let slideshow = std::rc::Rc::new(Slideshow::new(INSTALL_SLIDES));
+
         let status_label = gtk::Label::builder()
             .xalign(0.0)
             .wrap(true)
@@ -65,20 +72,27 @@ impl ProgressPage {
         let log_buffer = log_view.buffer();
         let log_scroller = gtk::ScrolledWindow::builder()
             .child(&log_view)
-            .vexpand(true)
-            .min_content_height(240)
+            .vexpand(false)
+            .min_content_height(180)
             .build();
         log_scroller.add_css_class("card");
+
+        let log_expander = gtk::Expander::builder()
+            .label(tr("Details"))
+            .expanded(false)
+            .child(&log_scroller)
+            .build();
 
         let content = gtk::Box::new(gtk::Orientation::Vertical, 12);
         content.set_margin_top(24);
         content.set_margin_bottom(24);
         content.set_margin_start(24);
         content.set_margin_end(24);
+        content.append(&slideshow.widget());
+        content.append(&result_box);
+        content.append(&log_expander);
         content.append(&status_label);
         content.append(&progress_bar);
-        content.append(&result_box);
-        content.append(&log_scroller);
 
         let toolbar = adw::ToolbarView::new();
         toolbar.add_top_bar(&adw::HeaderBar::new());
@@ -91,9 +105,11 @@ impl ProgressPage {
             progress_bar,
             status_label,
             log_buffer,
+            log_expander,
             result_box,
             result_icon,
             result_label,
+            slideshow,
         }
     }
 
@@ -115,6 +131,10 @@ impl ProgressPage {
         self.status_label.set_label(&tr("Starting installation…"));
         self.log_buffer.set_text("");
         self.result_box.set_visible(false);
+        self.page.set_title(&tr("Installing"));
+        self.log_expander.set_label(Some(&tr("Details")));
+        self.slideshow.retranslate();
+        self.slideshow.start();
 
         let (tx, rx) = async_channel::unbounded::<ProgressEvent>();
         let (done_tx, done_rx) = async_channel::bounded::<mx::Result<()>>(1);
@@ -156,8 +176,10 @@ impl ProgressPage {
             let result_icon = self.result_icon.clone();
             let result_label = self.result_label.clone();
             let page = self.page.clone();
+            let slideshow = self.slideshow.clone();
             glib::spawn_future_local(async move {
                 let outcome = done_rx.recv().await;
+                slideshow.stop();
                 result_box.set_visible(true);
                 match outcome {
                     Ok(Ok(())) => {
