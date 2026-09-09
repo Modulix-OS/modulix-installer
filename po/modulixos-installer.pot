@@ -11,6 +11,9 @@ msgstr ""
 msgid "A lightweight desktop for older or low-resource hardware"
 msgstr ""
 
+msgid "A modular system"
+msgstr ""
+
 msgid "A powerful, customizable desktop with a traditional layout"
 msgstr ""
 
@@ -23,7 +26,16 @@ msgstr ""
 msgid "After installation"
 msgstr ""
 
+msgid "Almost there"
+msgstr ""
+
 msgid "An EFI System Partition of at least 100 MiB is required"
+msgstr ""
+
+msgid "Application pack"
+msgstr ""
+
+msgid "Applications"
 msgstr ""
 
 msgid "Applied now"
@@ -38,6 +50,9 @@ msgstr ""
 msgid ""
 "Assign existing partitions or create new ones in free space below. To resize "
 "or delete an existing partition, use GParted."
+msgstr ""
+
+msgid "Base pack"
 msgstr ""
 
 msgid "Boot (/boot, EFI)"
@@ -113,6 +128,9 @@ msgid "Desktop"
 msgstr ""
 
 msgid "Desktop environment"
+msgstr ""
+
+msgid "Details"
 msgstr ""
 
 msgid "Disabled"
@@ -275,6 +293,9 @@ msgstr ""
 msgid "Modulix OS Installer"
 msgstr ""
 
+msgid "Modulix OS is built on NixOS, so your configuration stays reproducible."
+msgstr ""
+
 msgid "Modulix OS is ready. You can restart into it now."
 msgstr ""
 
@@ -308,6 +329,9 @@ msgstr ""
 msgid "No Windows installation was found on this disk"
 msgstr ""
 
+msgid "No applications"
+msgstr ""
+
 msgid "No disk selected"
 msgstr ""
 
@@ -324,6 +348,9 @@ msgid "Not connected"
 msgstr ""
 
 msgid "Not enough space would be freed up to install Modulix OS"
+msgstr ""
+
+msgid "Once this finishes, you'll be ready to restart into your new system."
 msgstr ""
 
 msgid "Only one partition can be assigned as root (/)"
@@ -354,6 +381,9 @@ msgid "Partition with GParted…"
 msgstr ""
 
 msgid "Partitioning"
+msgstr ""
+
+msgid "Partitioning, encryption, and your desktop environment are being put in place."
 msgstr ""
 
 msgid "Password"
@@ -440,6 +470,9 @@ msgstr ""
 msgid "Standard swap"
 msgstr ""
 
+msgid "Start from a bare system and install everything yourself"
+msgstr ""
+
 msgid "Starting installation…"
 msgstr ""
 
@@ -468,6 +501,9 @@ msgid "The TPM2 chip stores the key and unlocks the disk automatically at boot. 
 msgstr ""
 
 msgid "The disk layout changed — refresh the disk and try again"
+msgstr ""
+
+msgid "The essentials, ready to use"
 msgstr ""
 
 msgid "The following partitions will be permanently erased"
@@ -591,6 +627,15 @@ msgstr ""
 msgid "WPA3 Personal"
 msgstr ""
 
+msgid "We're setting things up in the background — this won't take long."
+msgstr ""
+
+msgid "Web browser, file manager, terminal, printing, PDF reader, image viewer, archive manager, text editor, media player"
+msgstr ""
+
+msgid "Welcome to Modulix OS"
+msgstr ""
+
 msgid "Wi-Fi networks"
 msgstr ""
 
@@ -604,6 +649,12 @@ msgid "Wired connection"
 msgstr ""
 
 msgid "World map"
+msgstr ""
+
+msgid "You can uninstall any of these afterwards"
+msgstr ""
+
+msgid "Your choices, applied"
 msgstr ""
 
 msgid "Zoom in on the area around the cursor"

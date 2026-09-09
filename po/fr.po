@@ -15,6 +15,9 @@ msgid "A lightweight desktop for older or low-resource hardware"
 msgstr ""
 "Un bureau léger, adapté à un matériel ancien ou aux ressources limitées"
 
+msgid "A modular system"
+msgstr "Un système modulaire"
+
 msgid "A powerful, customizable desktop with a traditional layout"
 msgstr ""
 "Un bureau puissant et personnalisable, à la disposition traditionnelle"
@@ -28,8 +31,17 @@ msgstr "Ajouter"
 msgid "After installation"
 msgstr "Après l'installation"
 
+msgid "Almost there"
+msgstr "Presque terminé"
+
 msgid "An EFI System Partition of at least 100 MiB is required"
 msgstr "Une partition système EFI d'au moins 100 Mio est requise"
+
+msgid "Application pack"
+msgstr "Pack d'applications"
+
+msgid "Applications"
+msgstr "Applications"
 
 msgid "Applied now"
 msgstr "Appliqué maintenant"
@@ -47,6 +59,9 @@ msgstr ""
 "Assignez les partitions existantes ou créez-en de nouvelles dans l'espace "
 "libre ci-dessous. Pour redimensionner ou supprimer une partition existante, "
 "utilisez GParted."
+
+msgid "Base pack"
+msgstr "Pack de base"
 
 msgid "Boot (/boot, EFI)"
 msgstr "Démarrage (/boot, EFI)"
@@ -125,6 +140,9 @@ msgstr "Bureau"
 
 msgid "Desktop environment"
 msgstr "Environnement de bureau"
+
+msgid "Details"
+msgstr "Détails"
 
 msgid "Disabled"
 msgstr "Désactivé"
@@ -297,6 +315,9 @@ msgstr "Modulix"
 msgid "Modulix OS Installer"
 msgstr "Installateur Modulix OS"
 
+msgid "Modulix OS is built on NixOS, so your configuration stays reproducible."
+msgstr "Modulix OS repose sur NixOS : votre configuration reste reproductible."
+
 msgid "Modulix OS is ready. You can restart into it now."
 msgstr "Modulix OS est prêt. Vous pouvez maintenant redémarrer dessus."
 
@@ -330,6 +351,9 @@ msgstr "Aucun réseau Wi-Fi trouvé"
 msgid "No Windows installation was found on this disk"
 msgstr "Aucune installation Windows n'a été trouvée sur ce disque"
 
+msgid "No applications"
+msgstr "Aucune application"
+
 msgid "No disk selected"
 msgstr "Aucun disque sélectionné"
 
@@ -347,6 +371,9 @@ msgstr "Non connecté"
 
 msgid "Not enough space would be freed up to install Modulix OS"
 msgstr "L'espace libéré serait insuffisant pour installer Modulix OS"
+
+msgid "Once this finishes, you'll be ready to restart into your new system."
+msgstr "Une fois terminé, vous pourrez redémarrer sur votre nouveau système."
 
 msgid "Only one partition can be assigned as root (/)"
 msgstr "Une seule partition peut être attribuée à la racine (/)"
@@ -377,6 +404,9 @@ msgstr "Partitionner avec GParted…"
 
 msgid "Partitioning"
 msgstr "Partitionnement"
+
+msgid "Partitioning, encryption, and your desktop environment are being put in place."
+msgstr "Le partitionnement, le chiffrement et votre environnement de bureau sont en cours de mise en place."
 
 msgid "Password"
 msgstr "Mot de passe"
@@ -467,6 +497,9 @@ msgstr "Taille (Mio)"
 msgid "Standard swap"
 msgstr "Espace d'échange standard"
 
+msgid "Start from a bare system and install everything yourself"
+msgstr "Partir d'un système nu et tout installer soi-même"
+
 msgid "Starting installation…"
 msgstr "Démarrage de l'installation…"
 
@@ -496,6 +529,9 @@ msgstr "La puce TPM2 conserve la clé et déverrouille le disque automatiquement
 
 msgid "The disk layout changed — refresh the disk and try again"
 msgstr "La disposition du disque a changé — actualisez le disque et réessayez"
+
+msgid "The essentials, ready to use"
+msgstr "L'essentiel, prêt à l'emploi"
 
 msgid "The following partitions will be permanently erased"
 msgstr "Les partitions suivantes seront définitivement effacées"
@@ -643,6 +679,15 @@ msgstr "WPA/WPA2 personnel"
 msgid "WPA3 Personal"
 msgstr "WPA3 personnel"
 
+msgid "We're setting things up in the background — this won't take long."
+msgstr "Nous préparons tout en arrière-plan — cela ne prendra pas longtemps."
+
+msgid "Web browser, file manager, terminal, printing, PDF reader, image viewer, archive manager, text editor, media player"
+msgstr "Navigateur web, gestionnaire de fichiers, terminal, impression, lecteur PDF, visionneuse d'images, gestionnaire d'archives, éditeur de texte, lecteur multimédia"
+
+msgid "Welcome to Modulix OS"
+msgstr "Bienvenue dans Modulix OS"
+
 msgid "Wi-Fi networks"
 msgstr "Réseaux Wi-Fi"
 
@@ -657,6 +702,12 @@ msgstr "Connexion filaire"
 
 msgid "World map"
 msgstr "Carte du monde"
+
+msgid "You can uninstall any of these afterwards"
+msgstr "Vous pourrez désinstaller chacune d'entre elles par la suite"
+
+msgid "Your choices, applied"
+msgstr "Vos choix, appliqués"
 
 msgid "Zoom in on the area around the cursor"
 msgstr "Zoome sur la zone autour du curseur"
