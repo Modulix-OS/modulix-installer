@@ -5,7 +5,7 @@
 //! `plan.erases` is about to destroy.
 
 use crate::backend::Backends;
-use crate::config::{InstallConfig, PartitionMode, SwapMode};
+use crate::config::{AppPack, InstallConfig, PartitionMode, SwapMode};
 use crate::engine::live_input::gather_plan_input;
 use crate::engine::plan::{self, PlanError};
 use crate::finish::progress::ProgressPage;
@@ -22,6 +22,13 @@ fn mode_label(mode: PartitionMode) -> String {
         PartitionMode::AlongsideWindows => tr("Install alongside Windows"),
         PartitionMode::FreeSpace => tr("Use free space"),
         PartitionMode::Manual => tr("Manual"),
+    }
+}
+
+fn pack_label(pack: AppPack) -> String {
+    match pack {
+        AppPack::None => tr("No applications"),
+        AppPack::Base => tr("Base pack"),
     }
 }
 
@@ -53,6 +60,7 @@ pub struct SummaryPage {
     encryption_row: adw::ActionRow,
     user_row: adw::ActionRow,
     desktop_row: adw::ActionRow,
+    apps_row: adw::ActionRow,
     erases_group: adw::PreferencesGroup,
     plan_banner: adw::Banner,
     install_button: gtk::Button,
@@ -65,6 +73,7 @@ pub struct SummaryPage {
     pending_erases: Rc<RefCell<Vec<String>>>,
     pending_disk_label: Rc<RefCell<String>>,
     pending_config: Rc<RefCell<Option<InstallConfig>>>,
+    erase_rows: Rc<RefCell<Vec<adw::ActionRow>>>,
 }
 
 impl SummaryPage {
@@ -85,6 +94,7 @@ impl SummaryPage {
         let desktop_row = adw::ActionRow::builder()
             .title(tr("Desktop environment"))
             .build();
+        let apps_row = adw::ActionRow::builder().title(tr("Applications")).build();
         for row in [
             &language_row,
             &timezone_row,
@@ -92,6 +102,7 @@ impl SummaryPage {
             &network_row,
             &user_row,
             &desktop_row,
+            &apps_row,
         ] {
             overview_group.add(row);
         }
@@ -117,7 +128,7 @@ impl SummaryPage {
         let spinner = gtk::Spinner::new();
         let install_button = gtk::Button::builder()
             .label(tr("Install"))
-            .css_classes(["destructive-action", "pill"])
+            .css_classes(["suggested-action", "pill"])
             .sensitive(false)
             .build();
         let button_box = gtk::Box::new(gtk::Orientation::Horizontal, 8);
@@ -156,6 +167,7 @@ impl SummaryPage {
             encryption_row,
             user_row,
             desktop_row,
+            apps_row,
             erases_group,
             plan_banner,
             install_button,
@@ -167,6 +179,7 @@ impl SummaryPage {
             pending_erases: Rc::new(RefCell::new(Vec::new())),
             pending_disk_label: Rc::new(RefCell::new(String::new())),
             pending_config: Rc::new(RefCell::new(None)),
+            erase_rows: Rc::new(RefCell::new(Vec::new())),
         };
         step.wire_install_button();
         step
@@ -270,6 +283,7 @@ impl SummaryPage {
             tr(crate::steps::desktop_environment::display_label(de)),
             de.de_name()
         ));
+        self.apps_row.set_subtitle(&pack_label(cfg.app_pack));
         self.mode_row
             .set_subtitle(&mode_label(cfg.partitioning.mode));
         self.swap_row
@@ -308,12 +322,16 @@ impl SummaryPage {
         let erases_group = self.erases_group.clone();
         let pending_erases = self.pending_erases.clone();
         let pending_disk_label = self.pending_disk_label.clone();
+        let erase_rows = self.erase_rows.clone();
 
         bridge::spawn(
             &self.runtime,
             async move { gather_plan_input(&disk_backend, &disk_path, cfg_partitioning).await },
             move |result| {
                 spinner.stop();
+                for row in erase_rows.borrow_mut().drain(..) {
+                    erases_group.remove(&row);
+                }
                 let input = match result {
                     Ok(input) => input,
                     Err(e) => {
@@ -336,12 +354,10 @@ impl SummaryPage {
                         if result.erases.is_empty() {
                             erases_group.set_visible(false);
                         } else {
-                            while let Some(row) = erases_group.first_child() {
-                                erases_group.remove(&row);
-                            }
                             for path in &result.erases {
-                                erases_group
-                                    .add(&adw::ActionRow::builder().title(path.clone()).build());
+                                let row = adw::ActionRow::builder().title(path.clone()).build();
+                                erases_group.add(&row);
+                                erase_rows.borrow_mut().push(row);
                             }
                             erases_group.set_visible(true);
                         }
