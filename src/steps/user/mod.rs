@@ -4,8 +4,11 @@ use crate::mx;
 use crate::steps::{Step, StepId, ValidityTracker};
 use crate::widgets::PasswordConfirmEntry;
 use adw::prelude::*;
+use std::cell::Cell;
+use std::rc::Rc;
+mod username;
 
-/// Step 8 — primary user; root receives the same password (both must end up
+/// primary user; root receives the same password (both must end up
 /// `hashedPassword`, not `initialPassword`, once `init_all` lands in
 /// iteration 2).
 pub struct UserStep {
@@ -19,15 +22,16 @@ pub struct UserStep {
 
 impl UserStep {
     pub fn new() -> Self {
-        let username_row = adw::EntryRow::builder().title(tr("Username")).build();
         let fullname_row = adw::EntryRow::builder().title(tr("Full name")).build();
+        let username_row = adw::EntryRow::builder().title(tr("Username")).build();
+        username_row.set_tooltip_text(Some(&tr("Lowercase letters, digits, - and _ only")));
         let password_widget = PasswordConfirmEntry::new();
 
         let group = adw::PreferencesGroup::builder()
             .title(tr("User account"))
             .build();
-        group.add(&username_row);
         group.add(&fullname_row);
+        group.add(&username_row);
         password_widget.attach_to_group(&group);
 
         let page = adw::PreferencesPage::new();
@@ -43,8 +47,8 @@ impl UserStep {
             let password_widget = password_widget.clone();
             let validity = validity.clone();
             move || {
-                if username_row.text().trim().is_empty() {
-                    validity.set_blocked(tr("Enter a username"));
+                if let Some(reason) = username::blocked_reason(&username_row.text()) {
+                    validity.set_blocked(reason);
                 } else if !password_widget.is_valid() {
                     validity.set_blocked(tr("Passwords must match and not be empty"));
                 } else {
@@ -53,10 +57,60 @@ impl UserStep {
             }
         };
 
+        let syncing = Rc::new(Cell::new(false));
+        let user_edited = Rc::new(Cell::new(false));
+
         {
+            let username_row = username_row.clone();
+            let syncing = syncing.clone();
+            let user_edited = user_edited.clone();
             let update_validity = update_validity.clone();
-            username_row.connect_changed(move |_| update_validity());
+            fullname_row.connect_changed(move |row| {
+                if user_edited.get() {
+                    return;
+                }
+                let derived = username::from_full_name(&row.text());
+                syncing.set(true);
+                username_row.set_text(&derived);
+                syncing.set(false);
+                update_validity();
+            });
         }
+
+        {
+            let syncing = syncing.clone();
+            let user_edited = user_edited.clone();
+            let update_validity = update_validity.clone();
+            username_row.connect_changed(move |row| {
+                if syncing.get() {
+                    return;
+                }
+                let text = row.text();
+                user_edited.set(!text.is_empty());
+
+                let clean = username::sanitize(&text);
+                if clean != text {
+                    let old_pos = row.position().max(0) as usize;
+                    let kept_before_cursor = text
+                        .chars()
+                        .take(old_pos)
+                        .filter(|c| {
+                            c.is_ascii_lowercase()
+                                || c.is_ascii_digit()
+                                || *c == '_'
+                                || *c == '-'
+                                || c.is_ascii_uppercase()
+                        })
+                        .count();
+                    syncing.set(true);
+                    row.set_text(&clean);
+                    syncing.set(false);
+                    row.set_position(kept_before_cursor.min(clean.chars().count()) as i32);
+                }
+                update_validity();
+            });
+        }
+
         password_widget.connect_changed(update_validity);
 
         Self {
@@ -98,8 +152,8 @@ impl Step for UserStep {
     }
 
     fn commit(&self, cfg: &mut InstallConfig) -> mx::Result<()> {
-        cfg.user.username = self.username_row.text().trim().to_string();
-        cfg.user.full_name = self.fullname_row.text().to_string();
+        cfg.user.username = username::sanitize(&self.username_row.text());
+        cfg.user.full_name = self.fullname_row.text().trim().to_string();
         cfg.user.password = self.password_widget.password();
         Ok(())
     }
@@ -107,6 +161,8 @@ impl Step for UserStep {
     fn retranslate(&self) {
         self.group.set_title(&tr("User account"));
         self.username_row.set_title(&tr("Username"));
+        self.username_row
+            .set_tooltip_text(Some(&tr("Lowercase letters, digits, - and _ only")));
         self.fullname_row.set_title(&tr("Full name"));
         self.password_widget.retranslate();
     }
