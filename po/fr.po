@@ -120,6 +120,9 @@ msgstr "Continuer"
 msgid "Continue anyway"
 msgstr "Continuer quand même"
 
+msgid "Choose this desktop environment"
+msgstr "Choisir cette environnement de bureau"
+
 msgid "Couldn't save this step"
 msgstr "Impossible d'enregistrer cette étape"
 
