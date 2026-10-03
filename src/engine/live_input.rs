@@ -15,10 +15,22 @@ pub fn detect_uefi() -> bool {
     std::path::Path::new("/sys/firmware/efi").exists()
 }
 
+/// Snapshots the live disk state into a [`PlanInput`] for `engine::plan::plan`.
+///
+/// * `disk_backend` — backend the disk/partition enumeration is read from.
+/// * `disk_path` — target disk, must be one `disk_backend.list_disks()` returns.
+/// * `cfg` — the partitioning answers collected by step 6.
+/// * `uefi` — whether the live system booted in UEFI mode; decides on its own
+///   whether the plan carves a new ESP, so it is passed in rather than probed
+///   here (see [`detect_uefi`]) — tests and previews must be able to pin it.
+///
+/// Returns the assembled input, or a backend error if `disk_path` is unknown
+/// or an enumeration/probe call fails.
 pub async fn gather_plan_input(
     disk_backend: &Arc<dyn DiskBackend>,
     disk_path: &str,
     cfg: PartitioningConfig,
+    uefi: bool,
 ) -> mx::Result<PlanInput> {
     let disk = disk_backend
         .list_disks()
@@ -56,6 +68,6 @@ pub async fn gather_plan_input(
         ntfs,
         cfg,
         ram_bytes,
-        uefi: detect_uefi(),
+        uefi,
     })
 }

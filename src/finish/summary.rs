@@ -6,7 +6,7 @@
 
 use crate::backend::Backends;
 use crate::config::{AppPack, InstallConfig, PartitionMode, SwapMode};
-use crate::engine::live_input::gather_plan_input;
+use crate::engine::live_input::{detect_uefi, gather_plan_input};
 use crate::engine::plan::{self, PlanError};
 use crate::finish::progress::ProgressPage;
 use crate::i18n::tr;
@@ -326,7 +326,9 @@ impl SummaryPage {
 
         bridge::spawn(
             &self.runtime,
-            async move { gather_plan_input(&disk_backend, &disk_path, cfg_partitioning).await },
+            async move {
+                gather_plan_input(&disk_backend, &disk_path, cfg_partitioning, detect_uefi()).await
+            },
             move |result| {
                 spinner.stop();
                 for row in erase_rows.borrow_mut().drain(..) {

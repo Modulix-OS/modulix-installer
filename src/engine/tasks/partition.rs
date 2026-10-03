@@ -64,6 +64,7 @@ impl Task for PartitionTask {
             &ctx.backends.disk,
             &disk_path,
             ctx.config.partitioning.clone(),
+            ctx.uefi,
         )
         .await?;
         let result = plan::plan(&input).map_err(|e| mx::Error::Backend(e.msgid()))?;

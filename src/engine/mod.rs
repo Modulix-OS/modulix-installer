@@ -56,17 +56,41 @@ pub struct PipelineState {
     pub luks_device: Option<String>,
 }
 
+/// Everything a [`Task`] needs: the backends it acts through, the answers
+/// collected by the wizard, the firmware mode the plan is computed for, and
+/// the mutable hand-off state between stages.
 pub struct TaskCtx {
     pub backends: Backends,
     pub config: InstallConfig,
+    /// Whether the live system booted in UEFI mode — `PartitionTask` feeds
+    /// this to `live_input::gather_plan_input`, which decides from it alone
+    /// whether the plan carves a new ESP. Held here instead of probed per
+    /// task so tests can pin it (`/sys/firmware/efi` does not exist inside a
+    /// Nix build sandbox, which would otherwise silently turn every pipeline
+    /// test into a BIOS-mode one).
+    pub uefi: bool,
     pub state: tokio::sync::Mutex<PipelineState>,
 }
 
 impl TaskCtx {
+    /// Builds a context probing the running system for its firmware mode.
+    ///
+    /// * `backends` — subsystem backends every task acts through.
+    /// * `config` — the wizard answers driving the install.
     pub fn new(backends: Backends, config: InstallConfig) -> Self {
+        Self::with_uefi(backends, config, live_input::detect_uefi())
+    }
+
+    /// Builds a context with the firmware mode pinned explicitly.
+    ///
+    /// * `backends` — subsystem backends every task acts through.
+    /// * `config` — the wizard answers driving the install.
+    /// * `uefi` — firmware mode the plan is computed for, see [`TaskCtx::uefi`].
+    pub fn with_uefi(backends: Backends, config: InstallConfig, uefi: bool) -> Self {
         Self {
             backends,
             config,
+            uefi,
             state: tokio::sync::Mutex::new(PipelineState::default()),
         }
     }

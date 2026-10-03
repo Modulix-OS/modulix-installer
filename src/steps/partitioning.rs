@@ -12,6 +12,7 @@ use crate::backend::disk::ntfs::{NtfsBlocker, NtfsProbe};
 use crate::backend::disk::{DiskInfo, PartitionInfo, short_device_name};
 use crate::bridge;
 use crate::config::{InstallConfig, PartitionMode, PartitioningConfig, SwapMode};
+use crate::engine::live_input::detect_uefi;
 use crate::engine::plan::{self, PlanError, PlanInput, PlanWarning, PreviewRole};
 use crate::engine::sizing::{compute_swap_bytes, detect_ram_bytes};
 use crate::i18n::tr;
@@ -105,10 +106,6 @@ fn set_windows_label(
         human_bytes(freed),
         breakdown.join(", "),
     ));
-}
-
-fn detect_uefi() -> bool {
-    Path::new("/sys/firmware/efi").exists()
 }
 
 fn detect_tpm2() -> bool {
