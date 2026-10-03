@@ -6,30 +6,35 @@
 
 use crate::backend::Backends;
 use crate::config::InstallConfig;
-use crate::engine::{self, ProgressEvent, TaskCtx};
+use crate::engine::{self, ProgressEvent, TaskCtx, install_log};
 use crate::finish::slides::INSTALL_SLIDES;
 use crate::i18n::tr;
 use crate::mx;
 use crate::widgets::slideshow::Slideshow;
 use adw::prelude::*;
 
-fn render_backend_error(e: &mx::Error) -> String {
-    match e {
-        mx::Error::Backend(msgid) => tr(msgid),
-        other => other.to_string(),
-    }
-}
+/// Hard cap on the install log: the tail is what matters, and an
+/// unbounded `TextBuffer` would grow for the whole `nixos-install`.
+const LOG_MAX_LINES: i32 = 2000;
 
 #[derive(Clone)]
 pub struct ProgressPage {
     page: adw::NavigationPage,
     progress_bar: gtk::ProgressBar,
+    /// Live while a task reports no fraction of its own; see
+    /// `ProgressEvent::Indeterminate`.
+    pulse_source: std::rc::Rc<std::cell::RefCell<Option<glib::SourceId>>>,
     status_label: gtk::Label,
     log_buffer: gtk::TextBuffer,
+    log_view: gtk::TextView,
     log_expander: gtk::Expander,
     result_box: gtk::Box,
     result_icon: gtk::Image,
     result_label: gtk::Label,
+    /// Where the full log was persisted. Hidden until the install fails,
+    /// which is the only time the user needs to go read it.
+    log_path_label: gtk::Label,
+    log_scroller: gtk::ScrolledWindow,
     slideshow: std::rc::Rc<Slideshow>,
 }
 
@@ -45,14 +50,39 @@ impl ProgressPage {
         let progress_bar = gtk::ProgressBar::builder().show_text(false).build();
 
         let result_icon = gtk::Image::builder().pixel_size(32).build();
+        // Selectable, `WordChar`-wrapped and inside a scroller: a failed
+        // `nixos-install` reports Nix traces and device paths that have no
+        // space to break on, and the whole message has to stay readable
+        // instead of stretching the page off-screen.
         let result_label = gtk::Label::builder()
             .wrap(true)
+            .wrap_mode(gtk::pango::WrapMode::WordChar)
+            .selectable(true)
             .xalign(0.0)
             .hexpand(true)
             .build();
+        let log_path_label = gtk::Label::builder()
+            .wrap(true)
+            .wrap_mode(gtk::pango::WrapMode::WordChar)
+            .selectable(true)
+            .xalign(0.0)
+            .hexpand(true)
+            .visible(false)
+            .css_classes(["dim-label"])
+            .build();
+        let result_text = gtk::Box::new(gtk::Orientation::Vertical, 6);
+        result_text.append(&result_label);
+        result_text.append(&log_path_label);
+        let result_scroller = gtk::ScrolledWindow::builder()
+            .child(&result_text)
+            .hexpand(true)
+            .propagate_natural_height(true)
+            .max_content_height(220)
+            .hscrollbar_policy(gtk::PolicyType::Never)
+            .build();
         let result_box = gtk::Box::new(gtk::Orientation::Horizontal, 12);
         result_box.append(&result_icon);
-        result_box.append(&result_label);
+        result_box.append(&result_scroller);
         result_box.set_visible(false);
         result_box.add_css_class("card");
         result_box.set_margin_top(6);
@@ -103,12 +133,16 @@ impl ProgressPage {
         Self {
             page,
             progress_bar,
+            pulse_source: std::rc::Rc::new(std::cell::RefCell::new(None)),
             status_label,
             log_buffer,
+            log_view,
             log_expander,
             result_box,
             result_icon,
             result_label,
+            log_path_label,
+            log_scroller,
             slideshow,
         }
     }
@@ -131,38 +165,69 @@ impl ProgressPage {
         self.status_label.set_label(&tr("Starting installation…"));
         self.log_buffer.set_text("");
         self.result_box.set_visible(false);
+        self.log_path_label.set_visible(false);
+        self.log_scroller.set_min_content_height(180);
         self.page.set_title(&tr("Installing"));
         self.log_expander.set_label(Some(&tr("Details")));
         self.slideshow.retranslate();
         self.slideshow.start();
+        self.set_pulsing(false);
 
-        let (tx, rx) = async_channel::unbounded::<ProgressEvent>();
+        // Two hops, not one: the pipeline feeds `raw_tx`, a tokio task mirrors
+        // every event into `install_log` and forwards it to the GTK loop over
+        // `ui_tx`. Writing the file from the `spawn_future_local` consumer
+        // below would put tens of thousands of `nixos-install` lines of
+        // filesystem I/O on the main loop.
+        let (raw_tx, raw_rx) = async_channel::unbounded::<ProgressEvent>();
+        let (ui_tx, rx) = async_channel::unbounded::<ProgressEvent>();
         let (done_tx, done_rx) = async_channel::bounded::<mx::Result<()>>(1);
+        let (tee_done_tx, tee_done_rx) = async_channel::bounded::<()>(1);
+
+        runtime.spawn(async move {
+            let mut writer = install_log::Writer::open().await;
+            while let Ok(event) = raw_rx.recv().await {
+                writer.record(&event).await;
+                // A closed UI must not truncate the file.
+                let _ = ui_tx.send(event).await;
+            }
+            writer.flush().await;
+            // Failure path: the pipeline aborted before `PostInstallTask`, so
+            // the target is still mounted and can take the copy.
+            install_log::copy_to_target().await;
+            let _ = tee_done_tx.send(()).await;
+        });
 
         runtime.spawn(async move {
             let ctx = TaskCtx::new(backends, config);
-            let result = engine::full_pipeline().run(&ctx, &tx).await;
+            let result = engine::full_pipeline().run(&ctx, &raw_tx).await;
+            // Untranslated on purpose: this line lands in the log file and in
+            // journald, which are read by whoever debugs the install. The UI
+            // gets the translated message from `done_rx`.
+            let outcome = match &result {
+                Ok(()) => "install finished successfully".to_string(),
+                Err(e) => format!("INSTALL FAILED: {e}"),
+            };
+            let _ = raw_tx.send(ProgressEvent::Log(outcome)).await;
+            drop(raw_tx);
+            // The tee owns the log file and the target copy; wait for it so
+            // the failure page can only name copies that really exist.
+            let _ = tee_done_rx.recv().await;
             let _ = done_tx.send(result).await;
         });
 
         {
-            let progress_bar = self.progress_bar.clone();
-            let status_label = self.status_label.clone();
-            let log_buffer = self.log_buffer.clone();
+            let this = self.clone();
             glib::spawn_future_local(async move {
                 while let Ok(event) = rx.recv().await {
                     match event {
-                        ProgressEvent::Started { task } => status_label.set_label(&task),
-                        ProgressEvent::Log(line) => {
-                            let mut end = log_buffer.end_iter();
-                            log_buffer.insert(&mut end, &format!("{line}\n"));
-                        }
+                        ProgressEvent::Started { task } => this.status_label.set_label(&task),
+                        ProgressEvent::Log(line) => this.append_log(&line),
                         ProgressEvent::Progress { fraction } => {
-                            progress_bar.set_fraction(fraction);
+                            this.progress_bar.set_fraction(fraction);
                         }
+                        ProgressEvent::Indeterminate(on) => this.set_pulsing(on),
                         ProgressEvent::Finished { task } => {
-                            let mut end = log_buffer.end_iter();
-                            log_buffer.insert(&mut end, &format!("\u{2713} {task}\n"));
+                            this.append_log(&format!("\u{2713} {task}"));
                         }
                     }
                 }
@@ -170,40 +235,110 @@ impl ProgressPage {
         }
 
         {
-            let status_label = self.status_label.clone();
-            let progress_bar = self.progress_bar.clone();
-            let result_box = self.result_box.clone();
-            let result_icon = self.result_icon.clone();
-            let result_label = self.result_label.clone();
-            let page = self.page.clone();
-            let slideshow = self.slideshow.clone();
+            let this = self.clone();
             glib::spawn_future_local(async move {
                 let outcome = done_rx.recv().await;
-                slideshow.stop();
-                result_box.set_visible(true);
+                this.slideshow.stop();
+                this.set_pulsing(false);
+                this.result_box.set_visible(true);
+                this.page.set_can_pop(true);
                 match outcome {
                     Ok(Ok(())) => {
-                        progress_bar.set_fraction(1.0);
-                        status_label.set_label(&tr("Installation complete"));
-                        result_icon.set_icon_name(Some("emblem-ok-symbolic"));
-                        result_label
+                        this.progress_bar.set_fraction(1.0);
+                        this.status_label.set_label(&tr("Installation complete"));
+                        this.result_icon.set_icon_name(Some("emblem-ok-symbolic"));
+                        this.result_label
                             .set_label(&tr("Modulix OS is ready. You can restart into it now."));
-                        page.set_can_pop(true);
                     }
-                    Ok(Err(e)) => {
-                        status_label.set_label(&tr("Installation failed"));
-                        result_icon.set_icon_name(Some("dialog-error-symbolic"));
-                        result_label.set_label(&render_backend_error(&e));
-                        page.set_can_pop(true);
-                    }
-                    Err(_) => {
-                        status_label.set_label(&tr("Installation failed"));
-                        result_icon.set_icon_name(Some("dialog-error-symbolic"));
-                        result_label.set_label(&tr("The installer stopped unexpectedly"));
-                        page.set_can_pop(true);
-                    }
+                    Ok(Err(e)) => this.show_failure(&mx::render(&e)),
+                    Err(_) => this.show_failure(&tr("The installer stopped unexpectedly")),
                 }
             });
+        }
+    }
+
+    /// Appends one line to the log and keeps the view pinned to the bottom,
+    /// so a long `nixos-install` stays readable without scrolling by hand.
+    ///
+    /// * `line` - text to append; the newline is added here.
+    ///
+    /// # Post-conditions
+    /// The buffer never grows past [`LOG_MAX_LINES`]: a full `nixos-install`
+    /// emits tens of thousands of lines, and only the tail is ever useful.
+    fn append_log(&self, line: &str) {
+        let mut end = self.log_buffer.end_iter();
+        self.log_buffer.insert(&mut end, &format!("{line}\n"));
+
+        let overflow = self.log_buffer.line_count() - LOG_MAX_LINES;
+        if overflow > 0 {
+            let start = self.log_buffer.start_iter();
+            if let Some(cut) = self.log_buffer.iter_at_line(overflow) {
+                self.log_buffer.delete(&mut start.clone(), &mut cut.clone());
+            }
+        }
+        let end = self.log_buffer.end_iter();
+        let mark = self.log_buffer.create_mark(None, &end, false);
+        self.log_view.scroll_to_mark(&mark, 0.0, false, 0.0, 0.0);
+        self.log_buffer.delete_mark(&mark);
+    }
+
+    /// Switches the progress bar between pulsing and fraction mode.
+    ///
+    /// * `on` - true to pulse, false to go back to the last fraction.
+    ///
+    /// # Post-conditions
+    /// At most one pulse timeout is alive at a time; turning it off removes
+    /// the source rather than leaving it firing on a hidden page.
+    fn set_pulsing(&self, on: bool) {
+        if let Some(source) = self.pulse_source.borrow_mut().take() {
+            source.remove();
+        }
+        if !on {
+            return;
+        }
+        self.progress_bar.pulse();
+        let progress_bar = self.progress_bar.clone();
+        let source = glib::timeout_add_local(std::time::Duration::from_millis(120), move || {
+            progress_bar.pulse();
+            glib::ControlFlow::Continue
+        });
+        *self.pulse_source.borrow_mut() = Some(source);
+    }
+
+    /// Renders a failed install: the log is opened and grown, and every place
+    /// the full log was persisted is named — the on-screen buffer dies with
+    /// the session, the files do not.
+    ///
+    /// * `message` - user-facing reason.
+    ///
+    /// # Post-conditions
+    /// The message is visible in full (wrapped, scrollable, selectable), the
+    /// log expander is open and taller than during the install, and
+    /// `log_path_label` is visible iff at least one persisted copy exists.
+    fn show_failure(&self, message: &str) {
+        self.status_label.set_label(&tr("Installation failed"));
+        self.result_icon
+            .set_icon_name(Some("dialog-error-symbolic"));
+        self.result_label.set_label(message);
+        self.log_expander.set_expanded(true);
+        self.log_scroller.set_min_content_height(260);
+
+        let mut paths = Vec::new();
+        if let Some(live) = install_log::path() {
+            paths.push(format!("{} {live}", tr("Full log:")));
+        }
+        if std::path::Path::new(install_log::TARGET_LOG).exists() {
+            paths.push(format!(
+                "{} {}",
+                tr("Copy kept on the target disk:"),
+                install_log::TARGET_LOG
+            ));
+        }
+        if paths.is_empty() {
+            self.log_path_label.set_visible(false);
+        } else {
+            self.log_path_label.set_label(&paths.join("\n"));
+            self.log_path_label.set_visible(true);
         }
     }
 }
