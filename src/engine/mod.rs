@@ -12,10 +12,21 @@ use async_trait::async_trait;
 
 #[derive(Debug, Clone)]
 pub enum ProgressEvent {
-    Started { task: String },
+    Started {
+        task: String,
+    },
     Log(String),
-    Progress { fraction: f64 },
-    Finished { task: String },
+    Progress {
+        fraction: f64,
+    },
+    /// Switches the progress bar between pulsing and fraction mode. Sent by
+    /// the long tasks that cannot report a fraction of their own
+    /// (`NixosInstallTask`), so the bar does not sit frozen for the whole
+    /// `nixos-install`.
+    Indeterminate(bool),
+    Finished {
+        task: String,
+    },
 }
 
 pub type ProgressSink = async_channel::Sender<ProgressEvent>;
