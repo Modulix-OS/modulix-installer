@@ -162,7 +162,10 @@ impl DiskBackend for Udisks2Backend {
             // partition's Block object, no `Partition` interface. A blank
             // disk still has this object — it just lacks `PartitionTable`
             // (previously required by this filter, which made vendor-fresh
-            // drives invisible — see the partitioning plan, step 7).
+            // drives invisible — see the partitioning plan, step 7). Same
+            // trap for the size below: `Drive.Size` is 0 on an NVMe with no
+            // partition table, so the capacity comes from this Block object,
+            // which is correct whether or not the disk carries a table.
             if ifaces
                 .keys()
                 .any(|i| i.as_str() == "org.freedesktop.UDisks2.Partition")
@@ -182,10 +185,24 @@ impl DiskBackend for Udisks2Backend {
                 .and_then(|d| prop(d, "org.freedesktop.UDisks2.Drive", "Model"))
                 .and_then(|v| v.clone().try_into().ok())
                 .unwrap_or_else(|| "Unknown disk".to_string());
-            let size_bytes = drive_ifaces
-                .and_then(|d| prop(d, "org.freedesktop.UDisks2.Drive", "Size"))
+            // `Drive.Size` is the fallback, not the source: it stays 0 on a
+            // vendor-fresh NVMe, but it is still the only one populated for a
+            // card reader whose media is gone (`Block.Size` is 0 there).
+            let size_bytes = prop(ifaces, "org.freedesktop.UDisks2.Block", "Size")
                 .and_then(|v| v.clone().try_into().ok())
+                .filter(|size: &u64| *size > 0)
+                .or_else(|| {
+                    drive_ifaces
+                        .and_then(|d| prop(d, "org.freedesktop.UDisks2.Drive", "Size"))
+                        .and_then(|v| v.clone().try_into().ok())
+                })
                 .unwrap_or(0u64);
+            // Neither source knows a size: an empty card reader or a stub
+            // device. It can be neither displayed nor planned against, so it
+            // must not reach the target-disk dropdown.
+            if size_bytes == 0 {
+                continue;
+            }
             let is_removable = drive_ifaces
                 .and_then(|d| prop(d, "org.freedesktop.UDisks2.Drive", "Removable"))
                 .and_then(|v| v.clone().try_into().ok())
