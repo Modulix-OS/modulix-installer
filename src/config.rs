@@ -195,11 +195,14 @@ impl DesktopEnvironment {
             DesktopEnvironment::Gnome => &[
                 "nautilus",
                 "gnome-console",
-                "evince",
+                "papers",
                 "loupe",
                 "file-roller",
                 "gnome-text-editor",
-                "celluloid",
+                "decibels",
+                "showtime",
+                "gnome-calculator",
+                "baobab",
             ],
             DesktopEnvironment::Plasma => &[
                 "kdePackages.dolphin",
