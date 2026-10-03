@@ -1,8 +1,6 @@
-use crate::engine::{ProgressEvent, ProgressSink, Task, TaskCtx};
+use crate::engine::{LUKS_MAPPER_NAME as MAPPER_NAME, ProgressEvent, ProgressSink, Task, TaskCtx};
 use crate::mx;
 use async_trait::async_trait;
-
-const MAPPER_NAME: &str = "modulixroot";
 
 /// `luksFormat` + `luksOpen` on the root partition, run right after
 /// `PartitionTask` and before `FormatTask`/`MountTask` — the corrected

@@ -1,10 +1,6 @@
-use crate::engine::{ProgressEvent, ProgressSink, Task, TaskCtx};
+use crate::engine::{INSTALL_ROOT, ProgressEvent, ProgressSink, Task, TaskCtx};
 use crate::mx;
 use async_trait::async_trait;
-
-/// modulix-core-utils' `rebuild_config` hardcodes `--root /mnt`, so the
-/// target must be mounted here, not a configurable path.
-const INSTALL_ROOT: &str = "/mnt";
 
 pub struct MountTask;
 

@@ -19,6 +19,15 @@ pub enum ProgressEvent {
 
 pub type ProgressSink = async_channel::Sender<ProgressEvent>;
 
+/// Where the target system is mounted. Not configurable: the whole
+/// modulix-core-utils install path (and `nixos-install --root`) is pinned to
+/// this prefix.
+pub const INSTALL_ROOT: &str = "/mnt";
+
+/// `dm-crypt` mapper name the root LUKS container is opened as, and the
+/// `boot.initrd.luks.devices` entry the installed system unlocks it through.
+pub const LUKS_MAPPER_NAME: &str = "modulixroot";
+
 /// Partition paths and per-partition format decisions handed off between
 /// pipeline stages. `PartitionTask` fills these in from `engine::plan`'s
 /// output; `EncryptTask` may rewrite `root_partition` to a `/dev/mapper/…`
