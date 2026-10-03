@@ -25,7 +25,7 @@ impl fmt::Display for Error {
             Error::Backend(msg) => write!(f, "backend error: {msg}"),
             Error::Io(e) => write!(f, "I/O error: {e}"),
             Error::Utf8(e) => write!(f, "invalid UTF-8: {e}"),
-            Error::CoreUtils(e) => write!(f, "modulix-core-utils error: {e:?}"),
+            Error::CoreUtils(e) => write!(f, "modulix-core-utils error: {e}"),
             Error::Zbus(e) => write!(f, "D-Bus error: {e}"),
             Error::ZbusFdo(e) => write!(f, "D-Bus error: {e}"),
         }
@@ -65,3 +65,20 @@ impl From<zbus::fdo::Error> for Error {
 }
 
 pub type Result<T> = std::result::Result<T, Error>;
+
+/// Renders an [`Error`] as a user-facing string.
+///
+/// Honours the [`Error::Backend`] convention: its payload is a bare gettext
+/// msgid, so it goes through `tr()`; every other variant is rendered with its
+/// [`fmt::Display`] impl, which is already prefixed with its kind.
+///
+/// * `e` - the error to render.
+///
+/// # Returns
+/// A translated, human-readable message. Never empty, never truncated.
+pub fn render(e: &Error) -> String {
+    match e {
+        Error::Backend(msgid) => crate::i18n::tr(msgid),
+        other => other.to_string(),
+    }
+}

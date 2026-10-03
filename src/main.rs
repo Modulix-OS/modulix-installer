@@ -15,8 +15,12 @@ use gtk::prelude::*;
 fn main() -> glib::ExitCode {
     i18n::init();
 
-    let args: Vec<String> = std::env::args().collect();
-    let windowed = args.iter().any(|a| a == "--windowed");
+    // libadwaita, the stylesheet and the resource bundle come up before the
+    // backends: the fatal path below has to build real GTK widgets, and under
+    // the kiosk session there is no terminal to fall back to.
+    adw::init().expect("failed to initialize libadwaita");
+    gio::resources_register_include!("modulixos-installer.gresource")
+        .expect("failed to load bundled resources");
 
     let runtime = tokio::runtime::Builder::new_multi_thread()
         .enable_all()
@@ -27,16 +31,16 @@ fn main() -> glib::ExitCode {
     // simulated mode to degrade into: an installer that simulates a whole
     // install and then reports success is worse than one that refuses to run.
     let backends = match runtime.block_on(backend::Backends::new()) {
-        Ok(backends) => backends,
+        Ok(backends) => Ok(backends),
         Err(e) => {
-            eprintln!("modulixos-installer: a required system service could not be reached: {e}");
-            std::process::exit(1);
+            let reason = mx::render(&e);
+            eprintln!(
+                "modulixos-installer: a required system service could not be reached: {reason}"
+            );
+            Err(reason)
         }
     };
-
-    adw::init().expect("failed to initialize libadwaita");
-    gio::resources_register_include!("modulixos-installer.gresource")
-        .expect("failed to load bundled resources");
+    let fatal = backends.is_err();
 
     let application = adw::Application::builder()
         .application_id("org.modulix.Installer")
@@ -47,8 +51,14 @@ fn main() -> glib::ExitCode {
         if let Some(display) = gtk::gdk::Display::default() {
             gtk::IconTheme::for_display(&display).add_resource_path("/org/modulix/installer/icons");
         }
-        app::build_window(gtk_app, backends.clone(), runtime_handle.clone(), windowed);
+        match &backends {
+            Ok(backends) => {
+                app::build_window(gtk_app, backends.clone(), runtime_handle.clone());
+            }
+            Err(reason) => app::build_fatal_window(gtk_app, reason),
+        }
     });
 
-    application.run_with_args(&[] as &[&str])
+    let code = application.run_with_args(&[] as &[&str]);
+    if fatal { glib::ExitCode::FAILURE } else { code }
 }

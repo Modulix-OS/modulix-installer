@@ -33,12 +33,12 @@ flowboxchild:hover, flowboxchild:focus {
 }
 ";
 
-pub fn build_window(
-    app: &adw::Application,
-    backends: Backends,
-    runtime: tokio::runtime::Handle,
-    windowed: bool,
-) {
+/// Builds and presents the installer window, fullscreen.
+///
+/// * `app` - the running application.
+/// * `backends` - subsystem backends every step and task acts through.
+/// * `runtime` - tokio handle backend work is spawned on.
+pub fn build_window(app: &adw::Application, backends: Backends, runtime: tokio::runtime::Handle) {
     if let Some(display) = gtk::gdk::Display::default() {
         let provider = gtk::CssProvider::new();
         provider.load_from_string(RAIL_CSS);
@@ -337,9 +337,75 @@ pub fn build_window(
         *advance_hook.borrow_mut() = Box::new(move || advance());
     }
 
-    if !windowed {
-        window.fullscreen();
-    }
+    window.fullscreen();
+    window.present();
+}
+
+/// Builds and presents the only window shown when a backend could not be
+/// reached: a fullscreen error page whose single action is to quit.
+///
+/// A dialog would not do. An `adw::AlertDialog` needs a parent window, so it
+/// could only ever appear on top of a wizard that has no working backend
+/// behind it — which is exactly how a failed connection used to end up
+/// simulating a whole install.
+///
+/// * `app` - the running application; quitting it is the only way out.
+/// * `reason` - the full, already-rendered failure message.
+///
+/// # Post-conditions
+/// The message is shown in full: selectable, wrapped on word or character
+/// boundaries (D-Bus errors and device paths carry no spaces) and scrollable
+/// rather than clipped.
+pub fn build_fatal_window(app: &adw::Application, reason: &str) {
+    let message = gtk::Label::builder()
+        .label(reason)
+        .selectable(true)
+        .wrap(true)
+        .wrap_mode(gtk::pango::WrapMode::WordChar)
+        .xalign(0.0)
+        .css_classes(["monospace"])
+        .build();
+    let scroller = gtk::ScrolledWindow::builder()
+        .child(&message)
+        .propagate_natural_height(true)
+        .max_content_height(360)
+        .hscrollbar_policy(gtk::PolicyType::Never)
+        .build();
+    scroller.add_css_class("card");
+
+    let quit = gtk::Button::builder()
+        .label(tr("Quit"))
+        .halign(gtk::Align::Center)
+        .css_classes(["destructive-action", "pill"])
+        .build();
+
+    let body = gtk::Box::new(gtk::Orientation::Vertical, 18);
+    body.append(&scroller);
+    body.append(&quit);
+
+    let status = adw::StatusPage::builder()
+        .icon_name("dialog-error-symbolic")
+        .title(tr("The installer cannot start"))
+        .description(tr("A required system service could not be reached."))
+        .child(&body)
+        .build();
+
+    let toolbar = adw::ToolbarView::new();
+    toolbar.add_top_bar(&adw::HeaderBar::new());
+    toolbar.set_content(Some(&status));
+
+    let window = adw::ApplicationWindow::builder()
+        .application(app)
+        .title(tr("Modulix OS Installer"))
+        .content(&toolbar)
+        .build();
+
+    quit.connect_clicked({
+        let app = app.clone();
+        move |_| app.quit()
+    });
+
+    window.fullscreen();
     window.present();
 }
 
