@@ -8,6 +8,7 @@ mod mount;
 mod nixos_install;
 mod partition;
 mod post_install;
+mod set_passwords;
 
 pub use efi_entry::EfiEntryTask;
 pub use encrypt::EncryptTask;
@@ -19,6 +20,7 @@ pub use mount::MountTask;
 pub use nixos_install::NixosInstallTask;
 pub use partition::PartitionTask;
 pub use post_install::PostInstallTask;
+pub use set_passwords::SetPasswordsTask;
 
 use crate::engine::{ProgressEvent, ProgressSink};
 

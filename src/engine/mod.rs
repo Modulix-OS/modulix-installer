@@ -168,6 +168,7 @@ pub fn full_pipeline() -> Pipeline {
         Box::new(tasks::ExtraConfigTask),
         Box::new(tasks::NixosInstallTask),
         Box::new(tasks::EfiEntryTask),
+        Box::new(tasks::SetPasswordsTask),
         Box::new(tasks::PostInstallTask),
     ])
 }
