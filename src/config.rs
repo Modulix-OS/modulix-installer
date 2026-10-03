@@ -116,8 +116,16 @@ impl Default for UserConfig {
 pub enum DesktopEnvironment {
     #[default]
     Gnome,
+    /// Kept for `as_nix_str`/`screenshots`, not yet offered by
+    /// [`DesktopEnvironment::ALL`] — hence never constructed today.
+    #[allow(dead_code)]
     Plasma,
+    /// Same as [`DesktopEnvironment::Plasma`], and additionally unsupported
+    /// by `modulix-core-utils` (see `as_nix_str`).
+    #[allow(dead_code)]
     Xfce,
+    /// Same as [`DesktopEnvironment::Plasma`].
+    #[allow(dead_code)]
     Lxqt,
 }
 
@@ -129,11 +137,11 @@ impl DesktopEnvironment {
     ];
 
     /// Matches the `desktop` string modulix-core-utils' `init::configuration_nix` expects.
-    /// Consumed by `engine::tasks::InitConfigTask` once `init_all` lands (iteration 2).
-    /// NOTE: `modulix-core-utils/src/init.rs:168` only validates
-    /// `"gnome" | "plasma" | "lxqt"` today — `"xfce"` needs a branch added
-    /// there before iteration 2 wires this in for real.
-    #[allow(dead_code)]
+    /// Consumed by `engine::tasks::InitConfigTask`, which maps it to
+    /// `modulix_core_utils::init::Desktop`.
+    /// NOTE: `modulix-core-utils` only validates `"gnome" | "plasma" | "lxqt"`
+    /// today, so `Desktop::parse` rejects `"xfce"` — that branch has to be
+    /// added there before `DesktopEnvironment::Xfce` can be offered.
     pub fn as_nix_str(self) -> &'static str {
         match self {
             DesktopEnvironment::Gnome => "gnome",
