@@ -140,5 +140,17 @@
           modules = [ ./nix/iso.nix ];
         };
       }) supportedSystems);
+
+      apps = forAllSystems (system:
+        let
+          pkgs = pkgsFor system;
+        in {
+          vm = {
+            type = "app";
+            program = "${pkgs.callPackage ./nix/vm.nix {
+              isoImage = self.packages.${system}.iso;
+            }}/bin/modulixos-vm";
+          };
+        });
     };
 }
