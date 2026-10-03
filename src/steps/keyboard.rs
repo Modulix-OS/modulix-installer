@@ -18,6 +18,7 @@ pub struct KeyboardStep {
     layout_row: adw::ActionRow,
     variant_row: adw::ActionRow,
     test_row: adw::ActionRow,
+    error_banner: adw::Banner,
     selected_layout: Rc<RefCell<String>>,
     selected_variant: Rc<RefCell<String>>,
     validity: ValidityTracker,
@@ -53,16 +54,37 @@ impl KeyboardStep {
 
         let page = adw::PreferencesPage::new();
         page.add(&group);
+        page.set_vexpand(true);
+
+        // A layout that fails to apply used to be swallowed silently, which is
+        // exactly what hid the fact that `setxkbmap` never worked under the
+        // Wayland kiosk session.
+        let error_banner = adw::Banner::builder().revealed(false).build();
+
+        let container = gtk::Box::new(gtk::Orientation::Vertical, 0);
+        container.append(&error_banner);
+        container.append(&page);
 
         let apply_layout = {
             let backend = backends.locale.clone();
             let runtime = runtime.clone();
+            let error_banner = error_banner.clone();
             move |layout: String, variant: String| {
                 let backend = backend.clone();
+                let error_banner = error_banner.clone();
                 bridge::spawn(
                     &runtime,
                     async move { backend.apply_keyboard_layout(&layout, &variant).await },
-                    |_| {},
+                    move |result| match result {
+                        Ok(()) => error_banner.set_revealed(false),
+                        Err(e) => {
+                            eprintln!("failed to apply the keyboard layout: {e}");
+                            error_banner.set_title(&tr(
+                                "This layout could not be applied to the running session.",
+                            ));
+                            error_banner.set_revealed(true);
+                        }
+                    },
                 );
             }
         };
@@ -145,8 +167,9 @@ impl KeyboardStep {
         }
 
         Self {
-            widget: page.upcast(),
+            widget: container.upcast(),
             group,
+            error_banner,
             layout_row,
             variant_row,
             test_row,
@@ -194,5 +217,10 @@ impl Step for KeyboardStep {
         self.layout_row.set_title(&tr("Layout"));
         self.variant_row.set_title(&tr("Variant"));
         self.test_row.set_title(&tr("Typing test"));
+        if self.error_banner.is_revealed() {
+            self.error_banner.set_title(&tr(
+                "This layout could not be applied to the running session.",
+            ));
+        }
     }
 }

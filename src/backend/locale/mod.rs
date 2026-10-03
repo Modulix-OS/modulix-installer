@@ -48,7 +48,9 @@ pub trait LocaleBackend: Send + Sync {
     async fn list_locales(&self) -> mx::Result<Vec<LocaleEntry>>;
     async fn list_timezones(&self) -> mx::Result<Vec<TimezoneEntry>>;
     async fn list_keyboard_layouts(&self) -> mx::Result<Vec<KeyboardLayout>>;
-    /// Best-effort live preview of a layout/variant (e.g. `setxkbmap`) for the
-    /// keyboard step's typing test — failure here must never block the wizard.
+    /// Applies a layout/variant to the running session (the kiosk compositor's
+    /// IPC), so the typing test — and every password field after it — match
+    /// what the user picked. Failure must never block the wizard, but it is
+    /// surfaced by the keyboard step rather than swallowed.
     async fn apply_keyboard_layout(&self, layout: &str, variant: &str) -> mx::Result<()>;
 }
