@@ -45,11 +45,9 @@
               usbutils
               cpuid
 
-              # runtime tools the partitioning step 7 pipeline shells out to
-              # (backend/disk/udisks2.rs, engine/tasks/*):
-              # these must become *runtime* dependencies of the ISO module
-              # (mxpkgs/installer/default.nix) once it switches off Calamares,
-              # same as webkitgtk_6_0 above.
+              # runtime tools the partitioning step 6 pipeline shells out to
+              # (backend/disk/udisks2.rs, engine/tasks/*). The ISO carries them
+              # through nix/kiosk-module.nix, same as webkitgtk_6_0 above.
               ntfs3g # ntfsresize, AlongsideWindows shrink preflight
               gptfdisk # udisks2's GPT partition-table backend
               util-linux # mkswap/swapon, mount/umount
@@ -71,6 +69,15 @@
               tzdata
               glibcLocales
               xkeyboard_config
+
+              # missing from PATH in a bare devShell too — needed by
+              # backend/locale (dumpe2fs), backend/locale/system.rs (swaymsg,
+              # a no-op outside the kiosk session) and backend/a11y (orca +
+              # speechd)
+              e2fsprogs
+              sway
+              orca
+              speechd
             ];
             RUST_SRC_PATH = "${pkgs.rust.packages.stable.rustPlatform.rustLibSrc}";
             TZDIR = "${pkgs.tzdata}/share/zoneinfo";
