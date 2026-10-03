@@ -15,19 +15,35 @@ pub struct Slide {
 /// Arms a one-shot timer that advances `carousel` by one page (looping) and
 /// then re-arms itself via `connect_page_changed` on the way back in
 /// (see [`Slideshow::new`]) — as long as `running` still says so.
+///
+/// * `carousel` - carousel to advance; held weakly, so a destroyed widget just
+///   stops the timer.
+/// * `generation` - shared cancellation token. Bumped here, and captured by the
+///   timeout closure: a closure whose captured value no longer matches the cell
+///   has been superseded (re-armed elsewhere, or cancelled by
+///   [`Slideshow::stop`]) and returns without advancing.
+/// * `running` - false while the slideshow is stopped; a timer that wakes up in
+///   that state does nothing.
+///
+/// # Post-conditions
+/// At most one *effective* timer exists. Superseded timers are not removed —
+/// `glib::SourceId::remove` panics on a source glib already destroyed when the
+/// closure returned `ControlFlow::Break`, and that panic crosses a C trampoline
+/// and aborts the process — they simply no-op on their next (and last) wake-up.
 fn arm_timer(
     carousel: &adw::Carousel,
-    timer: &std::rc::Rc<std::cell::Cell<Option<glib::SourceId>>>,
+    generation: &std::rc::Rc<std::cell::Cell<u64>>,
     running: &std::rc::Rc<std::cell::Cell<bool>>,
 ) {
     use adw::prelude::*;
-    if let Some(old) = timer.take() {
-        old.remove();
-    }
+    let token = generation.get().wrapping_add(1);
+    generation.set(token);
+
     let carousel_weak = carousel.downgrade();
+    let generation = generation.clone();
     let running = running.clone();
-    let id = glib::timeout_add_seconds_local(AUTO_ADVANCE_SECONDS, move || {
-        if !running.get() {
+    glib::timeout_add_seconds_local(AUTO_ADVANCE_SECONDS, move || {
+        if !running.get() || generation.get() != token {
             return glib::ControlFlow::Break;
         }
         let Some(carousel) = carousel_weak.upgrade() else {
@@ -40,7 +56,6 @@ fn arm_timer(
         }
         glib::ControlFlow::Break
     });
-    timer.set(Some(id));
 }
 
 pub struct Slideshow {
@@ -48,7 +63,8 @@ pub struct Slideshow {
     carousel: adw::Carousel,
     slides: &'static [Slide],
     labels: Vec<(gtk::Label, gtk::Label)>,
-    timer: std::rc::Rc<std::cell::Cell<Option<glib::SourceId>>>,
+    /// Cancellation token for the pending auto-advance timer — see [`arm_timer`].
+    generation: std::rc::Rc<std::cell::Cell<u64>>,
     running: std::rc::Rc<std::cell::Cell<bool>>,
 }
 
@@ -107,25 +123,22 @@ impl Slideshow {
         outer.append(&carousel);
         outer.append(&dots);
 
-        let timer: std::rc::Rc<std::cell::Cell<Option<glib::SourceId>>> =
-            std::rc::Rc::new(std::cell::Cell::new(None));
+        let generation = std::rc::Rc::new(std::cell::Cell::new(0u64));
         let running = std::rc::Rc::new(std::cell::Cell::new(false));
 
         {
-            let timer = timer.clone();
+            let generation = generation.clone();
             let running = running.clone();
             let carousel_weak = carousel.downgrade();
             carousel.connect_page_changed(move |_carousel, _idx| {
-                if let Some(old) = timer.take() {
-                    old.remove();
-                }
                 // Any page change — manual or auto — re-arms the timer, so a
                 // swipe/click/scroll pushes the next auto-advance out by a
-                // full interval instead of firing right away.
+                // full interval instead of firing right away. The generation
+                // bump inside `arm_timer` invalidates the previous one.
                 if running.get()
                     && let Some(carousel) = carousel_weak.upgrade()
                 {
-                    arm_timer(&carousel, &timer, &running);
+                    arm_timer(&carousel, &generation, &running);
                 }
             });
         }
@@ -135,7 +148,7 @@ impl Slideshow {
             carousel,
             slides,
             labels,
-            timer,
+            generation,
             running,
         }
     }
@@ -145,22 +158,24 @@ impl Slideshow {
     }
 
     /// Arms the 8s auto-advance timer. Idempotent: calling it again just
-    /// replaces the pending timer.
+    /// supersedes the pending timer.
     pub fn start(&self) {
         if self.slides.len() <= 1 {
             return;
         }
         self.running.set(true);
-        arm_timer(&self.carousel, &self.timer, &self.running);
+        arm_timer(&self.carousel, &self.generation, &self.running);
     }
 
-    /// Desarms the auto-advance timer — call when the installation finishes
+    /// Disarms the auto-advance timer — call when the installation finishes
     /// or the page is left.
+    ///
+    /// # Post-conditions
+    /// No further page advance happens. A timer already pending stays alive for
+    /// up to `AUTO_ADVANCE_SECONDS` but wakes up into a no-op.
     pub fn stop(&self) {
         self.running.set(false);
-        if let Some(old) = self.timer.take() {
-            old.remove();
-        }
+        self.generation.set(self.generation.get().wrapping_add(1));
     }
 
     pub fn retranslate(&self) {
