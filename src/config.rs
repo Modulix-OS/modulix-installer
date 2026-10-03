@@ -156,12 +156,16 @@ impl DesktopEnvironment {
     /// points at the same per-DE SVG — swap individual entries for real
     /// shots later, the carousel length follows this table.
     pub fn screenshots(self) -> &'static [&'static str] {
-        const GNOME_SHOT: &str = "/org/modulix/installer/images/screenshots/gnome.svg";
+        const GNOME_SHOT: [&str; 3] = [
+            "/org/modulix/installer/images/screenshots/gnome1.jpg",
+            "/org/modulix/installer/images/screenshots/gnome2.jpg",
+            "/org/modulix/installer/images/screenshots/gnome3.jpg",
+        ];
         const PLASMA_SHOT: &str = "/org/modulix/installer/images/screenshots/plasma.svg";
         const XFCE_SHOT: &str = "/org/modulix/installer/images/screenshots/xfce.svg";
         const LXQT_SHOT: &str = "/org/modulix/installer/images/screenshots/lxqt.svg";
         match self {
-            DesktopEnvironment::Gnome => &[GNOME_SHOT, GNOME_SHOT, GNOME_SHOT],
+            DesktopEnvironment::Gnome => &GNOME_SHOT,
             DesktopEnvironment::Plasma => &[PLASMA_SHOT, PLASMA_SHOT, PLASMA_SHOT],
             DesktopEnvironment::Xfce => &[XFCE_SHOT, XFCE_SHOT, XFCE_SHOT],
             DesktopEnvironment::Lxqt => &[LXQT_SHOT, LXQT_SHOT, LXQT_SHOT],
