@@ -2,7 +2,7 @@
 //! live effects on the installer itself. `high-contrast`/`large-text` apply
 //! immediately (CSS provider / `gtk-xft-dpi`) because they're needed to use
 //! the rest of the wizard; `screen-magnifier`/`sticky-keys` are compositor
-//! level and `cage` doesn't expose them to us, so they're only best-effort
+//! level and the kiosk compositor doesn't expose them to us, so they're only best-effort
 //! `gsettings` calls (useful on a dev machine under GNOME) plus a value
 //! carried into `InstallConfig` for the system being installed.
 

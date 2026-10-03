@@ -4,7 +4,7 @@ use async_trait::async_trait;
 use tokio::sync::Mutex;
 
 /// `true` only under a full GNOME session: no GNOME Shell/dconf daemon is
-/// running under `cage`, so a missing `gsettings` binary — or one present
+/// running under the kiosk session, so a missing `gsettings` binary — or one present
 /// but with nothing to talk to — is the expected case, not an error.
 fn binary_in_path(name: &str) -> bool {
     let Some(paths) = std::env::var_os("PATH") else {

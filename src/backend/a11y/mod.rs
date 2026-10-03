@@ -7,7 +7,7 @@ use async_trait::async_trait;
 
 /// Narrator + visual/keyboard accessibility toggles (step 1).
 /// `set_narrator_enabled` is the one method that actually does something
-/// under `cage` (spawns/kills orca). The other four are best-effort
+/// under the kiosk session (spawns/kills orca). The other four are best-effort
 /// `gsettings` calls against the GNOME a11y schemas: on a dev machine under
 /// GNOME they make the desktop follow the installer's toggles, but under the
 /// kiosk session there's no GNOME Shell/dconf daemon listening, so
