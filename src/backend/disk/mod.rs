@@ -1,13 +1,13 @@
-mod fake;
 pub mod layout;
 pub mod ntfs;
+/// Disk fixtures driving `engine::plan`'s scenario matrix. Test-only: they
+/// used to back the `--fake-disk=` CLI flag, which no longer exists.
+#[cfg(test)]
 pub mod scenario;
 mod udisks2;
 pub mod usage;
 
-pub use fake::FakeDiskBackend;
 pub use ntfs::{NtfsBlocker, NtfsProbe};
-pub use scenario::DiskScenario;
 pub use udisks2::Udisks2Backend;
 
 use crate::mx;

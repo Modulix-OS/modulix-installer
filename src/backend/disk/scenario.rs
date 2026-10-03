@@ -1,6 +1,7 @@
-//! Disk fixtures shared by `#[cfg(test)]` and `--fake-disk=<scenario>`, so
-//! the same scenario a test asserts against can be clicked through in the UI
-//! by hand. See the partitioning plan (step 7) for the table these mirror.
+//! Disk fixtures for `engine::plan`'s scenario matrix. Test-only: they used
+//! to double as the `--fake-disk=<scenario>` fixtures of a simulation mode the
+//! installer no longer has. See the partitioning plan (step 7) for the table
+//! these mirror.
 
 use super::ntfs::{NtfsBlocker, NtfsProbe};
 use super::{DiskInfo, PartitionInfo, PartitionKind, TableKind};
@@ -30,40 +31,6 @@ pub enum DiskScenario {
 }
 
 impl DiskScenario {
-    pub const ALL: [DiskScenario; 11] = [
-        DiskScenario::Linux,
-        DiskScenario::Empty,
-        DiskScenario::Windows,
-        DiskScenario::WindowsFull,
-        DiskScenario::BitLocker,
-        DiskScenario::DirtyNtfs,
-        DiskScenario::FreeSpaceTail,
-        DiskScenario::Fragmented,
-        DiskScenario::Tiny,
-        DiskScenario::MultiDisk,
-        DiskScenario::Mbr,
-    ];
-
-    pub fn name(self) -> &'static str {
-        match self {
-            DiskScenario::Linux => "linux",
-            DiskScenario::Empty => "empty",
-            DiskScenario::Windows => "windows",
-            DiskScenario::WindowsFull => "windows-full",
-            DiskScenario::BitLocker => "bitlocker",
-            DiskScenario::DirtyNtfs => "dirty-ntfs",
-            DiskScenario::FreeSpaceTail => "freespace-tail",
-            DiskScenario::Fragmented => "fragmented",
-            DiskScenario::Tiny => "tiny",
-            DiskScenario::MultiDisk => "multi-disk",
-            DiskScenario::Mbr => "mbr",
-        }
-    }
-
-    pub fn parse(s: &str) -> Option<Self> {
-        Self::ALL.into_iter().find(|scenario| scenario.name() == s)
-    }
-
     pub fn fixture(self) -> DiskFixture {
         match self {
             DiskScenario::Linux => linux(),
@@ -85,10 +52,6 @@ pub struct DiskFixture {
     pub disks: Vec<DiskInfo>,
     pub partitions: Vec<PartitionInfo>,
     pub ntfs: HashMap<String, NtfsProbe>,
-    /// Fixture data for `FakeDiskBackend::probe_usage` — `(partition_path,
-    /// used_bytes)`, mirroring what `dumpe2fs`/`ntfsresize` would report on
-    /// real hardware. Not consulted by `engine::plan` itself.
-    pub usage: HashMap<String, u64>,
 }
 
 const DISK0: &str = "/dev/fake0";
@@ -155,8 +118,6 @@ fn linux() -> DiskFixture {
         Some("Root"),
         Some(PartitionKind::LinuxRoot),
     );
-    let mut usage = HashMap::new();
-    usage.insert(root.path.clone(), gib(150));
     DiskFixture {
         disks: vec![disk(
             DISK0,
@@ -167,7 +128,6 @@ fn linux() -> DiskFixture {
         )],
         partitions: vec![esp, root],
         ntfs: HashMap::new(),
-        usage,
     }
 }
 
@@ -179,7 +139,6 @@ fn empty() -> DiskFixture {
         }],
         partitions: vec![],
         ntfs: HashMap::new(),
-        usage: HashMap::new(),
     }
 }
 
@@ -242,7 +201,6 @@ fn windows(full: bool) -> DiskFixture {
         )],
         partitions: vec![esp, msr, ntfs, winre],
         ntfs: probes,
-        usage: HashMap::from([(ntfs_path, ntfs_used_bytes)]),
     }
 }
 
@@ -304,7 +262,6 @@ fn freespace_tail() -> DiskFixture {
         disks: vec![disk(DISK0, "Fake Dual-Boot SSD", disk_size, false, true)],
         partitions: vec![esp, ntfs],
         ntfs: HashMap::new(),
-        usage: HashMap::new(),
     }
 }
 
@@ -408,18 +365,10 @@ fn fragmented() -> DiskFixture {
     );
     let disk_size = tail_start + tail_size + mib(1);
 
-    let usage = HashMap::from([
-        (root.path.clone(), gib(60)),
-        (old_distro.path.clone(), gib(15)),
-        (extra.path.clone(), gib(25)),
-        (data.path.clone(), gib(30)),
-        (tail.path.clone(), gib(1)),
-    ]);
     DiskFixture {
         disks: vec![disk(DISK0, "Fake Fragmented SSD", disk_size, false, false)],
         partitions: vec![esp, root, old_distro, swap, extra, data, tail],
         ntfs: HashMap::new(),
-        usage,
     }
 }
 
@@ -431,7 +380,6 @@ fn tiny() -> DiskFixture {
         }],
         partitions: vec![],
         ntfs: HashMap::new(),
-        usage: HashMap::new(),
     }
 }
 
@@ -516,11 +464,6 @@ fn multi_disk() -> DiskFixture {
     );
     let existing = disk(DISK3, "Fake Existing Linux SSD", gib(120), false, false);
 
-    let usage = HashMap::from([
-        (windows_ntfs.path.clone(), gib(150)),
-        (existing_root.path.clone(), gib(80)),
-    ]);
-
     DiskFixture {
         disks: vec![nvme, usb, windows, existing],
         partitions: vec![
@@ -532,7 +475,6 @@ fn multi_disk() -> DiskFixture {
             existing_root,
         ],
         ntfs: ntfs_probes,
-        usage,
     }
 }
 
@@ -560,6 +502,5 @@ fn mbr() -> DiskFixture {
         }],
         partitions,
         ntfs: HashMap::new(),
-        usage: HashMap::new(),
     }
 }

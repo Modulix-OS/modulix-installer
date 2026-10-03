@@ -342,7 +342,6 @@ pub struct PartitioningStep {
     selected_gap_id: Rc<RefCell<Option<String>>>,
     ram_bytes: Rc<Cell<u64>>,
     uefi: bool,
-    is_fake: bool,
     validity: ValidityTracker,
 }
 
@@ -483,10 +482,6 @@ impl PartitioningStep {
             .child(&gparted_content)
             .halign(gtk::Align::Center)
             .build();
-        if backends.is_fake {
-            gparted_button.set_sensitive(false);
-            gparted_button.set_tooltip_text(Some(&tr("Unavailable with simulated disks")));
-        }
         let manual_box = gtk::Box::new(gtk::Orientation::Vertical, 12);
         manual_box.append(&manual_banner);
         manual_box.append(&manual_editor.widget());
@@ -639,7 +634,6 @@ impl PartitioningStep {
             selected_gap_id: Rc::new(RefCell::new(None)),
             ram_bytes: Rc::new(Cell::new(8u64 * 1024 * 1024 * 1024)),
             uefi,
-            is_fake: backends.is_fake,
             validity: ValidityTracker::blocked(tr("Select a target disk")),
         };
 
@@ -1639,10 +1633,6 @@ impl Step for PartitioningStep {
             "Assign existing partitions or create new ones in free space below. To resize or delete an existing partition, use GParted.",
         ));
         self.gparted_label.set_label(&tr("Partition with GParted…"));
-        if self.is_fake {
-            self.gparted_button
-                .set_tooltip_text(Some(&tr("Unavailable with simulated disks")));
-        }
         self.swap_group.set_title(&tr("Swap"));
         self.swap_row.set_title(&tr("Swap"));
         let swap_selected = self.swap_dropdown.selected();

@@ -1,8 +1,6 @@
 mod cryptsetup;
-mod fake;
 
 pub use cryptsetup::CryptsetupBackend;
-pub use fake::FakeCryptBackend;
 
 use crate::mx;
 use async_trait::async_trait;

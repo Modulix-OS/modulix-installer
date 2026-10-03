@@ -1,13 +1,11 @@
 mod catalog;
 pub(crate) mod display_name;
 mod evdev;
-mod fake;
 mod system;
 mod zonetab;
 
 pub use display_name::{display_name, language_code_of};
 pub use evdev::parse_evdev_xml;
-pub use fake::FakeLocaleBackend;
 pub use system::SystemLocaleBackend;
 pub use zonetab::parse_zone_tab;
 

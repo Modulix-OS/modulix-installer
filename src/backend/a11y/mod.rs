@@ -1,7 +1,5 @@
-mod fake;
 mod orca;
 
-pub use fake::FakeA11yBackend;
 pub use orca::OrcaBackend;
 
 use crate::mx;

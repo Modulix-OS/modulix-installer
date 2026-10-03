@@ -1,7 +1,7 @@
-//! Captive-portal sign-in window (network step). Entirely offline in `--fake`
-//! (see [`builtin_portal_html`]); in the real backend it loads NM's own
+//! Captive-portal sign-in window (network step). Loads NetworkManager's own
 //! connectivity-check URI, which is what actually triggers a captive portal's
-//! redirect.
+//! redirect. When NM exposes no such URI there is no way to know the portal's
+//! address, and [`no_portal_uri_html`] says so instead of pretending.
 //!
 //! Security note (root-in-kiosk): this embeds a third-party-controlled web
 //! page (any café's captive portal) in a process
@@ -18,13 +18,6 @@ use std::cell::Cell;
 use std::rc::Rc;
 use std::sync::Arc;
 use webkit6::prelude::*;
-
-/// `.invalid` is reserved by RFC 2606 and will never resolve, and
-/// `decide-policy` fires *before* any load starts — `.ignore()` guarantees no
-/// socket is ever opened, so the whole flow stays offline in `--fake`. A
-/// custom URI scheme risked being rejected by WebKit before reaching the
-/// policy handler at all.
-const PORTAL_SENTINEL_URI: &str = "http://modulix.invalid/portal-accepted";
 
 pub struct PortalWindow {
     dialog: adw::Dialog,
@@ -52,34 +45,6 @@ impl PortalWindow {
             settings.set_enable_dns_prefetching(false);
             settings.set_enable_developer_extras(false);
             settings.set_javascript_can_open_windows_automatically(false);
-        }
-
-        {
-            let backend = backend.clone();
-            let runtime = runtime.clone();
-            view.connect_decide_policy(move |_view, decision, kind| {
-                if kind != webkit6::PolicyDecisionType::NavigationAction {
-                    return false;
-                }
-                let Some(nav) = decision.downcast_ref::<webkit6::NavigationPolicyDecision>() else {
-                    return false;
-                };
-                let uri = nav
-                    .navigation_action()
-                    .and_then(|action| action.request())
-                    .and_then(|request| request.uri());
-                if uri.as_deref() == Some(PORTAL_SENTINEL_URI) {
-                    decision.ignore();
-                    let backend = backend.clone();
-                    bridge::spawn(
-                        &runtime,
-                        async move { backend.complete_portal().await },
-                        |_| {},
-                    );
-                    return true;
-                }
-                false
-            });
         }
 
         let reload_button = gtk::Button::from_icon_name("view-refresh-symbolic");
@@ -143,7 +108,7 @@ impl PortalWindow {
 
         match page {
             PortalPage::Uri(uri) => view.load_uri(&uri),
-            PortalPage::Builtin => view.load_html(&builtin_portal_html(), None),
+            PortalPage::Builtin => view.load_html(&no_portal_uri_html(), None),
         }
 
         dialog.present(Some(parent));
@@ -165,7 +130,19 @@ impl PortalWindow {
     }
 }
 
-fn builtin_portal_html() -> String {
+/// Page shown for [`PortalPage::Builtin`], i.e. when NetworkManager exposes no
+/// connectivity-check URI.
+///
+/// There is no D-Bus call returning a captive portal's real login address, so
+/// without that URI the installer genuinely cannot open the portal. The page
+/// says exactly that rather than offering a button that would only pretend to
+/// sign in — the window still closes on its own as soon as connectivity
+/// reaches `Full`, however the user got there.
+///
+/// # Returns
+/// A self-contained HTML document. Every translated string is escaped before
+/// interpolation.
+fn no_portal_uri_html() -> String {
     format!(
         r#"<!DOCTYPE html>
 <html>
@@ -173,14 +150,11 @@ fn builtin_portal_html() -> String {
 <body style="font-family: sans-serif; max-width: 32rem; margin: 4rem auto; text-align: center; color: #222;">
 <h1>{title}</h1>
 <p>{body}</p>
-<p><a href="{sentinel}" style="display:inline-block; padding:0.75rem 1.5rem; background:#3584e4; color:#fff; border-radius:6px; text-decoration:none;">{cta}</a></p>
 </body>
 </html>"#,
-        title = glib::markup_escape_text(&tr("Modulix demo captive portal")),
+        title = glib::markup_escape_text(&tr("Captive portal address unknown")),
         body = glib::markup_escape_text(&tr(
-            "This is an offline demo page simulating a Wi-Fi captive portal login screen. Click the button below to simulate signing in and continue the installation."
+            "This network requires signing in through a captive portal, but NetworkManager does not report its address. Sign in from another device on the same network, or pick a different network. This window closes by itself once the connection works."
         )),
-        sentinel = PORTAL_SENTINEL_URI,
-        cta = glib::markup_escape_text(&tr("Sign in")),
     )
 }

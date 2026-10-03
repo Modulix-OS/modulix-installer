@@ -1,7 +1,5 @@
-mod fake;
 mod network_manager;
 
-pub use fake::FakeNetworkBackend;
 pub use network_manager::NetworkManagerBackend;
 
 use crate::mx;
@@ -75,11 +73,6 @@ pub trait NetworkBackend: Send + Sync {
     async fn scan_wifi(&self) -> mx::Result<Vec<WifiAccessPoint>>;
     async fn connect_wifi(&self, request: WifiConnectRequest) -> mx::Result<()>;
     async fn portal_page(&self) -> mx::Result<PortalPage>;
-    /// `--fake`-only hook; no-op for NetworkManager (the real portal login
-    /// itself is what flips connectivity there).
-    async fn complete_portal(&self) -> mx::Result<()> {
-        Ok(())
-    }
 }
 
 fn security_rank(security: WifiSecurity) -> u8 {

@@ -16,42 +16,21 @@ fn main() -> glib::ExitCode {
     i18n::init();
 
     let args: Vec<String> = std::env::args().collect();
-    let fake_disk_arg = args.iter().find_map(|a| a.strip_prefix("--fake-disk="));
-    let fake = args.iter().any(|a| a == "--fake") || fake_disk_arg.is_some();
     let windowed = args.iter().any(|a| a == "--windowed");
-
-    let fake_disk_scenario = match fake_disk_arg {
-        Some(name) => match backend::disk::DiskScenario::parse(name) {
-            Some(scenario) => scenario,
-            None => {
-                let valid: Vec<&str> = backend::disk::DiskScenario::ALL
-                    .iter()
-                    .map(|s| s.name())
-                    .collect();
-                eprintln!(
-                    "unknown --fake-disk scenario {name:?}, expected one of: {}",
-                    valid.join(", ")
-                );
-                std::process::exit(1);
-            }
-        },
-        None => backend::disk::DiskScenario::Linux,
-    };
 
     let runtime = tokio::runtime::Builder::new_multi_thread()
         .enable_all()
         .build()
         .expect("failed to start the tokio runtime");
 
-    let backends = if fake {
-        backend::Backends::fake_with(fake_disk_scenario)
-    } else {
-        match runtime.block_on(backend::Backends::real()) {
-            Ok(backends) => backends,
-            Err(e) => {
-                eprintln!("failed to connect real backends, falling back to --fake: {e}");
-                backend::Backends::fake()
-            }
+    // A failed backend connection is fatal, never a fallback. There is no
+    // simulated mode to degrade into: an installer that simulates a whole
+    // install and then reports success is worse than one that refuses to run.
+    let backends = match runtime.block_on(backend::Backends::new()) {
+        Ok(backends) => backends,
+        Err(e) => {
+            eprintln!("modulixos-installer: a required system service could not be reached: {e}");
+            std::process::exit(1);
         }
     };
 

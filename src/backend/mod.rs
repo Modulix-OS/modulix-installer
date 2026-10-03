@@ -17,41 +17,31 @@ pub struct Backends {
     pub locale: Arc<dyn locale::LocaleBackend>,
     pub a11y: Arc<dyn a11y::A11yBackend>,
     pub crypt: Arc<dyn crypt::CryptBackend>,
-    /// True under `--fake` — gates UI affordances that need a real device
-    /// node to make sense, e.g. step 7's "Partition with GParted…" button
-    /// (`/dev/fake0` doesn't exist for GParted to open).
-    pub is_fake: bool,
 }
 
 impl Backends {
-    pub fn fake() -> Self {
-        Self::fake_with(disk::DiskScenario::Linux)
-    }
-
-    /// Same as [`Backends::fake`], but with the disk backend seeded from a
-    /// named [`disk::DiskScenario`] instead of the default `linux` one —
-    /// what `--fake-disk=<scenario>` selects.
-    pub fn fake_with(scenario: disk::DiskScenario) -> Self {
-        Self {
-            disk: Arc::new(disk::FakeDiskBackend::with_scenario(scenario)),
-            network: Arc::new(net::FakeNetworkBackend::new()),
-            locale: Arc::new(locale::FakeLocaleBackend::new()),
-            a11y: Arc::new(a11y::FakeA11yBackend::new()),
-            crypt: Arc::new(crypt::FakeCryptBackend::new()),
-            is_fake: true,
-        }
-    }
-
-    /// Connects the real backends. Async because disk/network need a D-Bus
+    /// Connects every backend. Async because disk and network need a D-Bus
     /// handshake; call this once at startup via `runtime.block_on`.
-    pub async fn real() -> mx::Result<Self> {
+    ///
+    /// # Post-conditions
+    /// Every field talks to the real subsystem. There is no simulated
+    /// alternative and no fallback: an installer that silently simulates an
+    /// install and then reports success is worse than one that refuses to
+    /// start, so a failure here is fatal — see `main`.
+    ///
+    /// # Returns
+    /// The connected bundle.
+    ///
+    /// # Errors
+    /// Whatever `Udisks2Backend::connect` or `NetworkManagerBackend::connect`
+    /// returned; the three remaining backends are infallible to construct.
+    pub async fn new() -> mx::Result<Self> {
         Ok(Self {
             disk: Arc::new(disk::Udisks2Backend::connect().await?),
             network: Arc::new(net::NetworkManagerBackend::connect().await?),
             locale: Arc::new(locale::SystemLocaleBackend::new()),
             a11y: Arc::new(a11y::OrcaBackend::new()),
             crypt: Arc::new(crypt::CryptsetupBackend::new()),
-            is_fake: false,
         })
     }
 }
