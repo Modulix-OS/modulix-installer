@@ -9,9 +9,13 @@
       url = "github:Modulix-OS/modulix-core-utils";
       flake = false;
     };
+    # Branding only (modulixos/branding.nix + assets/). Deliberately not
+    # `follows`-ing nixpkgs: no mxpkgs package output is ever evaluated here,
+    # so there is no closure to keep in sync.
+    mxpkgs.url = "github:Modulix-OS/mxpkgs";
   };
 
-  outputs = { self, nixpkgs, naersk, modulix-core-utils }:
+  outputs = { self, nixpkgs, naersk, modulix-core-utils, mxpkgs }:
     let
       supportedSystems = [ "x86_64-linux" "aarch64-linux" ];
       forAllSystems = f: builtins.listToAttrs (map (system: {
@@ -113,9 +117,28 @@
             modulixCoreUtilsSrc = modulix-core-utils;
             self = ./.;
           };
+          isoImage = self.nixosConfigurations."modulixos-iso-${system}".config.system.build.isoImage;
         in {
           inherit modulixos-installer;
           default = modulixos-installer;
+          iso = isoImage;
         });
+
+      nixosModules.installer-kiosk = ./nix/kiosk-module.nix;
+
+      nixosConfigurations = builtins.listToAttrs (map (system: {
+        name = "modulixos-iso-${system}";
+        value = nixpkgs.lib.nixosSystem {
+          inherit system;
+          # mxpkgs' modules all call `lib.mkMxDefault`, which only exists on
+          # the extended lib — evaluation fails outright without this.
+          lib = mxpkgs.lib.extendLib nixpkgs.lib;
+          specialArgs = {
+            inherit mxpkgs;
+            installerPkg = self.packages.${system}.modulixos-installer;
+          };
+          modules = [ ./nix/iso.nix ];
+        };
+      }) supportedSystems);
     };
 }
