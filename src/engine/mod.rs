@@ -36,9 +36,19 @@ pub type ProgressSink = async_channel::Sender<ProgressEvent>;
 /// this prefix.
 pub const INSTALL_ROOT: &str = "/mnt";
 
+/// NixOS configuration repository written by `InitConfigTask`, inside the
+/// target root. Passed explicitly as `InitParams::config_dir` so debug and
+/// release builds resolve it identically (`CONFIG_DIRECTORY` otherwise points
+/// at modulix-core-utils' own `test/` tree in debug).
+pub const CONFIG_REPO: &str = "/mnt/etc/modulix-os";
+
 /// `dm-crypt` mapper name the root LUKS container is opened as, and the
 /// `boot.initrd.luks.devices` entry the installed system unlocks it through.
 pub const LUKS_MAPPER_NAME: &str = "modulixroot";
+
+/// Flake attribute `init` writes into `nixosConfigurations`
+/// (modulix-core-utils' private `CONFIG_NAME`).
+pub const CONFIG_FLAKE_ATTR: &str = "default";
 
 /// Partition paths and per-partition format decisions handed off between
 /// pipeline stages. `PartitionTask` fills these in from `engine::plan`'s
@@ -150,13 +160,20 @@ impl Pipeline {
     }
 }
 
-/// The full iteration-2 install pipeline. `InitConfigTask`/`PostInstallTask`
-/// are no-op stubs until `modulix-core-utils` grows `init::init_all` —
-/// wiring them up then is a one-line change inside those tasks.
+/// The full install pipeline.
 ///
-/// `EncryptTask` must run right after `PartitionTask` and before
-/// `FormatTask`/`MountTask` — `luksFormat`/`luksOpen` need the bare
-/// partition, not one that's already been `mkfs`'d and mounted on `/mnt`.
+/// Order constraints:
+/// * `EncryptTask` runs right after `PartitionTask` and before
+///   `FormatTask`/`MountTask` — `luksFormat`/`luksOpen` need the bare
+///   partition, not one already `mkfs`'d and mounted on `/mnt`.
+/// * `InitConfigTask` needs the target mounted, `ExtraConfigTask` needs the
+///   configuration repository it creates, and `NixosInstallTask` needs both
+///   committed.
+/// * `SetPasswordsTask` needs an installed system to `nixos-enter` into, so
+///   it cannot move earlier.
+/// * `EfiEntryTask` needs limine's loader already on the ESP, so it follows
+///   `NixosInstallTask`, and it needs `/mnt` still mounted, so it precedes
+///   `PostInstallTask`.
 pub fn full_pipeline() -> Pipeline {
     Pipeline::new(vec![
         Box::new(tasks::PartitionTask),
