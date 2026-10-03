@@ -165,6 +165,7 @@ pub fn full_pipeline() -> Pipeline {
         Box::new(tasks::MountTask),
         Box::new(tasks::EnrollTpmTask),
         Box::new(tasks::InitConfigTask),
+        Box::new(tasks::ExtraConfigTask),
         Box::new(tasks::PostInstallTask),
     ])
 }

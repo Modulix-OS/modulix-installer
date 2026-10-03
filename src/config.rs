@@ -243,8 +243,7 @@ impl AppPack {
     pub const ALL: [AppPack; 2] = [AppPack::None, AppPack::Base];
 
     /// nixpkgs packages installed on top of the DE. Consumed by
-    /// `engine::tasks::InitConfigTask` once `init_all` lands (iteration 2).
-    #[allow(dead_code)]
+    /// `engine::tasks::ExtraConfigTask`, which renders them into `apps.nix`.
     pub fn packages(self, de: DesktopEnvironment) -> Vec<&'static str> {
         match self {
             AppPack::None => Vec::new(),
