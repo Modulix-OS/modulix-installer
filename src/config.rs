@@ -98,6 +98,9 @@ pub struct UserConfig {
     /// `networking.hostName` of the installed system. Never empty: the user
     /// step seeds it with `"modulixos"` and blocks on an empty field.
     pub hostname: String,
+    /// Login password of both the primary user and root. Never written into
+    /// the NixOS configuration — `engine::tasks::SetPasswordsTask` pipes it
+    /// to `chpasswd` after the install so it never reaches the Nix store.
     pub password: String,
 }
 
