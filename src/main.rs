@@ -19,6 +19,10 @@ fn main() -> glib::ExitCode {
     // backends: the fatal path below has to build real GTK widgets, and under
     // the kiosk session there is no terminal to fall back to.
     adw::init().expect("failed to initialize libadwaita");
+    // Dark is selected here rather than through `GTK_THEME` in the kiosk
+    // module: libadwaita drops its own stylesheet when `GTK_THEME` is set,
+    // leaving the app on GTK4's built-in Adwaita.
+    adw::StyleManager::default().set_color_scheme(adw::ColorScheme::PreferDark);
     gio::resources_register_include!("modulixos-installer.gresource")
         .expect("failed to load bundled resources");
 

@@ -39,7 +39,7 @@ impl A11ySettings {
                 adw::StyleManager::default().set_color_scheme(adw::ColorScheme::ForceLight);
             } else {
                 gtk::style_context_remove_provider_for_display(&display, &provider);
-                adw::StyleManager::default().set_color_scheme(adw::ColorScheme::Default);
+                adw::StyleManager::default().set_color_scheme(adw::ColorScheme::PreferDark);
             }
         });
 
