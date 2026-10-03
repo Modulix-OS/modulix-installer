@@ -3,19 +3,27 @@
 
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
+    naersk.url = "github:nix-community/naersk";
+    naersk.inputs.nixpkgs.follows = "nixpkgs";
+    modulix-core-utils = {
+      url = "github:Modulix-OS/modulix-core-utils";
+      flake = false;
+    };
   };
 
-  outputs = { self, nixpkgs }:
+  outputs = { self, nixpkgs, naersk, modulix-core-utils }:
     let
       supportedSystems = [ "x86_64-linux" "aarch64-linux" ];
       forAllSystems = f: builtins.listToAttrs (map (system: {
         name = system;
         value = f system;
       }) supportedSystems);
+
+      pkgsFor = system: import nixpkgs { inherit system; };
     in {
       devShells = forAllSystems (system:
         let
-          pkgs = import nixpkgs { inherit system; };
+          pkgs = pkgsFor system;
         in {
           default = pkgs.mkShell {
             nativeBuildInputs = with pkgs; [
@@ -94,6 +102,20 @@
             LOCALE_ARCHIVE = "${pkgs.glibcLocales}/lib/locale/locale-archive";
             LOCALE_ARCHIVE_2_27 = "${pkgs.glibcLocales}/lib/locale/locale-archive";
           };
+        });
+
+      packages = forAllSystems (system:
+        let
+          pkgs = pkgsFor system;
+          naerskLib = pkgs.callPackage naersk { };
+          modulixos-installer = pkgs.callPackage ./nix/package.nix {
+            inherit naerskLib;
+            modulixCoreUtilsSrc = modulix-core-utils;
+            self = ./.;
+          };
+        in {
+          inherit modulixos-installer;
+          default = modulixos-installer;
         });
     };
 }
