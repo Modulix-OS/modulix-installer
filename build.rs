@@ -20,20 +20,28 @@ fn main() {
 }
 
 /// Compiles every `po/<lang>.po` into `$OUT_DIR/locale/<lang>/LC_MESSAGES/modulixos-installer.mo`
-/// and points debug builds at that directory (see `src/i18n.rs`) — release
-/// builds bind to the system locale dir instead, same debug/release split as
-/// `modulix-core-utils`' `CONFIG_DIRECTORY`.
+/// and points debug builds at that directory by default (see
+/// `src/i18n.rs::locale_dir()`) — release builds default to the system
+/// locale dir instead, same debug/release split as `modulix-core-utils`'
+/// `CONFIG_DIRECTORY`. Either default can be overridden at runtime via
+/// `MODULIX_LOCALE_DIR` (set by the Nix package wrapper), so this constant
+/// only has to be *right*, never edited by a derivation.
 fn compile_translations() {
     println!("cargo:rerun-if-changed=po");
+    println!("cargo:rerun-if-env-changed=PROFILE");
 
     let out_dir = env::var("OUT_DIR").expect("OUT_DIR set by cargo");
     let locale_dir = Path::new(&out_dir).join("locale");
-    // Emitted unconditionally: i18n.rs's `env!("MODULIX_LOCALE_DIR")` needs
-    // this to exist even if po/ is empty or missing.
-    println!(
-        "cargo:rustc-env=MODULIX_LOCALE_DIR={}",
-        locale_dir.display()
-    );
+
+    let profile = env::var("PROFILE").expect("PROFILE set by cargo");
+    let default_dir = if profile == "release" {
+        "/usr/share/locale".to_string()
+    } else {
+        locale_dir.display().to_string()
+    };
+    // Emitted unconditionally: i18n.rs's `env!("MODULIX_LOCALE_DIR_DEFAULT")`
+    // needs this to exist even if po/ is empty or missing.
+    println!("cargo:rustc-env=MODULIX_LOCALE_DIR_DEFAULT={default_dir}");
 
     let po_dir = Path::new("po");
     if !po_dir.exists() {

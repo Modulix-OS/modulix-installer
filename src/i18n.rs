@@ -39,18 +39,21 @@ use crate::backend::locale::display_name::split_locale_code;
 
 const DOMAIN: &str = "modulixos-installer";
 
-/// Same debug/release split as modulix-core-utils' `CONFIG_DIRECTORY`:
-/// debug builds bind to the `.mo` files `build.rs` compiles from
-/// `po/*.po` into `$OUT_DIR/locale`, so `cargo run` works without installing
-/// anything; release builds use the real system locale dir.
-#[cfg(debug_assertions)]
-const LOCALE_DIR: &str = env!("MODULIX_LOCALE_DIR");
-#[cfg(not(debug_assertions))]
-const LOCALE_DIR: &str = "/usr/share/locale";
+/// Same debug/release split as modulix-core-utils' `CONFIG_DIRECTORY`, but
+/// runtime-overridable: `build.rs` bakes in a default (`$OUT_DIR/locale` for
+/// `cargo run` in debug, `/usr/share/locale` in release) via
+/// `MODULIX_LOCALE_DIR_DEFAULT`, and `MODULIX_LOCALE_DIR` — set by the Nix
+/// package's `wrapProgram` to `$out/share/locale` — overrides it at startup.
+/// This lets the derivation point the release binary at the store path
+/// without `substituteInPlace`-patching a Rust constant.
+fn locale_dir() -> String {
+    std::env::var("MODULIX_LOCALE_DIR")
+        .unwrap_or_else(|_| env!("MODULIX_LOCALE_DIR_DEFAULT").to_string())
+}
 
 /// Locales tried, in order, when `setlocale(LC_ALL, "")` (i.e. the host
 /// environment) doesn't resolve to anything but `C`/`POSIX` — e.g. the live
-/// ISO, which runs under `cage` as root with no `$LANG` at all.
+/// ISO, which runs under the kiosk session as root with no `$LANG` at all.
 const FALLBACK_LOCALES: &[&str] = &["en_US.UTF-8", "en_US.utf8", "C.UTF-8"];
 
 thread_local! {
@@ -212,7 +215,7 @@ pub fn init() {
                 .find_map(|candidate| setlocale_lcall(candidate).filter(|l| !is_c_or_posix(l)))
         });
 
-    let _ = bindtextdomain(DOMAIN, LOCALE_DIR);
+    let _ = bindtextdomain(DOMAIN, locale_dir());
     let _ = bind_textdomain_codeset(DOMAIN, "UTF-8");
     let _ = textdomain(DOMAIN);
 
