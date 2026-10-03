@@ -820,29 +820,30 @@ impl PartitioningStep {
                     mode_change_guard.set(false);
                 };
 
-                if mode == PartitionMode::AlongsideWindows && previous_mode != mode {
-                    if let Some(err) = alongside_infeasible.borrow().clone() {
-                        // Only set for `alongside_row_state(&e) ==
-                        // Clickable` blockers (e.g. not enough room on
-                        // Windows) — `NtfsBlocked`/`NoWindows` grey the row
-                        // out instead, so this is never reached for those.
-                        // The row stays clickable here so this is reachable
-                        // at all; clicking it just explains why and
-                        // reverts, instead of silently doing nothing.
-                        revert(&mode_checks);
-                        let dialog = adw::AlertDialog::builder()
-                            .heading(tr("Can't install alongside Windows"))
-                            .body(err.msgid())
-                            .build();
-                        dialog.add_response("close", &tr("Close"));
-                        dialog.set_default_response(Some("close"));
-                        dialog.set_close_response("close");
-                        let anchor = cb.clone();
-                        glib::spawn_future_local(async move {
-                            dialog.choose_future(Some(&anchor)).await;
-                        });
-                        return;
-                    }
+                if mode == PartitionMode::AlongsideWindows
+                    && previous_mode != mode
+                    && let Some(err) = alongside_infeasible.borrow().clone()
+                {
+                    // Only set for `alongside_row_state(&e) ==
+                    // Clickable` blockers (e.g. not enough room on
+                    // Windows) — `NtfsBlocked`/`NoWindows` grey the row
+                    // out instead, so this is never reached for those.
+                    // The row stays clickable here so this is reachable
+                    // at all; clicking it just explains why and
+                    // reverts, instead of silently doing nothing.
+                    revert(&mode_checks);
+                    let dialog = adw::AlertDialog::builder()
+                        .heading(tr("Can't install alongside Windows"))
+                        .body(err.msgid())
+                        .build();
+                    dialog.add_response("close", &tr("Close"));
+                    dialog.set_default_response(Some("close"));
+                    dialog.set_close_response("close");
+                    let anchor = cb.clone();
+                    glib::spawn_future_local(async move {
+                        dialog.choose_future(Some(&anchor)).await;
+                    });
+                    return;
                 }
 
                 selected_mode.set(mode);
