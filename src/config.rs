@@ -7,6 +7,10 @@ use std::rc::Rc;
 
 pub type SharedConfig = Rc<RefCell<InstallConfig>>;
 
+/// `networking.hostName` proposed by the user step and used when nothing is
+/// typed. Must satisfy `steps::user::hostname::blocked_reason`.
+pub const DEFAULT_HOSTNAME: &str = "modulixos";
+
 #[derive(Debug, Clone, Default)]
 pub struct InstallConfig {
     pub narrator_enabled: bool,
@@ -87,11 +91,25 @@ pub struct PartitioningConfig {
     pub manual: Vec<crate::engine::plan::ManualItem>,
 }
 
-#[derive(Debug, Clone, Default)]
+#[derive(Debug, Clone)]
 pub struct UserConfig {
     pub username: String,
     pub full_name: String,
+    /// `networking.hostName` of the installed system. Never empty: the user
+    /// step seeds it with `"modulixos"` and blocks on an empty field.
+    pub hostname: String,
     pub password: String,
+}
+
+impl Default for UserConfig {
+    fn default() -> Self {
+        Self {
+            username: String::new(),
+            full_name: String::new(),
+            hostname: DEFAULT_HOSTNAME.to_string(),
+            password: String::new(),
+        }
+    }
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]

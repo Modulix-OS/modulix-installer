@@ -6,16 +6,20 @@ use crate::widgets::PasswordConfirmEntry;
 use adw::prelude::*;
 use std::cell::Cell;
 use std::rc::Rc;
+mod hostname;
 mod username;
 
-/// primary user; root receives the same password (both must end up
-/// `hashedPassword`, not `initialPassword`, once `init_all` lands in
-/// iteration 2).
+/// Primary user and computer name; root receives the same password.
+/// Neither password is written into the NixOS configuration: they are set
+/// after the install with `chpasswd` under `nixos-enter`
+/// (`engine::tasks::SetPasswordsTask`), so nothing plaintext reaches the
+/// Nix store.
 pub struct UserStep {
     widget: gtk::Widget,
     group: adw::PreferencesGroup,
     username_row: adw::EntryRow,
     fullname_row: adw::EntryRow,
+    hostname_row: adw::EntryRow,
     password_widget: PasswordConfirmEntry,
     validity: ValidityTracker,
 }
@@ -25,6 +29,8 @@ impl UserStep {
         let fullname_row = adw::EntryRow::builder().title(tr("Full name")).build();
         let username_row = adw::EntryRow::builder().title(tr("Username")).build();
         username_row.set_tooltip_text(Some(&tr("Lowercase letters, digits, - and _ only")));
+        let hostname_row = adw::EntryRow::builder().title(tr("Computer name")).build();
+        hostname_row.set_text(hostname::DEFAULT);
         let password_widget = PasswordConfirmEntry::new();
 
         let group = adw::PreferencesGroup::builder()
@@ -32,6 +38,7 @@ impl UserStep {
             .build();
         group.add(&fullname_row);
         group.add(&username_row);
+        group.add(&hostname_row);
         password_widget.attach_to_group(&group);
 
         let page = adw::PreferencesPage::new();
@@ -44,10 +51,13 @@ impl UserStep {
 
         let update_validity = {
             let username_row = username_row.clone();
+            let hostname_row = hostname_row.clone();
             let password_widget = password_widget.clone();
             let validity = validity.clone();
             move || {
                 if let Some(reason) = username::blocked_reason(&username_row.text()) {
+                    validity.set_blocked(reason);
+                } else if let Some(reason) = hostname::blocked_reason(&hostname_row.text()) {
                     validity.set_blocked(reason);
                 } else if !password_widget.is_valid() {
                     validity.set_blocked(tr("Passwords must match and not be empty"));
@@ -111,6 +121,26 @@ impl UserStep {
             });
         }
 
+        {
+            let syncing = syncing.clone();
+            let update_validity = update_validity.clone();
+            hostname_row.connect_changed(move |row| {
+                if syncing.get() {
+                    return;
+                }
+                let text = row.text();
+                let clean = hostname::sanitize(&text);
+                if clean != text {
+                    let pos = row.position().max(0) as usize;
+                    syncing.set(true);
+                    row.set_text(&clean);
+                    syncing.set(false);
+                    row.set_position(pos.min(clean.chars().count()) as i32);
+                }
+                update_validity();
+            });
+        }
+
         password_widget.connect_changed(update_validity);
 
         Self {
@@ -118,6 +148,7 @@ impl UserStep {
             group,
             username_row,
             fullname_row,
+            hostname_row,
             password_widget,
             validity,
         }
@@ -154,6 +185,7 @@ impl Step for UserStep {
     fn commit(&self, cfg: &mut InstallConfig) -> mx::Result<()> {
         cfg.user.username = username::sanitize(&self.username_row.text());
         cfg.user.full_name = self.fullname_row.text().trim().to_string();
+        cfg.user.hostname = hostname::sanitize(&self.hostname_row.text());
         cfg.user.password = self.password_widget.password();
         Ok(())
     }
@@ -164,6 +196,7 @@ impl Step for UserStep {
         self.username_row
             .set_tooltip_text(Some(&tr("Lowercase letters, digits, - and _ only")));
         self.fullname_row.set_title(&tr("Full name"));
+        self.hostname_row.set_title(&tr("Computer name"));
         self.password_widget.retranslate();
     }
 }
