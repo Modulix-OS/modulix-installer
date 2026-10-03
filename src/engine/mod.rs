@@ -1,3 +1,4 @@
+pub mod install_log;
 pub mod live_input;
 pub mod plan;
 pub mod sizing;
