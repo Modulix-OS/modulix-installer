@@ -67,6 +67,9 @@ msgstr ""
 msgid "Cancel"
 msgstr ""
 
+msgid "Captive portal address unknown"
+msgstr ""
+
 msgid "Checking…"
 msgstr ""
 
@@ -107,6 +110,9 @@ msgid "Continue"
 msgstr ""
 
 msgid "Continue anyway"
+msgstr ""
+
+msgid "Copy kept on the target disk:"
 msgstr ""
 
 msgid "Couldn't save this step"
@@ -212,6 +218,9 @@ msgstr ""
 msgid "Free space:"
 msgstr ""
 
+msgid "Full log:"
+msgstr ""
+
 msgid "Full name"
 msgstr ""
 
@@ -297,9 +306,6 @@ msgid "Modulix OS is built on NixOS, so your configuration stays reproducible."
 msgstr ""
 
 msgid "Modulix OS is ready. You can restart into it now."
-msgstr ""
-
-msgid "Modulix demo captive portal"
 msgstr ""
 
 msgid "Mount point"
@@ -461,9 +467,6 @@ msgstr ""
 msgid "Select a target disk"
 msgstr ""
 
-msgid "Sign in"
-msgstr ""
-
 msgid "Size (MiB)"
 msgstr ""
 
@@ -528,22 +531,6 @@ msgid ""
 "possible"
 msgstr ""
 
-msgid ""
-"To dual-boot with Windows, restart Windows fully first (not just sign out) "
-"and try again"
-msgstr ""
-
-msgid ""
-"To dual-boot with Windows, this partition needs BitLocker suspended "
-"first: suspend it in Windows, or shrink the partition from Windows Disk "
-"Management, then restart the installer."
-msgstr ""
-
-msgid ""
-"To dual-boot with Windows, this partition needs a disk check first — boot "
-"into Windows and run \"chkdsk\""
-msgstr ""
-
 msgid "This Windows partition needs a preflight check"
 msgstr ""
 
@@ -565,8 +552,10 @@ msgid "This free space region is too small"
 msgstr ""
 
 msgid ""
-"This is an offline demo page simulating a Wi-Fi captive portal login screen. "
-"Click the button below to simulate signing in and continue the installation."
+"This network requires signing in through a captive portal, but "
+"NetworkManager does not report its address. Sign in from another device on "
+"the same network, or pick a different network. This window closes by "
+"itself once the connection works."
 msgstr ""
 
 msgid ""
@@ -582,6 +571,22 @@ msgid "Timezone"
 msgstr ""
 
 msgid ""
+"To dual-boot with Windows, restart Windows fully first (not just sign out) "
+"and try again"
+msgstr ""
+
+msgid ""
+"To dual-boot with Windows, this partition needs BitLocker suspended "
+"first: suspend it in Windows, or shrink the partition from Windows Disk "
+"Management, then restart the installer."
+msgstr ""
+
+msgid ""
+"To dual-boot with Windows, this partition needs a disk check first — boot "
+"into Windows and run \"chkdsk\""
+msgstr ""
+
+msgid ""
 "Turn this on now if you need speech feedback for the rest of the installer"
 msgstr ""
 
@@ -589,9 +594,6 @@ msgid "Type here to test your layout"
 msgstr ""
 
 msgid "Typing test"
-msgstr ""
-
-msgid "Unavailable with simulated disks"
 msgstr ""
 
 msgid "Unavailable: orca wasn't found on this system"

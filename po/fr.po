@@ -75,8 +75,14 @@ msgstr "Impossible d'installer à côté de Windows"
 msgid "Cancel"
 msgstr "Annuler"
 
+msgid "Captive portal address unknown"
+msgstr "Adresse du portail captif inconnue"
+
 msgid "Checking…"
 msgstr "Vérification…"
+
+msgid "Choose this desktop environment"
+msgstr "Choisir cette environnement de bureau"
 
 msgid "Classic"
 msgstr "Classique"
@@ -120,8 +126,8 @@ msgstr "Continuer"
 msgid "Continue anyway"
 msgstr "Continuer quand même"
 
-msgid "Choose this desktop environment"
-msgstr "Choisir cette environnement de bureau"
+msgid "Copy kept on the target disk:"
+msgstr "Copie conservée sur le disque cible :"
 
 msgid "Couldn't save this step"
 msgstr "Impossible d'enregistrer cette étape"
@@ -235,6 +241,9 @@ msgstr "Zone d'espace libre"
 msgid "Free space:"
 msgstr "Espace libre :"
 
+msgid "Full log:"
+msgstr "Journal complet :"
+
 msgid "Full name"
 msgstr "Nom complet"
 
@@ -323,9 +332,6 @@ msgstr "Modulix OS repose sur NixOS : votre configuration reste reproductible."
 
 msgid "Modulix OS is ready. You can restart into it now."
 msgstr "Modulix OS est prêt. Vous pouvez maintenant redémarrer dessus."
-
-msgid "Modulix demo captive portal"
-msgstr "Portail captif de démonstration Modulix"
 
 msgid "Mount point"
 msgstr "Point de montage"
@@ -491,9 +497,6 @@ msgstr "Sélectionnez une zone d'espace libre où installer"
 msgid "Select a target disk"
 msgstr "Sélectionnez un disque cible"
 
-msgid "Sign in"
-msgstr "Se connecter"
-
 msgid "Size (MiB)"
 msgstr "Taille (Mio)"
 
@@ -563,30 +566,6 @@ msgstr ""
 "Cette partition Windows ne peut pas être redimensionnée, le dual-boot avec "
 "Windows n'est donc pas possible"
 
-msgid ""
-"To dual-boot with Windows, restart Windows fully first (not just sign out) "
-"and try again"
-msgstr ""
-"Pour un dual-boot avec Windows, redémarrez d'abord complètement Windows "
-"(pas seulement une déconnexion) puis réessayez"
-
-msgid ""
-"To dual-boot with Windows, this partition needs BitLocker suspended "
-"first: suspend it in Windows, or shrink the partition from Windows Disk "
-"Management, then restart the installer."
-msgstr ""
-"Pour un dual-boot avec Windows, cette partition nécessite de suspendre "
-"BitLocker au préalable : suspendez-le dans Windows, ou réduisez la "
-"partition depuis la Gestion des disques de Windows, puis redémarrez "
-"l'installateur."
-
-msgid ""
-"To dual-boot with Windows, this partition needs a disk check first — boot "
-"into Windows and run \"chkdsk\""
-msgstr ""
-"Pour un dual-boot avec Windows, cette partition nécessite d'abord une "
-"vérification de disque — démarrez sous Windows et exécutez « chkdsk »"
-
 msgid "This Windows partition needs a preflight check"
 msgstr "Cette partition Windows nécessite une vérification préalable"
 
@@ -612,12 +591,15 @@ msgid "This free space region is too small"
 msgstr "Cette zone d'espace libre est trop petite"
 
 msgid ""
-"This is an offline demo page simulating a Wi-Fi captive portal login screen. "
-"Click the button below to simulate signing in and continue the installation."
+"This network requires signing in through a captive portal, but "
+"NetworkManager does not report its address. Sign in from another device on "
+"the same network, or pick a different network. This window closes by "
+"itself once the connection works."
 msgstr ""
-"Ceci est une page de démonstration hors ligne simulant l'écran de connexion "
-"d'un portail captif Wi-Fi. Cliquez sur le bouton ci-dessous pour simuler la "
-"connexion et poursuivre l'installation."
+"Ce réseau exige une connexion via un portail captif, mais NetworkManager "
+"n'indique pas son adresse. Connectez-vous depuis un autre appareil du "
+"même réseau, ou choisissez un autre réseau. Cette fenêtre se ferme "
+"d'elle-même dès que la connexion fonctionne."
 
 msgid ""
 "This partition will be reformatted as FAT32. Modulix uses its own 1024 MiB "
@@ -635,6 +617,30 @@ msgid "Timezone"
 msgstr "Fuseau horaire"
 
 msgid ""
+"To dual-boot with Windows, restart Windows fully first (not just sign out) "
+"and try again"
+msgstr ""
+"Pour un dual-boot avec Windows, redémarrez d'abord complètement Windows "
+"(pas seulement une déconnexion) puis réessayez"
+
+msgid ""
+"To dual-boot with Windows, this partition needs BitLocker suspended "
+"first: suspend it in Windows, or shrink the partition from Windows Disk "
+"Management, then restart the installer."
+msgstr ""
+"Pour un dual-boot avec Windows, cette partition nécessite de suspendre "
+"BitLocker au préalable : suspendez-le dans Windows, ou réduisez la "
+"partition depuis la Gestion des disques de Windows, puis redémarrez "
+"l'installateur."
+
+msgid ""
+"To dual-boot with Windows, this partition needs a disk check first — boot "
+"into Windows and run \"chkdsk\""
+msgstr ""
+"Pour un dual-boot avec Windows, cette partition nécessite d'abord une "
+"vérification de disque — démarrez sous Windows et exécutez « chkdsk »"
+
+msgid ""
 "Turn this on now if you need speech feedback for the rest of the installer"
 msgstr ""
 "Activez ceci dès maintenant si vous avez besoin d'un retour vocal pour la "
@@ -645,9 +651,6 @@ msgstr "Tapez ici pour tester votre disposition"
 
 msgid "Typing test"
 msgstr "Test de frappe"
-
-msgid "Unavailable with simulated disks"
-msgstr "Indisponible avec des disques simulés"
 
 msgid "Unavailable: orca wasn't found on this system"
 msgstr "Indisponible : orca est introuvable sur ce système"
