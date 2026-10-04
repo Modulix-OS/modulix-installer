@@ -27,6 +27,16 @@ pub fn new_retranslate_hook() -> RetranslateHook {
     Rc::new(RefCell::new(Box::new(|| {})))
 }
 
+/// Fired by the language step with the locale code it just switched to, after
+/// the retranslate pass. Lets a later step derive a default from the language
+/// without holding the shared [`InstallConfig`] — today only the keyboard step
+/// (see `keyboard::KeyboardStep::locale_hook`).
+pub type LanguageHook = Rc<RefCell<Box<dyn Fn(&str)>>>;
+
+pub fn new_language_hook() -> LanguageHook {
+    Rc::new(RefCell::new(Box::new(|_| {})))
+}
+
 /// Fired by a step that supplies its own advancement control instead of the
 /// outer "Next" button (see [`Step::shows_next`]) — currently just the
 /// desktop-environment step's zoom-dialog "Choose this desktop environment"
@@ -114,6 +124,13 @@ pub fn build_registry(
     advance_hook: AdvanceHook,
     a11y: &A11ySettings,
 ) -> Vec<Box<dyn Step>> {
+    // Built out of order on purpose: the language step needs a hook that only
+    // exists once the keyboard step does. The `vec!` below still assembles
+    // them in `StepId::ALL` order.
+    let keyboard = keyboard::KeyboardStep::new(backends, runtime);
+    let language_hook = new_language_hook();
+    *language_hook.borrow_mut() = keyboard.locale_hook();
+
     let registry: Vec<Box<dyn Step>> = vec![
         Box::new(accessibility::AccessibilityStep::new(
             backends, runtime, a11y,
@@ -122,9 +139,10 @@ pub fn build_registry(
             backends,
             runtime,
             retranslate_hook,
+            language_hook,
         )) as Box<dyn Step>,
         Box::new(timezone::TimezoneStep::new(backends, runtime)) as Box<dyn Step>,
-        Box::new(keyboard::KeyboardStep::new(backends, runtime)) as Box<dyn Step>,
+        Box::new(keyboard) as Box<dyn Step>,
         Box::new(network::NetworkStep::new(backends, runtime)) as Box<dyn Step>,
         Box::new(partitioning::PartitioningStep::new(backends, runtime, a11y)) as Box<dyn Step>,
         Box::new(user::UserStep::new()) as Box<dyn Step>,

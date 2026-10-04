@@ -1,6 +1,7 @@
 mod catalog;
 pub(crate) mod display_name;
 mod evdev;
+pub mod keyboard_default;
 mod system;
 mod zonetab;
 

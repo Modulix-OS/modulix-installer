@@ -4,8 +4,8 @@ use crate::bridge;
 use crate::config::InstallConfig;
 use crate::i18n::{self, tr};
 use crate::mx;
-use crate::steps::{RetranslateHook, Step, StepId, ValidityTracker};
-use crate::widgets::size_dropdown_to_widest;
+use crate::steps::{LanguageHook, RetranslateHook, Step, StepId, ValidityTracker};
+use crate::widgets::{enable_string_search, size_dropdown_to_widest};
 use adw::prelude::*;
 use std::cell::{Cell, RefCell};
 use std::collections::HashMap;
@@ -26,11 +26,13 @@ impl LanguageStep {
         backends: &Backends,
         runtime: &tokio::runtime::Handle,
         retranslate_hook: RetranslateHook,
+        language_hook: LanguageHook,
     ) -> Self {
         let codes: Rc<RefCell<Vec<String>>> = Rc::new(RefCell::new(Vec::new()));
-        // `i18n::init()` already resolved the startup message language (see
-        // `i18n.rs`) before any widget was built, so this starts out matching
-        // reality — updated below once the dropdown model is populated.
+        // `i18n::init()` already seeded the startup message language —
+        // `i18n::DEFAULT_LANGUAGE` (English), never the host locale — before
+        // any widget was built, so this starts out matching reality and the
+        // dropdown lands on English once the model is populated below.
         let selected = Rc::new(RefCell::new(i18n::current_language_code()));
         // Set while `set_model`/`set_selected` run below: replacing the model
         // fires `notify::selected` synchronously, and without this guard that
@@ -39,6 +41,7 @@ impl LanguageStep {
         let populating = Rc::new(Cell::new(true));
 
         let dropdown = gtk::DropDown::from_strings(&[]);
+        enable_string_search(&dropdown);
 
         let row = adw::ActionRow::builder()
             .title(tr("Language"))
@@ -141,6 +144,10 @@ impl LanguageStep {
                     );
                 }
                 (retranslate_hook.borrow())();
+                // After the retranslate pass, so a step that rebuilds a list
+                // from this hook does it with names already in the new
+                // language.
+                (language_hook.borrow())(code);
             }
         });
 
