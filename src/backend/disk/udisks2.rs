@@ -310,6 +310,29 @@ impl DiskBackend for Udisks2Backend {
             .ok_or_else(|| mx::Error::Backend(format!("unknown udisks2 object: {path}")))
     }
 
+    async fn partition_uuid(&self, path: &str) -> mx::Result<String> {
+        let object_path =
+            OwnedObjectPath::try_from(path).map_err(|e| mx::Error::Backend(e.to_string()))?;
+        const ATTEMPTS: u32 = 10;
+        for attempt in 0..ATTEMPTS {
+            let objects = self.managed_objects().await?;
+            let uuid = objects
+                .get(&object_path)
+                .and_then(|ifaces| prop(ifaces, "org.freedesktop.UDisks2.Block", "IdUUID"))
+                .and_then(|value| String::try_from(value.clone()).ok())
+                .filter(|uuid| !uuid.is_empty());
+            if let Some(uuid) = uuid {
+                return Ok(format!("/dev/disk/by-uuid/{uuid}"));
+            }
+            if attempt + 1 < ATTEMPTS {
+                tokio::time::sleep(std::time::Duration::from_millis(200)).await;
+            }
+        }
+        Err(mx::Error::Backend(format!(
+            "udisks2 reports no UUID for {path}"
+        )))
+    }
+
     async fn resolve_device(&self, device_node: &str) -> mx::Result<String> {
         let canonical = tokio::fs::canonicalize(device_node).await.ok();
         const ATTEMPTS: u32 = 10;

@@ -125,6 +125,16 @@ pub trait DiskBackend: Send + Sync {
     /// any other partition. Fake backend: registers a synthetic partition
     /// entry for it and returns the node unchanged.
     async fn resolve_device(&self, device_node: &str) -> mx::Result<String>;
+    /// Reads the filesystem/container UUID udev probed for a
+    /// `list_partitions` path (udisks2' `Block.IdUUID`), as the
+    /// `/dev/disk/by-uuid/<uuid>` path the installed configuration must name:
+    /// `boot.initrd.luks.devices.<name>.device` and `boot.resumeDevice` are
+    /// read from an initrd where no other spelling is stable. On a
+    /// `crypto_LUKS` partition this is the container's UUID, on an opened
+    /// mapper the UUID of whatever it contains. Polls like
+    /// [`DiskBackend::resolve_device`], since the property only appears once
+    /// udev has re-probed a freshly formatted device.
+    async fn partition_uuid(&self, path: &str) -> mx::Result<String>;
     async fn create_table(&self, disk: &str, table: TableKind) -> mx::Result<()>;
     async fn create_partition(
         &self,

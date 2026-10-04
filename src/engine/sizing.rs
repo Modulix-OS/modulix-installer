@@ -2,18 +2,43 @@ use crate::config::SwapMode;
 
 const GIB: u64 = 1024 * 1024 * 1024;
 
+/// Space a LUKS2 header takes at the start of a container, with
+/// `cryptsetup`'s default 16 MiB keyslot area. A swap partition inside a
+/// container therefore holds that much less swap, which matters for
+/// hibernation: the usable size, not the partition size, is what has to
+/// cover RAM.
+pub const LUKS2_HEADER_BYTES: u64 = 16 * 1024 * 1024;
+
 /// Swap size for the chosen mode. `Hibernation` must be able to hold a full
 /// RAM image *plus* some margin — the resume image includes non-RAM state
 /// (compression bookkeeping, in-flight I/O) so sizing it at exactly RAM
 /// leaves no slack — hence `ram + min(ram/2, 4 GiB)`, comfortably above
-/// the minimum requirement that swap size be at least RAM (and, when
-/// encryption is enabled, that swap must then live inside the LUKS
-/// container).
+/// the minimum requirement that swap size be at least RAM. When encryption is
+/// enabled that swap lives inside its own LUKS2 container
+/// (`engine::LUKS_SWAP_MAPPER_NAME`), so the partition carved for it needs
+/// [`LUKS2_HEADER_BYTES`] on top — see [`usable_swap_bytes`].
 pub fn compute_swap_bytes(mode: SwapMode, ram_bytes: u64) -> u64 {
     match mode {
         SwapMode::None => 0,
         SwapMode::Standard => standard_swap_bytes(ram_bytes),
         SwapMode::Hibernation => ram_bytes + (ram_bytes / 2).min(4 * GIB),
+    }
+}
+
+/// Swap a partition really offers once encryption has taken its header.
+///
+/// # Parameters
+/// * `partition_bytes` - size of the swap partition itself.
+/// * `encrypted` - whether the swap lives inside a LUKS2 container.
+///
+/// # Returns
+/// `partition_bytes` unchanged when unencrypted, minus
+/// [`LUKS2_HEADER_BYTES`] otherwise, saturating at 0.
+pub fn usable_swap_bytes(partition_bytes: u64, encrypted: bool) -> u64 {
+    if encrypted {
+        partition_bytes.saturating_sub(LUKS2_HEADER_BYTES)
+    } else {
+        partition_bytes
     }
 }
 

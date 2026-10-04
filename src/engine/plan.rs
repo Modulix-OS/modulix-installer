@@ -10,7 +10,7 @@ use crate::backend::disk::{
     short_device_name,
 };
 use crate::config::{PartitionMode, PartitioningConfig, SwapMode};
-use crate::engine::sizing::compute_swap_bytes;
+use crate::engine::sizing::{LUKS2_HEADER_BYTES, compute_swap_bytes, usable_swap_bytes};
 use crate::i18n::tr;
 
 /// Floor for a Linux root, `AlongsideWindows`/`FreeSpace` modes — below this
@@ -116,8 +116,9 @@ pub struct PreviewSegment {
     pub start_bytes: u64,
     pub role: PreviewRole,
     pub fs_type: Option<String>,
-    /// True on the root segment when `PartitioningConfig::encryption_enabled`
-    /// — `EncryptTask` only ever encrypts the root (`tasks/encrypt.rs`).
+    /// True on the root and swap segments when
+    /// `PartitioningConfig::encryption_enabled` — `EncryptTask` gives each of
+    /// them a LUKS2 container of its own (`tasks/encrypt.rs`).
     pub encrypted: bool,
     /// Copied from `PartitionInfo::used_bytes` for `PreviewRole::Keep`
     /// segments only — a freshly created partition is always empty.
@@ -253,8 +254,16 @@ pub fn warnings(input: &PlanInput) -> Vec<PlanWarning> {
     warnings
 }
 
+/// Size of the swap partition to carve, LUKS2 header included when the
+/// install is encrypted: the swap then sits in a container of its own, and a
+/// hibernation image has to fit in what is left after the header.
 fn swap_bytes_for(input: &PlanInput) -> u64 {
-    compute_swap_bytes(input.cfg.swap_mode, input.ram_bytes)
+    let swap = compute_swap_bytes(input.cfg.swap_mode, input.ram_bytes);
+    if swap > 0 && input.cfg.encryption_enabled {
+        swap + LUKS2_HEADER_BYTES
+    } else {
+        swap
+    }
 }
 
 /// Bounds on `PartitioningConfig::shrink_to_bytes` that
@@ -663,7 +672,8 @@ fn plan_manual(input: &PlanInput) -> Result<PartitionPlan, PlanError> {
             }
             ManualMountPoint::Swap
                 if input.cfg.swap_mode == SwapMode::Hibernation
-                    && part.size_bytes < input.ram_bytes =>
+                    && usable_swap_bytes(part.size_bytes, input.cfg.encryption_enabled)
+                        < input.ram_bytes =>
             {
                 return Err(PlanError::SwapTooSmallForHibernation);
             }
@@ -706,7 +716,8 @@ fn plan_manual(input: &PlanInput) -> Result<PartitionPlan, PlanError> {
             ManualMountPoint::Root => root_size = Some(size),
             ManualMountPoint::Boot => has_esp = true,
             ManualMountPoint::Swap
-                if input.cfg.swap_mode == SwapMode::Hibernation && size < input.ram_bytes =>
+                if input.cfg.swap_mode == SwapMode::Hibernation
+                    && usable_swap_bytes(size, input.cfg.encryption_enabled) < input.ram_bytes =>
             {
                 return Err(PlanError::SwapTooSmallForHibernation);
             }
@@ -864,7 +875,8 @@ fn build_preview(input: &PlanInput, ops: &[PlanOp], erases: &[String]) -> Vec<Pr
 
     segs.into_iter()
         .map(|s| {
-            let encrypted = s.role == PreviewRole::Root && input.cfg.encryption_enabled;
+            let encrypted = matches!(s.role, PreviewRole::Root | PreviewRole::Swap)
+                && input.cfg.encryption_enabled;
             let used_bytes = (s.role == PreviewRole::Keep)
                 .then_some(s.used_bytes)
                 .flatten();
@@ -1458,6 +1470,91 @@ mod tests {
             cfg,
         );
         assert_eq!(plan(&input), Err(PlanError::SwapTooSmallForHibernation));
+    }
+
+    #[test]
+    fn encrypted_swap_segment_is_marked_encrypted() {
+        let mut cfg = base_cfg(PartitionMode::EntireDisk);
+        cfg.swap_mode = SwapMode::Standard;
+        cfg.encryption_enabled = true;
+        let input = base_input(disk(250 * GIB, TableKind::None, false, false), vec![], cfg);
+        let result = plan(&input).unwrap();
+        let swap = result
+            .preview
+            .iter()
+            .find(|s| s.role == PreviewRole::Swap)
+            .expect("swap segment");
+        assert!(swap.encrypted);
+        let esp = result
+            .preview
+            .iter()
+            .find(|s| s.role == PreviewRole::Esp)
+            .expect("esp segment");
+        assert!(!esp.encrypted);
+    }
+
+    #[test]
+    fn encrypted_swap_partition_carries_the_luks_header_on_top() {
+        let mut plain = base_cfg(PartitionMode::EntireDisk);
+        plain.swap_mode = SwapMode::Hibernation;
+        let mut encrypted = plain.clone();
+        encrypted.encryption_enabled = true;
+
+        let swap_size = |cfg| {
+            let input = base_input(disk(250 * GIB, TableKind::None, false, false), vec![], cfg);
+            plan(&input)
+                .unwrap()
+                .preview
+                .iter()
+                .find(|s| s.role == PreviewRole::Swap)
+                .expect("swap segment")
+                .size_bytes
+        };
+
+        assert_eq!(
+            swap_size(encrypted) - swap_size(plain),
+            align_up(LUKS2_HEADER_BYTES)
+        );
+    }
+
+    #[test]
+    fn manual_encrypted_swap_just_under_ram_plus_header_errors() {
+        // Exactly RAM: enough unencrypted, one LUKS2 header short once the
+        // swap moves inside a container.
+        let swap_bytes = 8 * GIB;
+        let manual_swap_plan = |encryption_enabled| {
+            let mut cfg = base_cfg(PartitionMode::Manual);
+            cfg.swap_mode = SwapMode::Hibernation;
+            cfg.encryption_enabled = encryption_enabled;
+            let mut entries = manual_root_and_boot();
+            entries.push(ManualItem::Existing(ManualEntry {
+                path: "/dev/fake0p3".into(),
+                mount_point: ManualMountPoint::Swap,
+                format: true,
+                fs: FormatFs::LinuxSwap,
+            }));
+            cfg.manual = entries;
+            let mut partitions = manual_partitions();
+            partitions.push(part(
+                "/dev/fake0p3",
+                100 * GIB,
+                swap_bytes,
+                None,
+                Some("swap"),
+            ));
+            let input = base_input(
+                disk(250 * GIB, TableKind::Gpt, false, false),
+                partitions,
+                cfg,
+            );
+            plan(&input).map(|_| ())
+        };
+
+        assert_eq!(manual_swap_plan(false), Ok(()));
+        assert_eq!(
+            manual_swap_plan(true),
+            Err(PlanError::SwapTooSmallForHibernation)
+        );
     }
 
     #[test]

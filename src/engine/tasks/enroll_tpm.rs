@@ -2,11 +2,16 @@ use crate::engine::{ProgressEvent, ProgressSink, Task, TaskCtx};
 use crate::mx;
 use async_trait::async_trait;
 
-/// TPM2 enrollment only — `luksFormat`/`luksOpen` now live in `EncryptTask`,
+/// TPM2 enrollment only — `luksFormat`/`luksOpen` live in `EncryptTask`,
 /// which runs earlier (right after `PartitionTask`, before `FormatTask`
-/// mkfs's the decrypted mapper device). Enrolling here, after `MountTask`,
-/// is fine: `systemd-cryptenroll` operates on the raw LUKS container
-/// (`PipelineState::luks_device`), which doesn't change once opened.
+/// mkfs's the decrypted mapper devices). Enrolling here, after `MountTask`,
+/// is fine: `systemd-cryptenroll` operates on the raw LUKS containers
+/// (`PipelineState::luks_device`, `::luks_swap_device`), which don't change
+/// once opened.
+///
+/// Both containers are enrolled. Skipping the swap one would leave the boot
+/// unlocking root silently through the TPM and then asking for a passphrase
+/// for the swap, since nothing would have put one in the kernel keyring.
 pub struct EnrollTpmTask;
 
 #[async_trait]
@@ -24,18 +29,27 @@ impl Task for EnrollTpmTask {
             return Ok(());
         }
 
-        let device =
-            ctx.state.lock().await.luks_device.clone().ok_or_else(|| {
-                mx::Error::Backend("no LUKS device to enroll TPM2 against".into())
-            })?;
+        let (root, swap) = {
+            let state = ctx.state.lock().await;
+            (state.luks_device.clone(), state.luks_swap_device.clone())
+        };
+        let root =
+            root.ok_or_else(|| mx::Error::Backend("no LUKS device to enroll TPM2 against".into()))?;
 
-        ctx.backends
-            .crypt
-            .enroll_tpm2(&device, ctx.config.partitioning.tpm2_pin.as_deref())
-            .await?;
-        let _ = tx
-            .send(ProgressEvent::Log(format!("enrolled TPM2 on {device}")))
-            .await;
+        for container in std::iter::once(root).chain(swap) {
+            let device = ctx.backends.disk.device_node(&container).await?;
+            ctx.backends
+                .crypt
+                .enroll_tpm2(
+                    &device,
+                    &ctx.config.partitioning.encryption_passphrase,
+                    ctx.config.partitioning.tpm2_pin.as_deref(),
+                )
+                .await?;
+            let _ = tx
+                .send(ProgressEvent::Log(format!("enrolled TPM2 on {device}")))
+                .await;
+        }
         Ok(())
     }
 }

@@ -194,8 +194,8 @@ msgstr "Bildschirmleser aktivieren"
 msgid "Encrypt disk"
 msgstr "Festplatte verschlüsseln"
 
-msgid "Encrypting root partition"
-msgstr "Wurzelpartition wird verschlüsselt"
+msgid "Encrypting the disk"
+msgstr "Datenträger wird verschlüsselt"
 
 msgid "Encryption"
 msgstr "Verschlüsselung"

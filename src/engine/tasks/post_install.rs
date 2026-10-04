@@ -1,6 +1,7 @@
 use crate::engine::tasks::{best_effort, report};
 use crate::engine::{
-    INSTALL_ROOT, LUKS_MAPPER_NAME, ProgressEvent, ProgressSink, Task, TaskCtx, install_log,
+    INSTALL_ROOT, LUKS_MAPPER_NAME, LUKS_SWAP_MAPPER_NAME, ProgressEvent, ProgressSink, Task,
+    TaskCtx, install_log,
 };
 use crate::mx;
 use async_trait::async_trait;
@@ -58,12 +59,22 @@ impl Task for PostInstallTask {
         .await;
 
         if ctx.config.partitioning.encryption_enabled {
-            report(
-                tx,
-                "cryptsetup close",
-                best_effort("cryptsetup", &["close", LUKS_MAPPER_NAME]).await,
-            )
-            .await;
+            // Both containers `EncryptTask` opened, swap last since the
+            // `swapoff` above is what stopped using it.
+            let mappers = std::iter::once(LUKS_MAPPER_NAME).chain(
+                state
+                    .luks_swap_device
+                    .as_ref()
+                    .map(|_| LUKS_SWAP_MAPPER_NAME),
+            );
+            for mapper in mappers {
+                report(
+                    tx,
+                    "cryptsetup close",
+                    best_effort("cryptsetup", &["close", mapper]).await,
+                )
+                .await;
+            }
         }
 
         let _ = tx

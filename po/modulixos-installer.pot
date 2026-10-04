@@ -180,7 +180,7 @@ msgstr ""
 msgid "Encrypt disk"
 msgstr ""
 
-msgid "Encrypting root partition"
+msgid "Encrypting the disk"
 msgstr ""
 
 msgid "Encryption"

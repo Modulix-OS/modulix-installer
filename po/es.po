@@ -192,8 +192,8 @@ msgstr "Activar el narrador"
 msgid "Encrypt disk"
 msgstr "Cifrar el disco"
 
-msgid "Encrypting root partition"
-msgstr "Cifrando la partición raíz"
+msgid "Encrypting the disk"
+msgstr "Cifrando el disco"
 
 msgid "Encryption"
 msgstr "Cifrado"

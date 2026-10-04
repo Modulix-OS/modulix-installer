@@ -46,14 +46,31 @@ pub const CONFIG_REPO: &str = "/mnt/etc/modulix-os";
 /// `boot.initrd.luks.devices` entry the installed system unlocks it through.
 pub const LUKS_MAPPER_NAME: &str = "modulixroot";
 
+/// Same, for the swap container. An encrypted install puts its swap in a
+/// LUKS2 container of its own rather than next to the encrypted root: swap
+/// holds whatever was in RAM, including the keys of the root container, so a
+/// plaintext swap partition would undo the encryption it sits beside. A
+/// second container rather than one shared with root keeps the partition
+/// layout — and `engine::plan` with it — unchanged, and it is what lets
+/// hibernation resume from an encrypted image.
+pub const LUKS_SWAP_MAPPER_NAME: &str = "modulixswap";
+
 /// Flake attribute `init` writes into `nixosConfigurations`
 /// (modulix-core-utils' private `CONFIG_NAME`).
 pub const CONFIG_FLAKE_ATTR: &str = "default";
 
 /// Partition paths and per-partition format decisions handed off between
 /// pipeline stages. `PartitionTask` fills these in from `engine::plan`'s
-/// output; `EncryptTask` may rewrite `root_partition` to a `/dev/mapper/…`
-/// path; `FormatTask`/`MountTask`/`EnrollTpmTask` consume them.
+/// output; `EncryptTask` may rewrite `root_partition` and `swap_partition`
+/// to their LUKS mapper; `FormatTask`/`MountTask`/`EnrollTpmTask` consume
+/// them.
+///
+/// **Every path here is a udisks2 object path**, never a `/dev/...` node —
+/// including the mapper ones, which `DiskBackend::resolve_device` converts
+/// back. A stage shelling out to a tool that does not speak D-Bus converts at
+/// that point with `DiskBackend::device_node` (as `MountTask`,
+/// `EfiEntryTask` and `PostInstallTask` do); none of them may pass a path
+/// from here straight to a command line.
 ///
 /// `{role}_format` is `None` for a partition `plan::plan` reused as-is
 /// (`PlanOp::UseExisting { format: None, .. }`, e.g. an existing Windows ESP
@@ -73,9 +90,15 @@ pub struct PipelineState {
     pub swap_format: Option<FormatFs>,
     pub home_partition: Option<String>,
     pub home_format: Option<FormatFs>,
-    /// The raw (pre-`luksOpen`) LUKS container device — `EnrollTpmTask`
-    /// enrolls the TPM2 against this, not the `/dev/mapper/…` path.
+    /// The raw (pre-`luksOpen`) root LUKS container device — `EnrollTpmTask`
+    /// enrolls the TPM2 against this, not the mapper.
     pub luks_device: Option<String>,
+    /// Same for the swap container, when the install has both encryption and
+    /// swap. `InitConfigTask` additionally needs it to name the container the
+    /// installed system unlocks: `nixos-generate-config` declares LUKS
+    /// entries only for the mount points it walks, so a swap-only container
+    /// is one it never reports.
+    pub luks_swap_device: Option<String>,
 }
 
 /// Everything a [`Task`] needs: the backends it acts through, the answers
