@@ -34,13 +34,20 @@
 //! [`set_language`], only ever called from the language-step UI callback).
 
 use gettextrs::{
-    LocaleCategory, bind_textdomain_codeset, bindtextdomain, gettext, setlocale, textdomain,
+    LocaleCategory, bind_textdomain_codeset, bindtextdomain, dgettext, gettext, setlocale,
+    textdomain,
 };
 use std::cell::RefCell;
 
 use crate::backend::locale::display_name::split_locale_code;
 
 const DOMAIN: &str = "modulixos-installer";
+
+/// xkeyboard-config's own gettext domain. `evdev.xml` carries English
+/// `<description>` text only — no `xml:lang` variants — and xkeyboard-config
+/// ships the translations as catalogs whose msgids are those very strings
+/// (same trick GNOME's input-source list uses). See [`tr_xkb`].
+const XKB_DOMAIN: &str = "xkeyboard-config";
 
 /// Same debug/release split as modulix-core-utils' `CONFIG_DIRECTORY`, but
 /// runtime-overridable: `build.rs` bakes in a default (`$OUT_DIR/locale` for
@@ -52,6 +59,37 @@ const DOMAIN: &str = "modulixos-installer";
 fn locale_dir() -> String {
     std::env::var("MODULIX_LOCALE_DIR")
         .unwrap_or_else(|_| env!("MODULIX_LOCALE_DIR_DEFAULT").to_string())
+}
+
+/// Where xkeyboard-config's message catalogs live, tried in order:
+/// `MODULIX_XKB_LOCALE_DIR` (set by `nix/package.nix` and the devShell, the
+/// only reliable answer on NixOS since the package need not be in
+/// `systemPackages`), then the `share/locale` sibling of the `evdev.xml` path
+/// we were already given, then the usual system prefixes.
+///
+/// # Post-conditions
+/// Returns the first existing directory, or `None` — in which case layout
+/// names simply stay English instead of the binding failing loudly.
+fn xkb_locale_dir() -> Option<String> {
+    if let Ok(dir) = std::env::var("MODULIX_XKB_LOCALE_DIR")
+        && std::path::Path::new(&dir).is_dir()
+    {
+        return Some(dir);
+    }
+    if let Ok(xml) = std::env::var("MODULIX_DEV_EVDEV_XML") {
+        // <prefix>/share/X11/xkb/rules/evdev.xml -> <prefix>/share/locale
+        let sibling = std::path::Path::new(&xml)
+            .ancestors()
+            .nth(4)
+            .map(|prefix| prefix.join("locale"));
+        if let Some(dir) = sibling.filter(|dir| dir.is_dir()) {
+            return dir.to_str().map(str::to_string);
+        }
+    }
+    ["/run/current-system/sw/share/locale", "/usr/share/locale"]
+        .into_iter()
+        .find(|dir| std::path::Path::new(dir).is_dir())
+        .map(str::to_string)
 }
 
 /// Message language the installer always starts in, whatever the host
@@ -244,6 +282,11 @@ pub fn init() {
     let _ = bind_textdomain_codeset(DOMAIN, "UTF-8");
     let _ = textdomain(DOMAIN);
 
+    if let Some(dir) = xkb_locale_dir() {
+        let _ = bindtextdomain(XKB_DOMAIN, dir);
+        let _ = bind_textdomain_codeset(XKB_DOMAIN, "UTF-8");
+    }
+
     if applied.is_none() {
         eprintln!(
             "i18n: no generated non-C locale found ($LANG={:?}); LC_* formatting stays C, \
@@ -277,6 +320,21 @@ pub fn set_language(code: &str) -> LanguageOutcome {
 
 pub fn tr(msgid: &str) -> String {
     gettext(msgid)
+}
+
+/// Translates a keyboard layout/variant description through xkeyboard-config's
+/// own catalogs.
+///
+/// * `msgid` - the English `<description>` read from `evdev.xml`, verbatim.
+///
+/// # Post-conditions
+/// Returns the localized name, or `msgid` unchanged when no catalog covers it
+/// (missing translation, or no catalog directory found at [`init`] time).
+/// Follows `LANGUAGE` exactly like [`tr`]: the `_nl_msg_cat_cntr` bump in
+/// [`set_language`] invalidates glibc's cache for every bound domain, not just
+/// ours.
+pub fn tr_xkb(msgid: &str) -> String {
+    dgettext(XKB_DOMAIN, msgid)
 }
 
 #[cfg(test)]

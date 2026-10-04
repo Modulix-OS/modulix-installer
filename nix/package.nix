@@ -98,6 +98,7 @@ naerskLib.buildPackage {
       --set MODULIX_LOCALE_DIR $out/share/locale \
       --set TZDIR ${pkgs.tzdata}/share/zoneinfo \
       --set MODULIX_DEV_EVDEV_XML ${pkgs.xkeyboard_config}/share/X11/xkb/rules/evdev.xml \
+      --set MODULIX_XKB_LOCALE_DIR ${pkgs.xkeyboard_config}/share/locale \
       --set MODULIX_DEV_LOCALE_SUPPORTED ${pkgs.glibcLocales}/share/i18n/SUPPORTED
   '';
 

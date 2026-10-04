@@ -95,6 +95,7 @@
             TZDIR = "${pkgs.tzdata}/share/zoneinfo";
             PAPIRUS_ICON_THEME_48 = "${pkgs.papirus-icon-theme}/share/icons/Papirus/48x48";
             MODULIX_DEV_EVDEV_XML = "${pkgs.xkeyboard_config}/share/X11/xkb/rules/evdev.xml";
+            MODULIX_XKB_LOCALE_DIR = "${pkgs.xkeyboard_config}/share/locale";
             MODULIX_DEV_LOCALE_SUPPORTED = "${pkgs.glibcLocales}/share/i18n/SUPPORTED";
             # So `setlocale(LC_ALL, "fr_FR.UTF-8")` (formatting only — message
             # switching goes through `LANGUAGE`, see i18n.rs) can find a
