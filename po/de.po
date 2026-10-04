@@ -1,0 +1,850 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: modulixos-installer\n"
+"Report-Msgid-Bugs-To: \n"
+"Language: de\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+
+msgid "A clean, modern desktop focused on simplicity"
+msgstr "Eine klare, moderne Arbeitsumgebung mit Fokus auf Einfachheit"
+
+msgid "A lightweight desktop for older or low-resource hardware"
+msgstr ""
+"Eine schlanke Arbeitsumgebung für ältere oder leistungsschwache Hardware"
+
+msgid "A modular system"
+msgstr "Ein modulares System"
+
+msgid "A powerful, customizable desktop with a traditional layout"
+msgstr ""
+"Eine leistungsfähige, anpassbare Arbeitsumgebung mit klassischem Aufbau"
+
+msgid "Accessibility"
+msgstr "Barrierefreiheit"
+
+msgid "Add"
+msgstr "Hinzufügen"
+
+msgid "After installation"
+msgstr "Nach der Installation"
+
+msgid "Almost there"
+msgstr "Fast geschafft"
+
+msgid "An EFI System Partition of at least 100 MiB is required"
+msgstr "Eine EFI-Systempartition von mindestens 100 MiB ist erforderlich"
+
+msgid "Application pack"
+msgstr "Anwendungspaket"
+
+msgid "Applications"
+msgstr "Anwendungen"
+
+msgid "Applied now"
+msgstr "Sofort angewendet"
+
+msgid "Applied to the installed system"
+msgstr "Auf das installierte System angewendet"
+
+msgid "Assign exactly one partition as the root (/) filesystem"
+msgstr "Genau eine Partition als Wurzeldateisystem (/) zuweisen"
+
+msgid ""
+"Assign existing partitions or create new ones in free space below. To resize "
+"or delete an existing partition, use GParted."
+msgstr ""
+"Vorhandene Partitionen zuweisen oder unten im freien Speicherplatz neue "
+"anlegen. Zum Verkleinern oder Löschen einer vorhandenen Partition GParted "
+"verwenden."
+
+msgid "Base pack"
+msgstr "Basispaket"
+
+msgid "Boot (/boot, EFI)"
+msgstr "Boot (/boot, EFI)"
+
+msgid "Calculator"
+msgstr "Taschenrechner"
+
+msgid "Can't install alongside Windows"
+msgstr "Installation neben Windows nicht möglich"
+
+msgid "Cancel"
+msgstr "Abbrechen"
+
+msgid "Captive portal address unknown"
+msgstr "Adresse des Captive Portals unbekannt"
+
+msgid "Checking…"
+msgstr "Wird geprüft …"
+
+msgid "Choose this desktop environment"
+msgstr "Diese Arbeitsumgebung wählen"
+
+msgid "Classic"
+msgstr "Klassisch"
+
+msgid ""
+"Click anywhere on the map, or use arrow keys to move to a neighboring "
+"timezone and Enter to confirm; the region and city lists below offer the "
+"same choice without the map."
+msgstr ""
+"Auf eine beliebige Stelle der Karte klicken oder mit den Pfeiltasten zu "
+"einer benachbarten Zeitzone wechseln und mit der Eingabetaste bestätigen; "
+"die Listen für Region und Stadt darunter bieten dieselbe Auswahl ohne Karte."
+
+msgid "Click the map or pick from the list"
+msgstr "Auf die Karte klicken oder aus der Liste wählen"
+
+msgid "Close"
+msgstr "Schließen"
+
+msgid "Completing the system configuration"
+msgstr "Systemkonfiguration wird abgeschlossen"
+
+msgid "Confirm password"
+msgstr "Passwort bestätigen"
+
+msgid "Confirm the encryption passphrase"
+msgstr "Passphrase für die Verschlüsselung bestätigen"
+
+msgid "Connect"
+msgstr "Verbinden"
+
+msgid "Connect to a hidden network"
+msgstr "Mit einem verborgenen Netzwerk verbinden"
+
+msgid "Connect to a network to continue"
+msgstr "Zum Fortfahren mit einem Netzwerk verbinden"
+
+msgid "Connected"
+msgstr "Verbunden"
+
+msgid "Continue"
+msgstr "Fortfahren"
+
+msgid "Continue anyway"
+msgstr "Trotzdem fortfahren"
+
+msgid "Copy kept on the target disk:"
+msgstr "Kopie auf der Zielfestplatte:"
+
+msgid "Copy text"
+msgstr "Text kopieren"
+
+msgid "Could not build the QR code"
+msgstr "QR-Code konnte nicht erstellt werden"
+
+msgid "Could not restart:"
+msgstr "Neustart nicht möglich:"
+
+msgid "Couldn't save this step"
+msgstr "Dieser Schritt konnte nicht gespeichert werden"
+
+msgid "Create a partition here"
+msgstr "Hier eine Partition anlegen"
+
+msgid "Create partition"
+msgstr "Partition anlegen"
+
+msgid "Current layout"
+msgstr "Aktuelle Belegung"
+
+msgid "Default"
+msgstr "Standard"
+
+msgid "Delete"
+msgstr "Löschen"
+
+msgid "Desktop"
+msgstr "Desktop"
+
+msgid "Desktop environment"
+msgstr "Arbeitsumgebung"
+
+msgid "Details"
+msgstr "Details"
+
+msgid "Disabled"
+msgstr "Deaktiviert"
+
+msgid ""
+"Disk space used as extra memory when RAM is full. Hibernation also needs it "
+"to save the session to disk."
+msgstr ""
+"Speicherplatz, der als zusätzlicher Arbeitsspeicher dient, wenn der RAM voll "
+"ist. Auch der Ruhezustand benötigt ihn, um die Sitzung auf die Festplatte zu "
+"schreiben."
+
+msgid "Don't use"
+msgstr "Nicht verwenden"
+
+msgid "EFI System Partition"
+msgstr "EFI-Systempartition"
+
+msgid "Edit partition"
+msgstr "Partition bearbeiten"
+
+msgid "Enable narrator"
+msgstr "Bildschirmleser aktivieren"
+
+msgid "Encrypt disk"
+msgstr "Festplatte verschlüsseln"
+
+msgid "Encrypting root partition"
+msgstr "Wurzelpartition wird verschlüsselt"
+
+msgid "Encryption"
+msgstr "Verschlüsselung"
+
+msgid ""
+"Encrypts the whole disk with LUKS2. A passphrase is required at every boot "
+"unless TPM2 unlocking is enabled."
+msgstr ""
+"Verschlüsselt die gesamte Festplatte mit LUKS2. Bei jedem Start wird eine "
+"Passphrase verlangt, sofern die Entsperrung über TPM2 nicht aktiviert ist."
+
+msgid "Enrolling TPM2"
+msgstr "TPM2 wird registriert"
+
+msgid "Enter a username"
+msgstr "Einen Benutzernamen eingeben"
+
+msgid "Enter an encryption passphrase"
+msgstr "Eine Passphrase für die Verschlüsselung eingeben"
+
+msgid "Enter the password for this Wi-Fi network"
+msgstr "Das Passwort für dieses WLAN eingeben"
+
+msgid "Enterprise network, signal {level} of 4"
+msgstr "Enterprise-Netzwerk, Signal {level} von 4"
+
+msgid "Enterprise networks aren't supported by the installer"
+msgstr ""
+"Enterprise-Netzwerke werden vom Installationsprogramm nicht unterstützt"
+
+msgid "Erase and Install"
+msgstr "Löschen und installieren"
+
+msgid "Erase disk and install Modulix OS?"
+msgstr "Festplatte löschen und Modulix OS installieren?"
+
+msgid "Erase entire disk"
+msgstr "Gesamte Festplatte löschen"
+
+msgid "Error report QR code"
+msgstr "QR-Code des Fehlerberichts"
+
+msgid ""
+"Existing data in /home is kept — make sure it already holds a Linux "
+"filesystem."
+msgstr ""
+"Vorhandene Daten in /home bleiben erhalten — sicherstellen, dass dort "
+"bereits ein Linux-Dateisystem liegt."
+
+msgid "Filesystem"
+msgstr "Dateisystem"
+
+msgid "Finishing up"
+msgstr "Abschließende Arbeiten"
+
+msgid ""
+"For a strong password, use one of (CNIL recommendation):\n"
+" - 12+ characters with uppercase, lowercase, digits and special characters\n"
+" - 14+ characters with uppercase, lowercase and digits\n"
+" - Passphrase of at least 7 words.\n"
+"Optional, but recommended."
+msgstr ""
+"Für ein sicheres Passwort eine der folgenden Varianten verwenden (Empfehlung "
+"der CNIL):\n"
+" - mindestens 12 Zeichen mit Groß- und Kleinbuchstaben, Ziffern und "
+"Sonderzeichen\n"
+" - mindestens 14 Zeichen mit Groß- und Kleinbuchstaben und Ziffern\n"
+" - Passphrase aus mindestens 7 Wörtern.\n"
+"Optional, aber empfohlen."
+
+msgid "Format"
+msgstr "Formatieren"
+
+msgid "Formatting partitions"
+msgstr "Partitionen werden formatiert"
+
+msgid "Free space"
+msgstr "Freier Speicherplatz"
+
+msgid "Free space region"
+msgstr "Bereich mit freiem Speicherplatz"
+
+msgid "Free space:"
+msgstr "Freier Speicherplatz:"
+
+msgid "Full log:"
+msgstr "Vollständiges Protokoll:"
+
+msgid "Full name"
+msgstr "Vollständiger Name"
+
+msgid "Hibernation swap doesn't fit — using standard swap instead"
+msgstr ""
+"Swap für den Ruhezustand passt nicht — stattdessen wird Standard-Swap "
+"verwendet"
+
+msgid "High contrast"
+msgstr "Hoher Kontrast"
+
+msgid "Home"
+msgstr "Home"
+
+msgid "Home (/home)"
+msgstr "Home (/home)"
+
+msgid "Increase contrast between text and background"
+msgstr "Kontrast zwischen Text und Hintergrund erhöhen"
+
+msgid "Increase the interface text size"
+msgstr "Schriftgröße der Oberfläche vergrößern"
+
+msgid "Install"
+msgstr "Installieren"
+
+msgid "Install alongside Windows"
+msgstr "Neben Windows installieren"
+
+msgid "Installation complete"
+msgstr "Installation abgeschlossen"
+
+msgid "Installation failed"
+msgstr "Installation fehlgeschlagen"
+
+msgid "Installation type"
+msgstr "Installationsart"
+
+msgid "Installing"
+msgstr "Installation läuft"
+
+msgid "Installing Modulix OS"
+msgstr "Modulix OS wird installiert"
+
+msgid "Kept"
+msgstr "Beibehalten"
+
+msgid "Keyboard"
+msgstr "Tastatur"
+
+msgid "LUKS2, passphrase required at boot"
+msgstr "LUKS2, Passphrase beim Start erforderlich"
+
+msgid "LUKS2, unlocked via TPM2"
+msgstr "LUKS2, Entsperrung über TPM2"
+
+msgid "LUKS2, unlocked via TPM2 when available"
+msgstr "LUKS2, Entsperrung über TPM2, sofern verfügbar"
+
+msgid "Language"
+msgstr "Sprache"
+
+msgid "Large text"
+msgstr "Große Schrift"
+
+msgid "Layout"
+msgstr "Belegung"
+
+msgid "Lightweight"
+msgstr "Schlank"
+
+msgid "Manual"
+msgstr "Manuell"
+
+msgid "Mode"
+msgstr "Modus"
+
+msgid "Modern"
+msgstr "Modern"
+
+msgid "Modulix"
+msgstr "Modulix"
+
+msgid "Modulix OS Installer"
+msgstr "Modulix OS-Installationsprogramm"
+
+msgid "Modulix OS is built on NixOS, so your configuration stays reproducible."
+msgstr ""
+"Modulix OS basiert auf NixOS, die Konfiguration bleibt daher reproduzierbar."
+
+msgid "Modulix OS is ready. You can restart into it now."
+msgstr "Modulix OS ist bereit. Sie können jetzt neu starten."
+
+msgid "Mount point"
+msgstr "Einhängepunkt"
+
+msgid "Mounting target filesystems"
+msgstr "Zieldateisysteme werden eingehängt"
+
+msgid "Narrator"
+msgstr "Bildschirmleser"
+
+msgid "Network"
+msgstr "Netzwerk"
+
+msgid "Network name (SSID)"
+msgstr "Netzwerkname (SSID)"
+
+msgid "New partition"
+msgstr "Neue Partition"
+
+msgid "Next"
+msgstr "Weiter"
+
+msgid "No TPM2 chip detected"
+msgstr "Kein TPM2-Chip erkannt"
+
+msgid "No Wi-Fi networks found"
+msgstr "Keine WLAN-Netzwerke gefunden"
+
+msgid "No Windows installation was found on this disk"
+msgstr "Auf dieser Festplatte wurde keine Windows-Installation gefunden"
+
+msgid "No applications"
+msgstr "Keine Anwendungen"
+
+msgid "No disk selected"
+msgstr "Keine Festplatte ausgewählt"
+
+msgid "No existing partitions will be deleted."
+msgstr "Es werden keine vorhandenen Partitionen gelöscht."
+
+msgid "No partitions"
+msgstr "Keine Partitionen"
+
+msgid "No swap"
+msgstr "Kein Swap"
+
+msgid "Not connected"
+msgstr "Nicht verbunden"
+
+msgid "Not enough space would be freed up to install Modulix OS"
+msgstr ""
+"Es würde nicht genug Speicherplatz für die Installation von Modulix OS frei "
+"werden"
+
+msgid "Once this finishes, you'll be ready to restart into your new system."
+msgstr ""
+"Sobald dies abgeschlossen ist, kann in das neue System neu gestartet werden."
+
+msgid "Only one partition can be assigned as root (/)"
+msgstr "Nur eine Partition kann als Wurzelpartition (/) zugewiesen werden"
+
+msgid "Only one partition can be assigned to /boot, /home, or swap"
+msgstr ""
+"/boot, /home und Swap kann jeweils nur eine Partition zugewiesen werden"
+
+msgid "Open (no password)"
+msgstr "Offen (kein Passwort)"
+
+msgid "Open network, signal {level} of 4"
+msgstr "Offenes Netzwerk, Signal {level} von 4"
+
+msgid "Options"
+msgstr "Optionen"
+
+msgid "Other"
+msgstr "Andere"
+
+msgid "Other networks"
+msgstr "Weitere Netzwerke"
+
+msgid "Overview"
+msgstr "Übersicht"
+
+msgid "Partition with GParted…"
+msgstr "Mit GParted partitionieren …"
+
+msgid "Partitioning"
+msgstr "Partitionierung"
+
+msgid "Partitioning disk"
+msgstr "Festplatte wird partitioniert"
+
+msgid ""
+"Partitioning, encryption, and your desktop environment are being put in "
+"place."
+msgstr ""
+"Partitionierung, Verschlüsselung und die Arbeitsumgebung werden eingerichtet."
+
+msgid "Password"
+msgstr "Passwort"
+
+msgid "Passwords do not match."
+msgstr "Die Passwörter stimmen nicht überein."
+
+msgid "Passwords must match and not be empty"
+msgstr "Die Passwörter müssen übereinstimmen und dürfen nicht leer sein"
+
+msgid "Press modifier keys one at a time instead of together"
+msgstr "Sondertasten nacheinander statt gleichzeitig drücken"
+
+msgid "Preview"
+msgstr "Vorschau"
+
+msgid "Preview text"
+msgstr "Vorschautext"
+
+msgid "Previous"
+msgstr "Zurück"
+
+msgid "Quit the installer"
+msgstr "Installationsprogramm beenden"
+
+msgid "Reads each page aloud as you move through the installer"
+msgstr ""
+"Liest jede Seite vor, während das Installationsprogramm durchlaufen wird"
+
+msgid "Ready to install"
+msgstr "Bereit zur Installation"
+
+msgid "Refresh"
+msgstr "Aktualisieren"
+
+msgid "Registering the boot entry"
+msgstr "Boot-Eintrag wird registriert"
+
+msgid "Reload"
+msgstr "Neu laden"
+
+msgid "Remove"
+msgstr "Entfernen"
+
+msgid "Remove the installation medium"
+msgstr "Installationsmedium entfernen"
+
+msgid "Rescan"
+msgstr "Erneut suchen"
+
+msgid "Resize the Windows partition?"
+msgstr "Windows-Partition verkleinern?"
+
+msgid ""
+"Resizing Windows may make it ask for your password or BitLocker recovery key "
+"on the next boot. Make sure you have them before continuing. Back up "
+"anything important first."
+msgstr ""
+"Nach dem Verkleinern fragt Windows beim nächsten Start möglicherweise nach "
+"dem Passwort oder dem BitLocker-Wiederherstellungsschlüssel. Stellen Sie "
+"sicher, dass beides vorliegt, bevor Sie fortfahren. Sichern Sie zuvor alle "
+"wichtigen Daten."
+
+msgid "Restart"
+msgstr "Neu starten"
+
+msgid "Restart now"
+msgstr "Jetzt neu starten"
+
+msgid "Root"
+msgstr "Wurzel"
+
+msgid "Root (/)"
+msgstr "Wurzel (/)"
+
+msgid "Save"
+msgstr "Speichern"
+
+msgid ""
+"Scan this code with a phone to get the error report. The log is cut down to "
+"what a QR code can hold — the full log is in the files listed on screen."
+msgstr ""
+"Diesen Code mit einem Telefon scannen, um den Fehlerbericht zu erhalten. Das "
+"Protokoll ist auf das gekürzt, was ein QR-Code fassen kann — das "
+"vollständige Protokoll liegt in den auf dem Bildschirm genannten Dateien."
+
+msgid "Scanning…"
+msgstr "Suche läuft …"
+
+msgid "Screen magnifier"
+msgstr "Bildschirmlupe"
+
+msgid "Secured network, signal {level} of 4"
+msgstr "Gesichertes Netzwerk, Signal {level} von 4"
+
+msgid "Security"
+msgstr "Sicherheit"
+
+msgid "Select a free space region to install into"
+msgstr "Einen Bereich mit freiem Speicherplatz für die Installation auswählen"
+
+msgid "Select a target disk"
+msgstr "Eine Zielfestplatte auswählen"
+
+msgid "Setting passwords"
+msgstr "Passwörter werden gesetzt"
+
+msgid "Size (MiB)"
+msgstr "Größe (MiB)"
+
+msgid "Standard swap"
+msgstr "Standard-Swap"
+
+msgid "Start from a bare system and install everything yourself"
+msgstr "Mit einem nackten System beginnen und alles selbst installieren"
+
+msgid "Starting installation…"
+msgstr "Installation wird gestartet …"
+
+msgid "Status"
+msgstr "Status"
+
+msgid "Steps"
+msgstr "Schritte"
+
+msgid "Sticky keys"
+msgstr "Klebrige Tasten"
+
+msgid "Swap"
+msgstr "Swap"
+
+msgid "Swap with hibernation support"
+msgstr "Swap mit Unterstützung für den Ruhezustand"
+
+msgid "TPM2 PIN (optional)"
+msgstr "TPM2-PIN (optional)"
+
+msgid "Target disk"
+msgstr "Zielfestplatte"
+
+msgid ""
+"The TPM2 chip stores the key and unlocks the disk automatically at boot. Add "
+"a PIN to require a code as well."
+msgstr ""
+"Der TPM2-Chip speichert den Schlüssel und entsperrt die Festplatte beim "
+"Start automatisch. Mit einer PIN wird zusätzlich ein Code verlangt."
+
+msgid "The disk layout changed — refresh the disk and try again"
+msgstr ""
+"Die Partitionierung hat sich geändert — Festplatte aktualisieren und erneut "
+"versuchen"
+
+msgid "The essentials, ready to use"
+msgstr "Das Wichtigste, sofort einsatzbereit"
+
+msgid "The following partitions will be permanently erased"
+msgstr "Die folgenden Partitionen werden unwiderruflich gelöscht"
+
+msgid "The installer stopped unexpectedly"
+msgstr "Das Installationsprogramm wurde unerwartet beendet"
+
+msgid ""
+"The swap partition must be at least as large as this machine's RAM for "
+"hibernation"
+msgstr ""
+"Für den Ruhezustand muss die Swap-Partition mindestens so groß sein wie der "
+"Arbeitsspeicher dieses Rechners"
+
+msgid "These take effect after installation, not in the installer"
+msgstr ""
+"Diese wirken erst nach der Installation, nicht im Installationsprogramm"
+
+msgid "These take effect immediately in the installer itself"
+msgstr "Diese wirken sofort im Installationsprogramm selbst"
+
+msgid ""
+"This Windows partition can't be resized, so dual-boot with Windows isn't "
+"possible"
+msgstr ""
+"Diese Windows-Partition lässt sich nicht verkleinern, ein Dual-Boot mit "
+"Windows ist daher nicht möglich"
+
+msgid "This Windows partition needs a preflight check"
+msgstr "Diese Windows-Partition muss zuerst überprüft werden"
+
+msgid "This cannot be undone."
+msgstr "Dies kann nicht rückgängig gemacht werden."
+
+msgid "This disk is removable — make sure it isn't your install medium"
+msgstr ""
+"Diese Festplatte ist ein Wechseldatenträger — sicherstellen, dass es nicht "
+"das Installationsmedium ist"
+
+msgid "This disk is too small for Modulix OS"
+msgstr "Diese Festplatte ist zu klein für Modulix OS"
+
+msgid ""
+"This disk uses an old MBR partition table — convert it to GPT to use free "
+"space"
+msgstr ""
+"Diese Festplatte verwendet eine alte MBR-Partitionstabelle — für die Nutzung "
+"von freiem Speicherplatz in GPT umwandeln"
+
+msgid "This free space region is too small"
+msgstr "Dieser Bereich mit freiem Speicherplatz ist zu klein"
+
+msgid ""
+"This network requires signing in through a captive portal, but "
+"NetworkManager does not report its address. Sign in from another device on "
+"the same network, or pick a different network. This window closes by itself "
+"once the connection works."
+msgstr ""
+"Dieses Netzwerk erfordert eine Anmeldung über ein Captive Portal, "
+"NetworkManager meldet dessen Adresse jedoch nicht. Melden Sie sich von einem "
+"anderen Gerät im selben Netzwerk an oder wählen Sie ein anderes Netzwerk. "
+"Dieses Fenster schließt sich von selbst, sobald die Verbindung funktioniert."
+
+msgid ""
+"This partition will be reformatted as FAT32. Modulix uses its own 1024 MiB "
+"EFI partition — if this is Windows' EFI partition, Windows will no longer "
+"boot. Create a separate partition instead."
+msgstr ""
+"Diese Partition wird als FAT32 neu formatiert. Modulix verwendet eine eigene "
+"EFI-Partition mit 1024 MiB — handelt es sich hier um die EFI-Partition von "
+"Windows, startet Windows nicht mehr. Stattdessen eine separate Partition "
+"anlegen."
+
+msgid "This will permanently erase"
+msgstr "Unwiderruflich gelöscht wird"
+
+msgid "Timezone"
+msgstr "Zeitzone"
+
+msgid ""
+"To dual-boot with Windows, restart Windows fully first (not just sign out) "
+"and try again"
+msgstr ""
+"Für einen Dual-Boot mit Windows zuerst Windows vollständig neu starten "
+"(nicht nur abmelden) und es erneut versuchen"
+
+msgid ""
+"To dual-boot with Windows, this partition needs BitLocker suspended first: "
+"suspend it in Windows, or shrink the partition from Windows Disk Management, "
+"then restart the installer."
+msgstr ""
+"Für einen Dual-Boot mit Windows muss für diese Partition zuerst BitLocker "
+"ausgesetzt werden: in Windows aussetzen oder die Partition über die Windows-"
+"Datenträgerverwaltung verkleinern und danach das Installationsprogramm neu "
+"starten."
+
+msgid ""
+"To dual-boot with Windows, this partition needs a disk check first — boot "
+"into Windows and run \"chkdsk\""
+msgstr ""
+"Für einen Dual-Boot mit Windows muss diese Partition zuerst geprüft werden — "
+"Windows starten und \"chkdsk\" ausführen"
+
+msgid ""
+"Turn this on now if you need speech feedback for the rest of the installer"
+msgstr ""
+"Jetzt einschalten, wenn für den weiteren Verlauf der Installation "
+"Sprachausgabe benötigt wird"
+
+msgid "Type here to test your layout"
+msgstr "Hier tippen, um die Belegung zu testen"
+
+msgid "Typing test"
+msgstr "Tipptest"
+
+msgid "Unavailable: orca wasn't found on this system"
+msgstr "Nicht verfügbar: orca wurde auf diesem System nicht gefunden"
+
+msgid "Unlock automatically without a passphrase"
+msgstr "Automatisch ohne Passphrase entsperren"
+
+msgid ""
+"Unplug the USB drive now, then confirm. Leaving it plugged in boots the "
+"installer again instead of Modulix OS."
+msgstr ""
+"Den USB-Datenträger jetzt abziehen und dann bestätigen. Bleibt er stecken, "
+"startet erneut das Installationsprogramm statt Modulix OS."
+
+msgid "Use TPM2"
+msgstr "TPM2 verwenden"
+
+msgid "Use free space"
+msgstr "Freien Speicherplatz verwenden"
+
+msgid "Used for the installer and the installed system"
+msgstr "Gilt für das Installationsprogramm und das installierte System"
+
+msgid "User"
+msgstr "Benutzer"
+
+msgid "User account"
+msgstr "Benutzerkonto"
+
+msgid "Username"
+msgstr "Benutzername"
+
+msgid "Variant"
+msgstr "Variante"
+
+msgid "WPA/WPA2 Personal"
+msgstr "WPA/WPA2 Personal"
+
+msgid "WPA3 Personal"
+msgstr "WPA3 Personal"
+
+msgid "We're setting things up in the background — this won't take long."
+msgstr "Im Hintergrund wird alles eingerichtet — das dauert nicht lange."
+
+msgid ""
+"Web browser, file manager, terminal, printing, PDF reader, image viewer, "
+"archive manager, text editor, media player"
+msgstr ""
+"Webbrowser, Dateiverwaltung, Terminal, Drucken, PDF-Betrachter, "
+"Bildbetrachter, Archivverwaltung, Texteditor, Medienwiedergabe"
+
+msgid "Welcome to Modulix OS"
+msgstr "Willkommen bei Modulix OS"
+
+msgid "Wi-Fi networks"
+msgstr "WLAN-Netzwerke"
+
+msgid "Wi-Fi sign-in"
+msgstr "WLAN-Anmeldung"
+
+msgid "Windows"
+msgstr "Windows"
+
+msgid "Wired connection"
+msgstr "Kabelverbindung"
+
+msgid "World map"
+msgstr "Weltkarte"
+
+msgid "Writing NixOS configuration"
+msgstr "NixOS-Konfiguration wird geschrieben"
+
+msgid "You can uninstall any of these afterwards"
+msgstr "Jede davon kann später wieder entfernt werden"
+
+msgid "Your choices, applied"
+msgstr "Die Auswahl, angewendet"
+
+msgid "Zoom in on the area around the cursor"
+msgstr "Den Bereich um den Zeiger vergrößern"
+
+msgid "boot"
+msgstr "Boot"
+
+msgid "encrypted"
+msgstr "verschlüsselt"
+
+msgid "free at"
+msgstr "frei bei"
+
+msgid "from the start of the disk"
+msgstr "vom Anfang der Festplatte"
+
+msgid "removable"
+msgstr "Wechseldatenträger"
+
+msgid "root"
+msgstr "Wurzel"
+
+msgid "swap"
+msgstr "Swap"
+
+msgid "unformatted"
+msgstr "unformatiert"
+
+msgid "used"
+msgstr "belegt"

@@ -19,8 +19,7 @@ msgid "A modular system"
 msgstr "Un système modulaire"
 
 msgid "A powerful, customizable desktop with a traditional layout"
-msgstr ""
-"Un bureau puissant et personnalisable, à la disposition traditionnelle"
+msgstr "Un bureau puissant et personnalisable, à la disposition traditionnelle"
 
 msgid "Accessibility"
 msgstr "Accessibilité"
@@ -102,6 +101,9 @@ msgstr "Cliquez sur la carte ou choisissez dans la liste"
 msgid "Close"
 msgstr "Fermer"
 
+msgid "Completing the system configuration"
+msgstr "Finalisation de la configuration du système"
+
 msgid "Confirm password"
 msgstr "Confirmer le mot de passe"
 
@@ -129,6 +131,15 @@ msgstr "Continuer quand même"
 msgid "Copy kept on the target disk:"
 msgstr "Copie conservée sur le disque cible :"
 
+msgid "Copy text"
+msgstr "Copier le texte"
+
+msgid "Could not build the QR code"
+msgstr "Impossible de générer le QR code"
+
+msgid "Could not restart:"
+msgstr "Impossible de redémarrer :"
+
 msgid "Couldn't save this step"
 msgstr "Impossible d'enregistrer cette étape"
 
@@ -140,6 +151,9 @@ msgstr "Créer une partition"
 
 msgid "Current layout"
 msgstr "Disposition actuelle"
+
+msgid "Default"
+msgstr "Par défaut"
 
 msgid "Delete"
 msgstr "Supprimer"
@@ -156,8 +170,12 @@ msgstr "Détails"
 msgid "Disabled"
 msgstr "Désactivé"
 
-msgid "Disk space used as extra memory when RAM is full. Hibernation also needs it to save the session to disk."
-msgstr "Espace disque utilisé comme mémoire supplémentaire quand la RAM est pleine. L'hibernation s'en sert aussi pour enregistrer la session sur le disque."
+msgid ""
+"Disk space used as extra memory when RAM is full. Hibernation also needs it "
+"to save the session to disk."
+msgstr ""
+"Espace disque utilisé comme mémoire supplémentaire quand la RAM est pleine. "
+"L'hibernation s'en sert aussi pour enregistrer la session sur le disque."
 
 msgid "Don't use"
 msgstr "Ne pas utiliser"
@@ -174,11 +192,21 @@ msgstr "Activer le narrateur"
 msgid "Encrypt disk"
 msgstr "Chiffrer le disque"
 
+msgid "Encrypting root partition"
+msgstr "Chiffrement de la partition racine"
+
 msgid "Encryption"
 msgstr "Chiffrement"
 
-msgid "Encrypts the whole disk with LUKS2. A passphrase is required at every boot unless TPM2 unlocking is enabled."
-msgstr "Chiffre tout le disque avec LUKS2. Une phrase secrète est demandée à chaque démarrage, sauf si le déverrouillage TPM2 est activé."
+msgid ""
+"Encrypts the whole disk with LUKS2. A passphrase is required at every boot "
+"unless TPM2 unlocking is enabled."
+msgstr ""
+"Chiffre tout le disque avec LUKS2. Une phrase secrète est demandée à chaque "
+"démarrage, sauf si le déverrouillage TPM2 est activé."
+
+msgid "Enrolling TPM2"
+msgstr "Enregistrement dans le TPM2"
 
 msgid "Enter a username"
 msgstr "Saisissez un nom d'utilisateur"
@@ -204,6 +232,9 @@ msgstr "Effacer le disque et installer Modulix OS ?"
 msgid "Erase entire disk"
 msgstr "Effacer tout le disque"
 
+msgid "Error report QR code"
+msgstr "QR du rapport d'erreur"
+
 msgid ""
 "Existing data in /home is kept — make sure it already holds a Linux "
 "filesystem."
@@ -213,6 +244,9 @@ msgstr ""
 
 msgid "Filesystem"
 msgstr "Système de fichiers"
+
+msgid "Finishing up"
+msgstr "Finalisation"
 
 msgid ""
 "For a strong password, use one of (CNIL recommendation):\n"
@@ -231,6 +265,9 @@ msgstr ""
 
 msgid "Format"
 msgstr "Formater"
+
+msgid "Formatting partitions"
+msgstr "Formatage des partitions"
 
 msgid "Free space"
 msgstr "Espace libre"
@@ -285,6 +322,9 @@ msgstr "Type d'installation"
 msgid "Installing"
 msgstr "Installation en cours"
 
+msgid "Installing Modulix OS"
+msgstr "Installation de Modulix OS"
+
 msgid "Kept"
 msgstr "Conservé"
 
@@ -335,6 +375,9 @@ msgstr "Modulix OS est prêt. Vous pouvez maintenant redémarrer dessus."
 
 msgid "Mount point"
 msgstr "Point de montage"
+
+msgid "Mounting target filesystems"
+msgstr "Montage des systèmes de fichiers cibles"
 
 msgid "Narrator"
 msgstr "Narrateur"
@@ -414,8 +457,15 @@ msgstr "Partitionner avec GParted…"
 msgid "Partitioning"
 msgstr "Partitionnement"
 
-msgid "Partitioning, encryption, and your desktop environment are being put in place."
-msgstr "Le partitionnement, le chiffrement et votre environnement de bureau sont en cours de mise en place."
+msgid "Partitioning disk"
+msgstr "Partitionnement du disque"
+
+msgid ""
+"Partitioning, encryption, and your desktop environment are being put in "
+"place."
+msgstr ""
+"Le partitionnement, le chiffrement et votre environnement de bureau sont en "
+"cours de mise en place."
 
 msgid "Password"
 msgstr "Mot de passe"
@@ -439,6 +489,9 @@ msgstr "Exemple de texte"
 msgid "Previous"
 msgstr "Précédent"
 
+msgid "Quit the installer"
+msgstr "Quitter l'installeur"
+
 msgid "Reads each page aloud as you move through the installer"
 msgstr ""
 "Lit chaque page à voix haute pendant la progression dans l'installateur"
@@ -449,11 +502,17 @@ msgstr "Prêt à installer"
 msgid "Refresh"
 msgstr "Actualiser"
 
+msgid "Registering the boot entry"
+msgstr "Enregistrement de l'entrée de démarrage"
+
 msgid "Reload"
 msgstr "Recharger"
 
 msgid "Remove"
 msgstr "Supprimer"
+
+msgid "Remove the installation medium"
+msgstr "Retirez le support d'installation"
 
 msgid "Rescan"
 msgstr "Actualiser"
@@ -462,13 +521,19 @@ msgid "Resize the Windows partition?"
 msgstr "Redimensionner la partition Windows ?"
 
 msgid ""
-"Resizing Windows may make it ask for your password or BitLocker recovery "
-"key on the next boot. Make sure you have them before continuing. Back up "
+"Resizing Windows may make it ask for your password or BitLocker recovery key "
+"on the next boot. Make sure you have them before continuing. Back up "
 "anything important first."
 msgstr ""
 "Redimensionner Windows peut lui faire demander votre mot de passe ou votre "
 "clé de récupération BitLocker au prochain démarrage. Assurez-vous de les "
 "avoir avant de continuer. Sauvegardez d'abord tout ce qui est important."
+
+msgid "Restart"
+msgstr "Redémarrer"
+
+msgid "Restart now"
+msgstr "Redémarrer maintenant"
 
 msgid "Root"
 msgstr "Racine"
@@ -478,6 +543,14 @@ msgstr "Racine (/)"
 
 msgid "Save"
 msgstr "Enregistrer"
+
+msgid ""
+"Scan this code with a phone to get the error report. The log is cut down to "
+"what a QR code can hold — the full log is in the files listed on screen."
+msgstr ""
+"Scannez ce code avec un téléphone pour récupérer le rapport d'erreur. Le "
+"journal est réduit à ce qu'un QR code peut contenir — le journal complet se "
+"trouve dans les fichiers indiqués à l'écran."
 
 msgid "Scanning…"
 msgstr "Recherche en cours…"
@@ -496,6 +569,9 @@ msgstr "Sélectionnez une zone d'espace libre où installer"
 
 msgid "Select a target disk"
 msgstr "Sélectionnez un disque cible"
+
+msgid "Setting passwords"
+msgstr "Définition des mots de passe"
 
 msgid "Size (MiB)"
 msgstr "Taille (Mio)"
@@ -530,8 +606,12 @@ msgstr "Code PIN TPM2 (facultatif)"
 msgid "Target disk"
 msgstr "Disque cible"
 
-msgid "The TPM2 chip stores the key and unlocks the disk automatically at boot. Add a PIN to require a code as well."
-msgstr "La puce TPM2 conserve la clé et déverrouille le disque automatiquement au démarrage. Ajoutez un code PIN pour exiger aussi un code."
+msgid ""
+"The TPM2 chip stores the key and unlocks the disk automatically at boot. Add "
+"a PIN to require a code as well."
+msgstr ""
+"La puce TPM2 conserve la clé et déverrouille le disque automatiquement au "
+"démarrage. Ajoutez un code PIN pour exiger aussi un code."
 
 msgid "The disk layout changed — refresh the disk and try again"
 msgstr "La disposition du disque a changé — actualisez le disque et réessayez"
@@ -593,13 +673,13 @@ msgstr "Cette zone d'espace libre est trop petite"
 msgid ""
 "This network requires signing in through a captive portal, but "
 "NetworkManager does not report its address. Sign in from another device on "
-"the same network, or pick a different network. This window closes by "
-"itself once the connection works."
+"the same network, or pick a different network. This window closes by itself "
+"once the connection works."
 msgstr ""
 "Ce réseau exige une connexion via un portail captif, mais NetworkManager "
-"n'indique pas son adresse. Connectez-vous depuis un autre appareil du "
-"même réseau, ou choisissez un autre réseau. Cette fenêtre se ferme "
-"d'elle-même dès que la connexion fonctionne."
+"n'indique pas son adresse. Connectez-vous depuis un autre appareil du même "
+"réseau, ou choisissez un autre réseau. Cette fenêtre se ferme d'elle-même "
+"dès que la connexion fonctionne."
 
 msgid ""
 "This partition will be reformatted as FAT32. Modulix uses its own 1024 MiB "
@@ -620,18 +700,17 @@ msgid ""
 "To dual-boot with Windows, restart Windows fully first (not just sign out) "
 "and try again"
 msgstr ""
-"Pour un dual-boot avec Windows, redémarrez d'abord complètement Windows "
-"(pas seulement une déconnexion) puis réessayez"
+"Pour un dual-boot avec Windows, redémarrez d'abord complètement Windows (pas "
+"seulement une déconnexion) puis réessayez"
 
 msgid ""
-"To dual-boot with Windows, this partition needs BitLocker suspended "
-"first: suspend it in Windows, or shrink the partition from Windows Disk "
-"Management, then restart the installer."
+"To dual-boot with Windows, this partition needs BitLocker suspended first: "
+"suspend it in Windows, or shrink the partition from Windows Disk Management, "
+"then restart the installer."
 msgstr ""
 "Pour un dual-boot avec Windows, cette partition nécessite de suspendre "
-"BitLocker au préalable : suspendez-le dans Windows, ou réduisez la "
-"partition depuis la Gestion des disques de Windows, puis redémarrez "
-"l'installateur."
+"BitLocker au préalable : suspendez-le dans Windows, ou réduisez la partition "
+"depuis la Gestion des disques de Windows, puis redémarrez l'installateur."
 
 msgid ""
 "To dual-boot with Windows, this partition needs a disk check first — boot "
@@ -657,6 +736,13 @@ msgstr "Indisponible : orca est introuvable sur ce système"
 
 msgid "Unlock automatically without a passphrase"
 msgstr "Déverrouille automatiquement sans phrase secrète"
+
+msgid ""
+"Unplug the USB drive now, then confirm. Leaving it plugged in boots the "
+"installer again instead of Modulix OS."
+msgstr ""
+"Débranchez la clé USB maintenant, puis confirmez. Si elle reste branchée, "
+"c'est l'installateur qui redémarre au lieu de Modulix OS."
 
 msgid "Use TPM2"
 msgstr "Utiliser le TPM2"
@@ -688,8 +774,13 @@ msgstr "WPA3 personnel"
 msgid "We're setting things up in the background — this won't take long."
 msgstr "Nous préparons tout en arrière-plan — cela ne prendra pas longtemps."
 
-msgid "Web browser, file manager, terminal, printing, PDF reader, image viewer, archive manager, text editor, media player"
-msgstr "Navigateur web, gestionnaire de fichiers, terminal, impression, lecteur PDF, visionneuse d'images, gestionnaire d'archives, éditeur de texte, lecteur multimédia"
+msgid ""
+"Web browser, file manager, terminal, printing, PDF reader, image viewer, "
+"archive manager, text editor, media player"
+msgstr ""
+"Navigateur web, gestionnaire de fichiers, terminal, impression, lecteur PDF, "
+"visionneuse d'images, gestionnaire d'archives, éditeur de texte, lecteur "
+"multimédia"
 
 msgid "Welcome to Modulix OS"
 msgstr "Bienvenue dans Modulix OS"
@@ -708,6 +799,9 @@ msgstr "Connexion filaire"
 
 msgid "World map"
 msgstr "Carte du monde"
+
+msgid "Writing NixOS configuration"
+msgstr "Écriture de la configuration NixOS"
 
 msgid "You can uninstall any of these afterwards"
 msgstr "Vous pourrez désinstaller chacune d'entre elles par la suite"

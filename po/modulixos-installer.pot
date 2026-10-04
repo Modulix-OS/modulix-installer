@@ -73,6 +73,9 @@ msgstr ""
 msgid "Checking…"
 msgstr ""
 
+msgid "Choose this desktop environment"
+msgstr ""
+
 msgid "Classic"
 msgstr ""
 
@@ -86,6 +89,9 @@ msgid "Click the map or pick from the list"
 msgstr ""
 
 msgid "Close"
+msgstr ""
+
+msgid "Completing the system configuration"
 msgstr ""
 
 msgid "Confirm password"
@@ -115,6 +121,15 @@ msgstr ""
 msgid "Copy kept on the target disk:"
 msgstr ""
 
+msgid "Copy text"
+msgstr ""
+
+msgid "Could not build the QR code"
+msgstr ""
+
+msgid "Could not restart:"
+msgstr ""
+
 msgid "Couldn't save this step"
 msgstr ""
 
@@ -125,6 +140,9 @@ msgid "Create partition"
 msgstr ""
 
 msgid "Current layout"
+msgstr ""
+
+msgid "Default"
 msgstr ""
 
 msgid "Delete"
@@ -142,7 +160,9 @@ msgstr ""
 msgid "Disabled"
 msgstr ""
 
-msgid "Disk space used as extra memory when RAM is full. Hibernation also needs it to save the session to disk."
+msgid ""
+"Disk space used as extra memory when RAM is full. Hibernation also needs it "
+"to save the session to disk."
 msgstr ""
 
 msgid "Don't use"
@@ -160,10 +180,18 @@ msgstr ""
 msgid "Encrypt disk"
 msgstr ""
 
+msgid "Encrypting root partition"
+msgstr ""
+
 msgid "Encryption"
 msgstr ""
 
-msgid "Encrypts the whole disk with LUKS2. A passphrase is required at every boot unless TPM2 unlocking is enabled."
+msgid ""
+"Encrypts the whole disk with LUKS2. A passphrase is required at every boot "
+"unless TPM2 unlocking is enabled."
+msgstr ""
+
+msgid "Enrolling TPM2"
 msgstr ""
 
 msgid "Enter a username"
@@ -190,12 +218,18 @@ msgstr ""
 msgid "Erase entire disk"
 msgstr ""
 
+msgid "Error report QR code"
+msgstr ""
+
 msgid ""
 "Existing data in /home is kept — make sure it already holds a Linux "
 "filesystem."
 msgstr ""
 
 msgid "Filesystem"
+msgstr ""
+
+msgid "Finishing up"
 msgstr ""
 
 msgid ""
@@ -207,6 +241,9 @@ msgid ""
 msgstr ""
 
 msgid "Format"
+msgstr ""
+
+msgid "Formatting partitions"
 msgstr ""
 
 msgid "Free space"
@@ -260,6 +297,9 @@ msgstr ""
 msgid "Installing"
 msgstr ""
 
+msgid "Installing Modulix OS"
+msgstr ""
+
 msgid "Kept"
 msgstr ""
 
@@ -309,6 +349,9 @@ msgid "Modulix OS is ready. You can restart into it now."
 msgstr ""
 
 msgid "Mount point"
+msgstr ""
+
+msgid "Mounting target filesystems"
 msgstr ""
 
 msgid "Narrator"
@@ -389,7 +432,12 @@ msgstr ""
 msgid "Partitioning"
 msgstr ""
 
-msgid "Partitioning, encryption, and your desktop environment are being put in place."
+msgid "Partitioning disk"
+msgstr ""
+
+msgid ""
+"Partitioning, encryption, and your desktop environment are being put in "
+"place."
 msgstr ""
 
 msgid "Password"
@@ -413,6 +461,9 @@ msgstr ""
 msgid "Previous"
 msgstr ""
 
+msgid "Quit the installer"
+msgstr ""
+
 msgid "Reads each page aloud as you move through the installer"
 msgstr ""
 
@@ -422,10 +473,16 @@ msgstr ""
 msgid "Refresh"
 msgstr ""
 
+msgid "Registering the boot entry"
+msgstr ""
+
 msgid "Reload"
 msgstr ""
 
 msgid "Remove"
+msgstr ""
+
+msgid "Remove the installation medium"
 msgstr ""
 
 msgid "Rescan"
@@ -435,9 +492,15 @@ msgid "Resize the Windows partition?"
 msgstr ""
 
 msgid ""
-"Resizing Windows may make it ask for your password or BitLocker recovery "
-"key on the next boot. Make sure you have them before continuing. Back up "
+"Resizing Windows may make it ask for your password or BitLocker recovery key "
+"on the next boot. Make sure you have them before continuing. Back up "
 "anything important first."
+msgstr ""
+
+msgid "Restart"
+msgstr ""
+
+msgid "Restart now"
 msgstr ""
 
 msgid "Root"
@@ -447,6 +510,11 @@ msgid "Root (/)"
 msgstr ""
 
 msgid "Save"
+msgstr ""
+
+msgid ""
+"Scan this code with a phone to get the error report. The log is cut down to "
+"what a QR code can hold — the full log is in the files listed on screen."
 msgstr ""
 
 msgid "Scanning…"
@@ -465,6 +533,9 @@ msgid "Select a free space region to install into"
 msgstr ""
 
 msgid "Select a target disk"
+msgstr ""
+
+msgid "Setting passwords"
 msgstr ""
 
 msgid "Size (MiB)"
@@ -500,7 +571,9 @@ msgstr ""
 msgid "Target disk"
 msgstr ""
 
-msgid "The TPM2 chip stores the key and unlocks the disk automatically at boot. Add a PIN to require a code as well."
+msgid ""
+"The TPM2 chip stores the key and unlocks the disk automatically at boot. Add "
+"a PIN to require a code as well."
 msgstr ""
 
 msgid "The disk layout changed — refresh the disk and try again"
@@ -554,8 +627,8 @@ msgstr ""
 msgid ""
 "This network requires signing in through a captive portal, but "
 "NetworkManager does not report its address. Sign in from another device on "
-"the same network, or pick a different network. This window closes by "
-"itself once the connection works."
+"the same network, or pick a different network. This window closes by itself "
+"once the connection works."
 msgstr ""
 
 msgid ""
@@ -576,9 +649,9 @@ msgid ""
 msgstr ""
 
 msgid ""
-"To dual-boot with Windows, this partition needs BitLocker suspended "
-"first: suspend it in Windows, or shrink the partition from Windows Disk "
-"Management, then restart the installer."
+"To dual-boot with Windows, this partition needs BitLocker suspended first: "
+"suspend it in Windows, or shrink the partition from Windows Disk Management, "
+"then restart the installer."
 msgstr ""
 
 msgid ""
@@ -600,6 +673,11 @@ msgid "Unavailable: orca wasn't found on this system"
 msgstr ""
 
 msgid "Unlock automatically without a passphrase"
+msgstr ""
+
+msgid ""
+"Unplug the USB drive now, then confirm. Leaving it plugged in boots the "
+"installer again instead of Modulix OS."
 msgstr ""
 
 msgid "Use TPM2"
@@ -632,7 +710,9 @@ msgstr ""
 msgid "We're setting things up in the background — this won't take long."
 msgstr ""
 
-msgid "Web browser, file manager, terminal, printing, PDF reader, image viewer, archive manager, text editor, media player"
+msgid ""
+"Web browser, file manager, terminal, printing, PDF reader, image viewer, "
+"archive manager, text editor, media player"
 msgstr ""
 
 msgid "Welcome to Modulix OS"
@@ -651,6 +731,9 @@ msgid "Wired connection"
 msgstr ""
 
 msgid "World map"
+msgstr ""
+
+msgid "Writing NixOS configuration"
 msgstr ""
 
 msgid "You can uninstall any of these afterwards"
