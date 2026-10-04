@@ -220,7 +220,7 @@ impl ProgressPage {
             glib::spawn_future_local(async move {
                 while let Ok(event) = rx.recv().await {
                     match event {
-                        ProgressEvent::Started { task } => this.status_label.set_label(&task),
+                        ProgressEvent::Started { task } => this.status_label.set_label(&tr(&task)),
                         ProgressEvent::Log(line) => this.append_log(&line),
                         ProgressEvent::Progress { fraction } => {
                             this.progress_bar.set_fraction(fraction);

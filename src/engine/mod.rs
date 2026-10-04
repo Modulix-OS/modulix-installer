@@ -122,6 +122,10 @@ impl TaskCtx {
 /// progress bar.
 #[async_trait]
 pub trait Task: Send + Sync {
+    /// English gettext msgid, *not* a translated string: tasks run on tokio
+    /// worker threads and `i18n`'s `LANGUAGE` slot is read from the GTK main
+    /// thread only. The progress page translates it on arrival, which also
+    /// keeps the install log readable in a single language.
     fn label(&self) -> String;
     fn weight(&self) -> u32;
     async fn run(&self, ctx: &TaskCtx, tx: &ProgressSink) -> mx::Result<()>;
