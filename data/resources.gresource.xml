@@ -15,6 +15,7 @@
     <file alias="user-symbolic.svg">icons/user-symbolic.svg</file>
     <file alias="desktop-symbolic.svg">icons/desktop-symbolic.svg</file>
     <file alias="apps-symbolic.svg">icons/apps-symbolic.svg</file>
+    <file alias="qr-code-symbolic.svg">icons/qr-code-symbolic.svg</file>
   </gresource>
   <!-- App-pack card icons, resolved straight out of the `papirus-icon-theme`
        nixpkgs derivation (GPL-3.0) via the extra --sourcedir build.rs adds

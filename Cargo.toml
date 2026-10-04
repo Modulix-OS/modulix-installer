@@ -21,6 +21,7 @@ tokio = { version = "1.53.1", features = ["rt-multi-thread", "process", "sync", 
 unicode-normalization = "0.1"
 webkit6 = "0.6.1"
 zbus = "5"
+qrcode = { version = "0.14.1", default-features = false }
 
 [build-dependencies]
 glib-build-tools = "0.22.8"

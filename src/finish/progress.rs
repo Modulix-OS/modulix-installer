@@ -7,9 +7,11 @@
 use crate::backend::Backends;
 use crate::config::InstallConfig;
 use crate::engine::{self, ProgressEvent, TaskCtx, install_log};
+use crate::finish::qr_report;
 use crate::finish::slides::INSTALL_SLIDES;
 use crate::i18n::tr;
 use crate::mx;
+use crate::widgets::qr_code;
 use crate::widgets::slideshow::Slideshow;
 use adw::prelude::*;
 
@@ -36,11 +38,18 @@ pub struct ProgressPage {
     /// Offered once the install succeeded: the live session has no other
     /// way out, the installer is the only app in the kiosk.
     restart_button: gtk::Button,
+    /// Offered once the install failed, in the same spot: the kiosk has no
+    /// browser and no way to get text out, so the report leaves by phone
+    /// camera. See [`crate::finish::qr_report`].
+    qr_button: gtk::Button,
     /// Also offered once the install failed: the way out of a failed install
     /// is the same reboot the success path offers, behind the same
     /// remove-the-medium warning. Destructive-looking on purpose — nothing was
     /// installed, so leaving costs the user their session.
     quit_button: gtk::Button,
+    /// Error message and persisted-log paths of the last failure, as handed to
+    /// [`ProgressPage::show_failure`]. Read by the QR button's handler.
+    failure: std::rc::Rc<std::cell::RefCell<(String, Vec<String>)>>,
     log_scroller: gtk::ScrolledWindow,
     slideshow: std::rc::Rc<Slideshow>,
 }
@@ -94,6 +103,19 @@ impl ProgressPage {
             .visible(false)
             .build();
 
+        let qr_button = gtk::Button::builder()
+            .child(
+                &adw::ButtonContent::builder()
+                    .icon_name("qr-code-symbolic")
+                    .label(tr("Error report QR code"))
+                    .build(),
+            )
+            .css_classes(["pill"])
+            .halign(gtk::Align::End)
+            .valign(gtk::Align::Center)
+            .visible(false)
+            .build();
+
         let quit_button = gtk::Button::builder()
             .label(tr("Quit the installer"))
             .css_classes(["destructive-action", "pill"])
@@ -105,9 +127,10 @@ impl ProgressPage {
         // The outcome row takes the progress bar's place once the pipeline is
         // done — outcome text on the left, the actions on the right — rather
         // than stacking a card on top of a bar that no longer moves. Success
-        // shows `restart_button`, failure `quit_button`.
+        // shows `restart_button`, failure `qr_button` + `quit_button`.
         let result_box = gtk::Box::new(gtk::Orientation::Horizontal, 12);
         result_box.append(&result_scroller);
+        result_box.append(&qr_button);
         result_box.append(&quit_button);
         result_box.append(&restart_button);
         result_box.set_visible(false);
@@ -164,12 +187,15 @@ impl ProgressPage {
             result_label,
             log_path_label,
             restart_button,
+            qr_button,
             quit_button,
+            failure: std::rc::Rc::new(std::cell::RefCell::new((String::new(), Vec::new()))),
             log_scroller,
             slideshow,
         };
         this.wire_reboot_button(&this.restart_button);
         this.wire_reboot_button(&this.quit_button);
+        this.wire_qr_button();
         this
     }
 
@@ -193,9 +219,14 @@ impl ProgressPage {
         self.result_box.set_visible(false);
         self.restart_button.set_visible(false);
         self.restart_button.set_sensitive(true);
+        self.qr_button.set_visible(false);
         self.quit_button.set_visible(false);
         self.quit_button.set_sensitive(true);
         self.quit_button.set_label(&tr("Quit the installer"));
+        self.qr_button.set_sensitive(true);
+        if let Some(content) = self.qr_button.child().and_downcast::<adw::ButtonContent>() {
+            content.set_label(&tr("Error report QR code"));
+        }
         self.log_path_label.set_visible(false);
         self.status_label.set_visible(true);
         self.progress_bar.set_visible(true);
@@ -425,7 +456,50 @@ impl ProgressPage {
             self.log_path_label.set_visible(true);
         }
 
+        *self.failure.borrow_mut() = (message.to_string(), paths);
+        self.qr_button.set_visible(true);
         self.quit_button.set_visible(true);
+    }
+
+    /// Connects the failure-page "Error report QR code" button: it reads the
+    /// persisted log back and shows [`qr_report::build_report`]'s payload as a
+    /// QR code, so a phone can carry the error off a kiosk machine that has
+    /// neither a browser nor guaranteed network.
+    ///
+    /// # Post-conditions
+    /// The log is read **asynchronously** (`load_contents_future`): it reaches
+    /// tens of megabytes on a failed `nixos-install` and the GTK main loop must
+    /// not block on it. The button is insensitive for the duration, so a
+    /// double click cannot stack two reads. A log that cannot be read is not
+    /// fatal — the report then carries the error message and the paths alone.
+    fn wire_qr_button(&self) {
+        let failure = self.failure.clone();
+        self.qr_button.connect_clicked(move |button| {
+            button.set_sensitive(false);
+            let failure = failure.clone();
+            let button = button.clone();
+            glib::spawn_future_local(async move {
+                let log = match install_log::path() {
+                    Some(path) => gio::File::for_path(path)
+                        .load_contents_future()
+                        .await
+                        .map(|(bytes, _etag)| String::from_utf8_lossy(&bytes).into_owned())
+                        .unwrap_or_default(),
+                    None => String::new(),
+                };
+                let (message, paths) = failure.borrow().clone();
+                let payload = qr_report::build_report(&message, &paths, &log);
+                qr_code::present_dialog(
+                    &button,
+                    &tr("Error report QR code"),
+                    &tr(
+                        "Scan this code with a phone to get the error report. The log is cut down to what a QR code can hold — the full log is in the files listed on screen.",
+                    ),
+                    &payload,
+                );
+                button.set_sensitive(true);
+            });
+        });
     }
 }
 
