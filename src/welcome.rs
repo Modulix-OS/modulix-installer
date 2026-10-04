@@ -14,7 +14,7 @@
 use adw::prelude::*;
 
 /// Seconds a greeting stays on screen before the next language fades in.
-const ROTATE_SECONDS: u32 = 6;
+const ROTATE_SECONDS: u32 = 3;
 
 /// Cross-fade duration, in milliseconds. Well under [`ROTATE_SECONDS`] so the
 /// text is readable at rest rather than permanently in transition.
