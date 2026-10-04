@@ -13,6 +13,7 @@ let
   installerStatusFile = "/run/modulix-installer.status";
 
   runInstaller = pkgs.writeShellScript "modulix-installer-run" ''
+    ${applyOutputScale} || true
     ${pkgs.coreutils}/bin/touch ${installerStartedFlag}
     status=0
     ${installerPkg}/bin/modulixos-installer || status=$?
@@ -21,6 +22,99 @@ let
     # The installer is sway's only client — leaving the compositor up would
     # just show an empty screen.
     ${pkgs.sway}/bin/swaymsg exit || true
+  '';
+
+  applyOutputScale = pkgs.writeShellScript "modulix-apply-output-scale" ''
+    set -u
+
+    jq=${pkgs.jq}/bin/jq
+    swaymsg=${pkgs.sway}/bin/swaymsg
+    od=${pkgs.coreutils}/bin/od
+    printf_=${pkgs.coreutils}/bin/printf
+
+    min_logical_w=1280
+    min_logical_h=800
+    max_logical_h=1300
+
+    override=""
+    if [ -n "''${MODULIX_SCALE:-}" ]; then
+      override="$MODULIX_SCALE"
+    else
+      for arg in $(${pkgs.coreutils}/bin/cat /proc/cmdline); do
+        case "$arg" in
+          modulix.scale=*) override="''${arg#modulix.scale=}" ;;
+        esac
+      done
+    fi
+
+    is_virt=0
+    ${pkgs.systemd}/bin/systemd-detect-virt --quiet && is_virt=1
+
+    fmt_scale() {
+      "$printf_" '%d.%02d' $(($1 / 100)) $(($1 % 100))
+    }
+
+    edid_width_cm() {
+      connector="$1"
+      for f in /sys/class/drm/card*-"$connector"/edid; do
+        [ -s "$f" ] || continue
+        set -- $("$od" -An -tu1 -j21 -N1 "$f")
+        echo "''${1:-0}"
+        return
+      done
+      echo 0
+    }
+
+    "$swaymsg" -t get_outputs -r \
+      | "$jq" -r '.[] | select(.active) | "\(.name) \(.current_mode.width) \(.current_mode.height)"' \
+      | while read -r name w h; do
+      [ -n "$name" ] || continue
+      case "$w$h" in *[!0-9]* | "") continue ;; esac
+      [ "$w" -gt 0 ] && [ "$h" -gt 0 ] || continue
+
+      if [ -n "$override" ]; then
+        echo "modulix scale: $name forced to $override" >&2
+        "$swaymsg" output "$name" scale "$override" >/dev/null || true
+        continue
+      fi
+
+      cm=0
+      [ "$is_virt" -eq 1 ] || cm=$(edid_width_cm "$name")
+      case "$cm" in *[!0-9]* | "") cm=0 ;; esac
+
+      dpi=0
+      [ "$cm" -gt 0 ] && dpi=$((w * 254 / (cm * 100)))
+
+      if [ "$dpi" -ge 120 ]; then
+        raw=$((dpi * 100 / 96))
+        cents=$(((raw + 12) / 25 * 25))
+      elif [ "$dpi" -gt 0 ]; then
+        cents=100
+      elif [ "$w" -ge 3200 ] || [ "$h" -ge 1800 ]; then
+        cents=200
+      elif [ "$w" -ge 2400 ] || [ "$h" -ge 1400 ]; then
+        cents=150
+      else
+        cents=100
+      fi
+
+      [ "$cents" -le 300 ] || cents=300
+      [ "$cents" -ge 100 ] || cents=100
+
+      while [ "$cents" -lt 300 ] && [ $((h * 100 / cents)) -gt "$max_logical_h" ]; do
+        cents=$((cents + 25))
+      done
+
+      while [ "$cents" -gt 100 ] \
+        && { [ $((w * 100 / cents)) -lt "$min_logical_w" ] \
+          || [ $((h * 100 / cents)) -lt "$min_logical_h" ]; }; do
+        cents=$((cents - 25))
+      done
+
+      scale=$(fmt_scale "$cents")
+      echo "modulix scale: $name ''${w}x''${h} ''${dpi}dpi -> scale $scale" >&2
+      "$swaymsg" output "$name" scale "$scale" >/dev/null || true
+    done
   '';
 
   waitForGpu = pkgs.writeShellScript "modulix-wait-for-gpu" ''
@@ -301,6 +395,7 @@ in
       gparted
       gnome-calculator
       git
+      jq
       sway
       orca
       speechd

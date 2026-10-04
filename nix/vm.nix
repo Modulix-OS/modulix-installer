@@ -18,10 +18,17 @@ pkgs.writeShellScriptBin "modulixos-vm" ''
     --tpm2 \
     --daemon
 
+  res=""
+  display_opts=""
+  if [ -n "''${MODULIXOS_VM_RES:-}" ]; then
+    res=",xres=''${MODULIXOS_VM_RES%%x*},yres=''${MODULIXOS_VM_RES##*x}"
+    display_opts=",zoom-to-fit=on"
+  fi
+
   if [ "''${MODULIXOS_VM_GL:-1}" = 0 ]; then
-    gpu=(-device virtio-vga -display gtk)
+    gpu=(-device "virtio-vga$res" -display "gtk$display_opts")
   else
-    gpu=(-device virtio-vga-gl -display gtk,gl=on)
+    gpu=(-device "virtio-vga-gl$res" -display "gtk,gl=on$display_opts")
   fi
 
   ${pkgs.qemu}/bin/qemu-system-x86_64 \

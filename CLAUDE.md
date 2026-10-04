@@ -50,6 +50,9 @@ nix build .#iso     # the live ISO (nix/iso.nix)
 nix run  .#vm       # boot that ISO in qemu: UEFI, scratch 40 GiB disk, swtpm, virgl on
 MODULIXOS_VM_GL=0 nix run .#vm   # same, virtio-gpu without 3D — the libvirt-like case the
                                  # kiosk's software-renderer fallback exists for
+MODULIXOS_VM_RES=3840x2160 nix run .#vm   # force the guest resolution (xres/yres on the
+                                 # virtio GPU, qemu window zoom-to-fit) — the only way to
+                                 # exercise the HiDPI auto-scale below
 ```
 
 The install log is written to `/var/log/modulixos-install.log` (readable from tty2 during the
@@ -388,8 +391,9 @@ modulix-core-utils = { path = "../modulix-core-utils", features = ["init", "file
   `org.freedesktop.UDisks2` D-Bus service itself), `gparted` (manual mode's partition
   editor, needed only to resize or delete a partition the user already created — carving a
   new one out of free space happens in-app, see step 6 above), plus `git` (the config repo),
-  `e2fsprogs` (`mkfs.ext4`, which udisks2 shells out to) and `sway` (`swaymsg`, for
-  the keyboard step). Also `nixos-install-tools` (`nixos-generate-config` for
+  `e2fsprogs` (`mkfs.ext4`, which udisks2 shells out to), `sway` (`swaymsg`, for
+  the keyboard step and the HiDPI scale script) and `jq` (that same script's only
+  JSON parser). Also `nixos-install-tools` (`nixos-generate-config` for
   `InitConfigTask`, plus `nixos-install` and `nixos-enter`) and `pciutils`/`usbutils`/`cpuid`
   (core-utils' `DriverConfig::new()`, reached from the same task). On the ISO, the session
   unit gets all of this — including the default-on `nixos-*` tools and `nix` itself — through
@@ -417,6 +421,25 @@ modulix-core-utils = { path = "../modulix-core-utils", features = ["init", "file
   `/mnt/var/log/modulixos-install.log`, the only copy that survives. On failure the tee does
   the copy because `PostInstallTask` never runs; on success `PostInstallTask` does it just
   before unmounting.
+- **HiDPI is handled by the compositor, not the app**: there is no `scale_factor()`,
+  `GDK_SCALE` or DPI logic anywhere in `src/` — at scale 1 the wizard is unreadable on a
+  1440p or 4K panel. `nix/kiosk-module.nix`'s `applyOutputScale` script runs from inside
+  `runInstaller`, *before* the binary, so the window gets its size on its first frame; it is
+  not a second `exec` in `swayConfig`, because two `exec` lines race. Per active output it
+  reads `swaymsg -t get_outputs -r` through `jq`, takes the physical width from byte 21 (cm)
+  of `/sys/class/drm/card*-<name>/edid` — sway names outputs after DRM connectors, so the
+  glob is the whole mapping — and picks `dpi / 96` rounded to the nearest 0.25, with a
+  `dpi < 120` deadzone. The EDID is ignored under `systemd-detect-virt` (qemu synthesises a
+  ~100 dpi one that would mask the resolution) and when it reads 0; the fallback is pure
+  resolution thresholds (≥3200 or ≥1800 → 2.0, ≥2400 or ≥1400 → 1.5). Two clamps then
+  bracket the result, and they are what actually decides most real cases: a **logical height
+  ceiling of 1300** (this is what moves a 27" 1440p off 1.0, where the raw DPI would have
+  left it) and a **logical floor of 1280x800**, below which the desktop-environment step's
+  cards (`height_request(600)`) and its 1300x931 zoom dialog start clipping. `MODULIX_SCALE`
+  or a `modulix.scale=` kernel parameter overrides the whole computation. Fractional scales
+  are deliberate: sway 1.12 and GTK 4.22 both speak `wp-fractional-scale-v1`, so the
+  installer stays crisp at 1.25/1.5/1.75 — GParted is GTK3, gets told 2 and is downscaled by
+  sway, i.e. slightly soft, which is the accepted trade.
 - **Software rendering under a hypervisor**: `nix/kiosk-module.nix`'s `startSession` wrapper
   exports `WLR_RENDERER=pixman`, `GSK_RENDERER=cairo` and
   `WEBKIT_DISABLE_DMABUF_RENDERER=1` when `systemd-detect-virt` succeeds, plus
