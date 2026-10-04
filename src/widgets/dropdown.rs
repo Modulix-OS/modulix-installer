@@ -23,3 +23,26 @@ pub fn size_dropdown_to_widest(dropdown: &impl IsA<gtk::Widget>, model: &gtk::St
         widget.set_size_request(max_width + CHROME_PADDING, -1);
     }
 }
+
+/// Turns on type-ahead search for a dropdown backed by a [`gtk::StringList`].
+///
+/// `GtkDropDown` only shows a search entry when it knows how to turn an item
+/// into text, which for a `StringList` means a property expression on
+/// `GtkStringObject:string`. Without it the ~250 keyboard layouts, ~470
+/// locales and ~400 timezones can only be reached by scrolling.
+///
+/// * `dropdown` - dropdown whose model is (or will be) a `gtk::StringList`.
+///
+/// # Post-conditions
+/// The popup carries a search entry matching anywhere in the string, not just
+/// at its start — "canada" has to find "French (Canada)".
+pub fn enable_string_search(dropdown: &gtk::DropDown) {
+    let expression = gtk::PropertyExpression::new(
+        gtk::StringObject::static_type(),
+        None::<gtk::Expression>,
+        "string",
+    );
+    dropdown.set_expression(Some(expression));
+    dropdown.set_enable_search(true);
+    dropdown.set_search_match_mode(gtk::StringFilterMatchMode::Substring);
+}

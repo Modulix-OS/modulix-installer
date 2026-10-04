@@ -4,7 +4,7 @@ use crate::config::InstallConfig;
 use crate::i18n::tr;
 use crate::mx;
 use crate::steps::{Step, StepId, ValidityTracker};
-use crate::widgets::{TimezoneMap, size_dropdown_to_widest};
+use crate::widgets::{TimezoneMap, enable_string_search, size_dropdown_to_widest};
 use adw::prelude::*;
 use std::cell::RefCell;
 use std::rc::Rc;
@@ -28,6 +28,7 @@ impl TimezoneStep {
         let map = TimezoneMap::new();
 
         let dropdown = gtk::DropDown::from_strings(&[DEFAULT_TIMEZONE]);
+        enable_string_search(&dropdown);
         let fallback_row = adw::ActionRow::builder()
             .title(tr("Timezone"))
             .subtitle(tr("Click the map or pick from the list"))

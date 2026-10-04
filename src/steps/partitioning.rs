@@ -19,7 +19,9 @@ use crate::i18n::tr;
 use crate::mx;
 use crate::steps::{Step, StepId, ValidityTracker};
 use crate::widgets::disk_bar::{DiskBarSegment, SegmentRole, human_bytes};
-use crate::widgets::{DiskBar, PartitionEditor, PasswordConfirmEntry, size_dropdown_to_widest};
+use crate::widgets::{
+    DiskBar, PartitionEditor, PasswordConfirmEntry, enable_string_search, size_dropdown_to_widest,
+};
 use adw::prelude::*;
 use std::cell::{Cell, RefCell};
 use std::path::Path;
@@ -351,6 +353,7 @@ impl PartitioningStep {
             .xalign(0.0)
             .build();
         let disk_dropdown = gtk::DropDown::from_strings(&[]);
+        enable_string_search(&disk_dropdown);
         disk_dropdown.set_hexpand(true);
         let refresh_button = gtk::Button::from_icon_name("view-refresh-symbolic");
         refresh_button.set_tooltip_text(Some(&tr("Refresh")));
@@ -460,6 +463,7 @@ impl PartitioningStep {
         windows_box.append(&windows_label);
 
         let freespace_dropdown = gtk::DropDown::from_strings(&[]);
+        enable_string_search(&freespace_dropdown);
         let freespace_row = adw::ActionRow::builder()
             .title(tr("Free space region"))
             .build();

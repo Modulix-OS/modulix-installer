@@ -11,7 +11,7 @@ pub mod wifi_dialog;
 
 pub use ap_row::ApRow;
 pub use disk_bar::DiskBar;
-pub use dropdown::size_dropdown_to_widest;
+pub use dropdown::{enable_string_search, size_dropdown_to_widest};
 pub use partition_editor::PartitionEditor;
 pub use password_entry::PasswordConfirmEntry;
 pub use portal_window::PortalWindow;
