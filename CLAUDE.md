@@ -129,7 +129,8 @@ src/
   i18n.rs               gettext + hot reload — see "i18n" below for the LANGUAGE/setlocale split
   steps/                mod.rs (trait + registry) + one file per step;
                         user/ (mod.rs, username.rs, hostname.rs)
-  finish/               summary.rs, progress.rs — post-step-9 review (recomputes
+  finish/               summary.rs, progress.rs, qr_report.rs (error-report payload for
+                        the failure page's QR code) — post-step-9 review (recomputes
                         `plan::plan` against live disk state, destructive-confirmation
                         dialog) + install-progress page; pushed outside the step rail,
                         `StepId::ALL` stays at 9
@@ -144,7 +145,12 @@ src/
                         nixos_install.rs, efi_entry.rs, set_passwords.rs,
                         post_install.rs)
   widgets/              timezone_map.rs, disk_bar.rs, partition_editor.rs, password_entry.rs,
-                        ap_row.rs, wifi_dialog.rs, portal_window.rs
+                        ap_row.rs, wifi_dialog.rs, portal_window.rs, slideshow.rs,
+                        qr_code.rs (QR matrix + its `DrawingArea` and dialog),
+                        dropdown.rs (size_dropdown_to_widest + enable_string_search —
+                        every long `DropDown` gets substring type-ahead; `selected()`
+                        stays an index into the unfiltered model, GTK resets the search
+                        filter before reporting it)
 data/
   icons/*.svg           one symbolic icon per step — GTK4 symbolic constraint: must be
                         fill-only (no `stroke`, no `fill="none"`); GTK recolors `fill`
@@ -153,11 +159,17 @@ data/
                         the theme (rings/outlines are drawn as an evenodd fill between two
                         concentric shapes instead)
   screenshots/          gnome.webp, plasma.webp, lxqt.webp
+  slides/*.svg          install-slideshow pictograms — square and **background-free**
+                        (`slideshow.rs` draws them centred in a fixed `SLIDE_ICON_PX` box
+                        over the page background; a baked-in rect would show as a card)
   resources.gresource.xml
 nix/
   iso.nix               live ISO: installation-cd-minimal + mxpkgs branding/boot/options + kiosk
   kiosk-module.nix      the sway kiosk session (systemd unit + PAM + tty1 recovery
-                        shell), ISO runtime deps
+                        shell), ISO runtime deps, and the session's input config —
+                        `input type:touchpad { scroll_factor 0.4 }`, because libinput's
+                        default overshoots the long lists by screens per flick (compositor
+                        level, so it covers GParted too; no effect under `cargo run`)
   package.nix           naersk derivation; wrapGAppsHook4 wiring
   vm.nix                `nix run .#vm` qemu runner (UEFI + swtpm + scratch disk)
 build.rs                glib_build_tools::compile_resources
@@ -181,8 +193,38 @@ collation). Two consequences to keep in mind when touching this code:
   non-`C` locale** — with
   none generated, `LANGUAGE` is ignored for the whole session and the language step becomes a
   no-op again, exactly the bug this module fixed.
-- `po/` currently ships `fr.po` only — French and English (gettext's `msgid` fallback) are the
-  only two languages that visibly differ today, even though the dropdown lists every glibc locale.
+- **The startup language is always English**, never the host locale: `i18n::init()` seeds
+  `LANGUAGE` from `i18n::DEFAULT_LANGUAGE` (`en_US.UTF-8`) and only uses `setlocale` — the
+  `DEFAULT_LANGUAGE` spellings, then `FALLBACK_LOCALES`, then the host environment — to get
+  `LC_MESSAGES` off `C` for formatting. This is also what pre-selects the language step's
+  dropdown (`steps/language.rs` matches `current_language_code()` with `normalized_eq`), hence
+  `DEFAULT_LANGUAGE` being a *full* locale code: a bare `"en"` matches none of
+  `list_locales()`'s territory-carrying entries and the dropdown would fall back to index 0.
+- `po/` ships `fr.po`, `es.po` and `de.po` — French, Spanish, German and English (gettext's
+  `msgid` fallback) are the four languages that visibly differ today, even though the dropdown
+  lists every glibc locale. Catalogs are named by language only (`fr`, `es`, `de`), which covers
+  every territory variant because `i18n::language_env_value` cascades `de_AT.UTF-8` → `de_AT:de`.
+  Nothing in the build system enumerates them: `build.rs::compile_translations` and
+  `nix/package.nix`'s `postInstall` both glob `po/*.po`, so a new language is one file.
+  `nix/kiosk-module.nix`'s `i18n.supportedLocales` is the one place that does list them, and only
+  so that *formatting* follows the choice (messages need no generated locale).
+  There is no extraction script: a new msgid goes into `po/modulixos-installer.pot` *and* every
+  `po/<lang>.po` by hand (`msgcat --use-first --sort-output --no-location` keeps them ordered),
+  and `xgettext` would need `--keyword=tr` since `tr` is a plain function, not a macro.
+- `src/welcome.rs`'s `GREETINGS` is the one place that is **not** gettext-driven: the pre-wizard
+  page cycles through every shipped language at once, so adding a catalog means adding a
+  `Greeting` entry there too.
+- **A second text domain is bound: `xkeyboard-config`** (`i18n::tr_xkb`). `evdev.xml` carries
+  English `<description>` text only — no `xml:lang` variants — and xkeyboard-config ships the
+  translations as catalogs whose msgids *are* those English strings, which is how GNOME localizes
+  the same list. The catalog directory comes from `MODULIX_XKB_LOCALE_DIR` (set by `nix/package.nix`
+  and the devShell), falling back to the `share/locale` sibling of `MODULIX_DEV_EVDEV_XML` and then
+  to the system prefixes; not finding it just leaves layout names in English. The
+  `_nl_msg_cat_cntr` bump in `set_language` is global, so this domain follows the language switch
+  like ours.
+- `Task::label()` returns an **untranslated msgid on purpose**: tasks run on tokio worker threads
+  and the `LANGUAGE` slot is read from the GTK main thread only. `finish::progress` calls `tr()` on
+  arrival, so the install log stays single-language while the status line follows the UI.
 
 ### The 9 steps, fixed order
 
@@ -197,7 +239,14 @@ collation). Two consequences to keep in mind when touching this code:
    shared `A11ySettings` instance so step 1 and the popover never drift out of sync.
 2. **Language** — triggers `retranslate()` on every already-built page.
 3. **Timezone** — `gtk::DrawingArea` world map, equirectangular projection of `zone.tab` coordinates, click → nearest zone (same approach as Calamares) + region/city fallback list.
-4. **Keyboard** — layout + variant from `evdev.xml`, live typing test area, applies the layout immediately.
+4. **Keyboard** — layout + variant from `evdev.xml`, live typing test area, applies the layout
+   immediately. Names are localized through xkeyboard-config's own catalogs (`i18n::tr_xkb`, see
+   the i18n section) and the list is sorted by the *displayed* name, so a language change re-sorts
+   and rebuilds both dropdowns — selections are restored by code, never by index. The default
+   layout follows the language step through `steps::LanguageHook` →
+   `KeyboardStep::locale_hook` → `backend::locale::keyboard_default::layout_for_locale` (curated
+   exceptions, then territory, then language code, then `us`), and stops following it as soon as
+   the user picks a layout by hand.
 5. **Network** — ethernet/Wi-Fi via NetworkManager; if `Connectivity == Portal`, opens an `adw::Dialog` with embedded WebKitGTK, auto-closed once `Connectivity == Full`. Fully implemented (`backend/net/network_manager.rs`): open/secured/hidden Wi-Fi, WPA2/WPA3 (transition-safe), live connectivity watch, "Next" gated on `Connectivity` (`Full` → ready, `Limited`/`Unknown` → blocked with a "Continue anyway" override, `Portal`/`None` → hard block). When NM reports no connectivity-check URI there is no way to know the portal's address, and `widgets::portal_window`'s `no_portal_uri_html` says so instead of showing a fake sign-in button.
 6. **Partitioning** — Fully implemented. `engine::plan::plan` is the single pure function
    both the UI (live "before"/"after" `DiskBar` preview + blocked-reason row subtitles)
@@ -244,7 +293,32 @@ Then a summary (its "Install" button uses `suggested-action`, not `destructive-a
 confirmation dialog it opens stays destructive) → install-progress screen (an auto-advancing
 `widgets::slideshow::Slideshow` fills the main area, collapsed-by-default log in a
 `gtk::Expander` that auto-scrolls and opens itself on failure, progress bar pinned to the
-bottom, pulsing while `nixos-install` runs) → done.
+bottom, pulsing while `nixos-install` runs) → done. When the pipeline ends, the status line and
+progress bar are hidden and an outcome row takes their place in the same spot: outcome text on
+the left, "Restart now" on the right. Failure keeps the status line, puts the (selectable,
+scrollable) error and the log paths in that row, and replaces the restart button with two:
+an "Error report QR code" button and a `destructive-action` "Quit the installer" — the
+kiosk has no browser, no guaranteed network and no way to get text out, so the report
+leaves by phone camera, and leaving a failed install is the same reboot the success path
+offers (`wire_reboot_button` is shared, same remove-the-medium confirmation, same
+`systemctl reboot`). The payload
+(`finish::qr_report::build_report`, untranslated like the install log) is the error, the
+persisted log paths and the **tail** of `/var/log/modulixos-install.log` read back
+asynchronously, cut to `widgets::qr_code::QR_MAX_BYTES` (2953 bytes = version 40 / EC level
+L, the hard ceiling of a single QR code) with an explicit `(truncated, N bytes omitted)`
+marker. `widgets::qr_code` draws the matrix itself on a `DrawingArea` — forced white
+background whatever the theme, 4-module quiet zone, whole-pixel module size (a fractional
+module renders blurry and a blurry code does not scan).
+
+**Exactly one `HeaderBar` exists in the wizard** — `app.rs`'s, wrapping the whole
+`NavigationView`, with both sets of title buttons off (nothing in a sway kiosk can act on
+minimise/maximise/close). The summary and progress pages deliberately carry no `ToolbarView` of
+their own; two header bars used to stack, each drawing its own window controls. Consequences:
+the outer header's title has to be re-set from the visible page (`content_page.set_title`, in the
+`visible-page` handler *and* in the retranslate hook, which also re-titles the step
+`NavigationPage`s), and the back chevron those pages used to get for free is now the outer
+"Previous" button, shown on non-step pages only when `visible.can_pop()` — which is why the
+progress page never clears its `can_pop(false)`.
 
 **Scope**: the install is real end to end. Steps 7-9 still have a minimal UI, but their
 answers reach the installed system. Known gap: `limine`'s `extraEntries` for a Windows
