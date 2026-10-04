@@ -5,6 +5,11 @@
 
 const AUTO_ADVANCE_SECONDS: u32 = 8;
 
+/// Side of the square box every slide pictogram is drawn into. Fixed rather
+/// than ratio-derived: the artwork is square and carries no background of its
+/// own, so letting it grow with the page would turn a pictogram into a poster.
+const SLIDE_ICON_PX: i32 = 240;
+
 /// One slide: a pictogram (gresource path) + two gettext msgids.
 pub struct Slide {
     pub resource: &'static str,
@@ -73,9 +78,13 @@ impl Slideshow {
         use crate::i18n::tr;
         use adw::prelude::*;
 
+        // `spacing` is not cosmetic: a page whose natural width is smaller than
+        // the carousel lets its neighbours bleed in at both edges, which reads
+        // as two half-slides on screen at once.
         let carousel = adw::Carousel::builder()
             .allow_scroll_wheel(true)
             .allow_mouse_drag(true)
+            .spacing(48)
             .vexpand(true)
             .build();
 
@@ -84,28 +93,31 @@ impl Slideshow {
             let picture = gtk::Picture::for_resource(slide.resource);
             picture.set_content_fit(gtk::ContentFit::Contain);
             picture.set_can_shrink(true);
-            let frame = gtk::AspectFrame::builder()
-                .ratio(16.0 / 9.0)
-                .obey_child(false)
-                .child(&picture)
-                .build();
+            picture.set_size_request(SLIDE_ICON_PX, SLIDE_ICON_PX);
+            picture.set_halign(gtk::Align::Center);
+            picture.set_valign(gtk::Align::Center);
+            picture.set_margin_top(24);
+            picture.set_margin_bottom(24);
 
             let title_label = gtk::Label::builder()
                 .label(tr(slide.title))
                 .css_classes(["title-2"])
                 .justify(gtk::Justification::Center)
                 .wrap(true)
+                .hexpand(true)
                 .build();
             let body_label = gtk::Label::builder()
                 .label(tr(slide.body))
                 .css_classes(["dim-label"])
                 .justify(gtk::Justification::Center)
                 .wrap(true)
+                .hexpand(true)
                 .build();
 
             let page = gtk::Box::new(gtk::Orientation::Vertical, 12);
             page.set_valign(gtk::Align::Center);
-            page.append(&frame);
+            page.set_hexpand(true);
+            page.append(&picture);
             page.append(&title_label);
             page.append(&body_label);
 
