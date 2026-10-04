@@ -61,6 +61,8 @@ pub struct SummaryPage {
     user_row: adw::ActionRow,
     desktop_row: adw::ActionRow,
     apps_row: adw::ActionRow,
+    overview_group: adw::PreferencesGroup,
+    disk_group: adw::PreferencesGroup,
     erases_group: adw::PreferencesGroup,
     plan_banner: adw::Banner,
     install_button: gtk::Button,
@@ -133,27 +135,28 @@ impl SummaryPage {
             .build();
         let button_box = gtk::Box::new(gtk::Orientation::Horizontal, 8);
         button_box.set_halign(gtk::Align::End);
-        button_box.set_margin_top(6);
         button_box.append(&spinner);
         button_box.append(&install_button);
+        let install_group = adw::PreferencesGroup::new();
+        install_group.add(&button_box);
 
         let content = adw::PreferencesPage::new();
         content.add(&overview_group);
         content.add(&disk_group);
         content.add(&erases_group);
+        content.add(&install_group);
 
         let page_box = gtk::Box::new(gtk::Orientation::Vertical, 0);
         page_box.append(&plan_banner);
         page_box.append(&content);
-        page_box.append(&button_box);
         page_box.set_margin_bottom(12);
         page_box.set_margin_start(12);
         page_box.set_margin_end(12);
 
-        let toolbar = adw::ToolbarView::new();
-        toolbar.add_top_bar(&adw::HeaderBar::new());
-        toolbar.set_content(Some(&page_box));
-        let page = adw::NavigationPage::new(&toolbar, &tr("Ready to install"));
+        // No `HeaderBar` of its own: `app.rs` already wraps the whole
+        // `NavigationView` in one, and a second bar only stacks a duplicate row
+        // of window controls under the first.
+        let page = adw::NavigationPage::new(&page_box, &tr("Ready to install"));
 
         let step = Self {
             page,
@@ -168,6 +171,8 @@ impl SummaryPage {
             user_row,
             desktop_row,
             apps_row,
+            overview_group,
+            disk_group,
             erases_group,
             plan_banner,
             install_button,
@@ -187,6 +192,38 @@ impl SummaryPage {
 
     pub fn page(&self) -> adw::NavigationPage {
         self.page.clone()
+    }
+
+    /// Re-applies every static label after a language change.
+    ///
+    /// The page is built once at startup, before the user has even reached the
+    /// language step, so unlike a `Step` it is never rebuilt — without this its
+    /// titles stay frozen in the boot locale. Subtitles are not touched here:
+    /// [`SummaryPage::refresh`] recomputes them from the config right before
+    /// each push.
+    ///
+    /// # Post-conditions
+    /// Page title, group titles, row titles and the install button label are in
+    /// the current language. The plan banner is left alone — its text is an
+    /// outcome, re-set by the next `refresh`.
+    pub fn retranslate(&self) {
+        self.page.set_title(&tr("Ready to install"));
+        self.overview_group.set_title(&tr("Overview"));
+        self.disk_group.set_title(&tr("Partitioning"));
+        self.erases_group
+            .set_title(&tr("This will permanently erase"));
+        self.language_row.set_title(&tr("Language"));
+        self.timezone_row.set_title(&tr("Timezone"));
+        self.keyboard_row.set_title(&tr("Keyboard"));
+        self.network_row.set_title(&tr("Network"));
+        self.user_row.set_title(&tr("User account"));
+        self.desktop_row.set_title(&tr("Desktop environment"));
+        self.apps_row.set_title(&tr("Applications"));
+        self.disk_row.set_title(&tr("Target disk"));
+        self.mode_row.set_title(&tr("Mode"));
+        self.swap_row.set_title(&tr("Swap"));
+        self.encryption_row.set_title(&tr("Encryption"));
+        self.install_button.set_label(&tr("Install"));
     }
 
     fn wire_install_button(&self) {

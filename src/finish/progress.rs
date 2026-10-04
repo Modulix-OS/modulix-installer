@@ -124,10 +124,10 @@ impl ProgressPage {
         content.append(&status_label);
         content.append(&progress_bar);
 
-        let toolbar = adw::ToolbarView::new();
-        toolbar.add_top_bar(&adw::HeaderBar::new());
-        toolbar.set_content(Some(&content));
-        let page = adw::NavigationPage::new(&toolbar, &tr("Installing"));
+        // No `HeaderBar` of its own: `app.rs` already wraps the whole
+        // `NavigationView` in one, and a second bar only stacks a duplicate row
+        // of window controls under the first.
+        let page = adw::NavigationPage::new(&content, &tr("Installing"));
         page.set_can_pop(false);
 
         Self {
@@ -241,7 +241,6 @@ impl ProgressPage {
                 this.slideshow.stop();
                 this.set_pulsing(false);
                 this.result_box.set_visible(true);
-                this.page.set_can_pop(true);
                 match outcome {
                     Ok(Ok(())) => {
                         this.progress_bar.set_fraction(1.0);

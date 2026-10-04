@@ -137,7 +137,12 @@ pub fn build_window(app: &adw::Application, backends: Backends, runtime: tokio::
         }
     });
 
+    // Nothing can act on a minimise/maximise/close button: the session is a
+    // single fullscreen app under a sway kiosk with no window decorations and
+    // no way back to a desktop.
     let header = adw::HeaderBar::new();
+    header.set_show_start_title_buttons(false);
+    header.set_show_end_title_buttons(false);
     header.pack_start(&prev_button);
     header.pack_end(&next_button);
     header.pack_end(&a11y_button);
@@ -200,6 +205,10 @@ pub fn build_window(app: &adw::Application, backends: Backends, runtime: tokio::
         let a11y_button = a11y_button.clone();
         let a11y_rows = a11y_rows.clone();
         let calc_button = calc_button.clone();
+        let summary_page = summary_page.clone();
+        let content_page = content_page.clone();
+        let nav_view_for_title = nav_view.clone();
+        let pages_for_title = pages.clone();
         *retranslate_hook.borrow_mut() = Box::new(move || {
             for ((step, label), row) in step_list
                 .iter()
@@ -209,6 +218,16 @@ pub fn build_window(app: &adw::Application, backends: Backends, runtime: tokio::
                 step.retranslate();
                 label.set_label(&step.title());
                 row.update_property(&[gtk::accessible::Property::Label(&step.title())]);
+            }
+            // Step pages carry no header of their own; their title is what the
+            // single outer header bar displays, so it has to be re-set too —
+            // and then re-read for whichever page is currently visible.
+            for (step, page) in step_list.iter().zip(pages_for_title.iter()) {
+                page.set_title(&step.title());
+            }
+            summary_page.retranslate();
+            if let Some(visible) = nav_view_for_title.visible_page() {
+                content_page.set_title(&visible.title());
             }
             sidebar_page.set_title(&tr("Steps"));
             prev_button.set_label(&tr("Previous"));
@@ -281,10 +300,15 @@ pub fn build_window(app: &adw::Application, backends: Backends, runtime: tokio::
         let prev_button = prev_button.clone();
         let next_button = next_button.clone();
         let calc_button = calc_button.clone();
+        let content_page = content_page.clone();
         nav_view.connect_notify_local(Some("visible-page"), move |nav_view, _| {
             let Some(visible) = nav_view.visible_page() else {
                 return;
             };
+            // The summary and progress pages have no header bar of their own,
+            // so the only title on screen is the outer one — it has to follow
+            // whatever page is showing.
+            content_page.set_title(&visible.title());
             match visible
                 .tag()
                 .and_then(|tag| index_for_tag(&step_list, &tag))
@@ -298,7 +322,12 @@ pub fn build_window(app: &adw::Application, backends: Backends, runtime: tokio::
                     next_button.set_visible(step_list[idx].shows_next());
                 }
                 None => {
-                    prev_button.set_visible(false);
+                    // Summary and progress. The back chevron used to come from
+                    // their own header bar; with that gone, the outer
+                    // "Previous" takes over — but only where going back makes
+                    // sense, which `can_pop` already answers (it is false on
+                    // the progress page).
+                    prev_button.set_visible(visible.can_pop());
                     next_button.set_visible(false);
                     calc_button.set_visible(false);
                 }
