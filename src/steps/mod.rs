@@ -49,8 +49,8 @@ pub fn new_advance_hook() -> AdvanceHook {
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum StepId {
-    Accessibility,
     Language,
+    Accessibility,
     Timezone,
     Keyboard,
     Network,
@@ -62,8 +62,8 @@ pub enum StepId {
 
 impl StepId {
     pub const ALL: [StepId; 9] = [
-        StepId::Accessibility,
         StepId::Language,
+        StepId::Accessibility,
         StepId::Timezone,
         StepId::Keyboard,
         StepId::Network,
@@ -75,8 +75,8 @@ impl StepId {
 
     pub fn tag(self) -> &'static str {
         match self {
-            StepId::Accessibility => "accessibility",
             StepId::Language => "language",
+            StepId::Accessibility => "accessibility",
             StepId::Timezone => "timezone",
             StepId::Keyboard => "keyboard",
             StepId::Network => "network",
@@ -132,14 +132,14 @@ pub fn build_registry(
     *language_hook.borrow_mut() = keyboard.locale_hook();
 
     let registry: Vec<Box<dyn Step>> = vec![
-        Box::new(accessibility::AccessibilityStep::new(
-            backends, runtime, a11y,
-        )) as Box<dyn Step>,
         Box::new(language::LanguageStep::new(
             backends,
             runtime,
             retranslate_hook,
             language_hook,
+        )) as Box<dyn Step>,
+        Box::new(accessibility::AccessibilityStep::new(
+            backends, runtime, a11y,
         )) as Box<dyn Step>,
         Box::new(timezone::TimezoneStep::new(backends, runtime)) as Box<dyn Step>,
         Box::new(keyboard) as Box<dyn Step>,
