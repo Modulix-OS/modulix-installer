@@ -8,6 +8,7 @@ mod finish;
 mod i18n;
 mod mx;
 mod steps;
+mod welcome;
 mod widgets;
 
 use gtk::prelude::*;

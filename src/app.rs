@@ -33,6 +33,10 @@ flowboxchild:hover, flowboxchild:focus {
 }
 ";
 
+/// Root-stack child names: the pre-wizard welcome page, and everything else.
+const WELCOME_STACK_NAME: &str = "welcome";
+const WIZARD_STACK_NAME: &str = "wizard";
+
 /// Builds and presents the installer window, fullscreen.
 ///
 /// * `app` - the running application.
@@ -41,7 +45,7 @@ flowboxchild:hover, flowboxchild:focus {
 pub fn build_window(app: &adw::Application, backends: Backends, runtime: tokio::runtime::Handle) {
     if let Some(display) = gtk::gdk::Display::default() {
         let provider = gtk::CssProvider::new();
-        provider.load_from_string(RAIL_CSS);
+        provider.load_from_string(&format!("{RAIL_CSS}{}", crate::welcome::CSS));
         gtk::style_context_add_provider_for_display(
             &display,
             &provider,
@@ -148,8 +152,24 @@ pub fn build_window(app: &adw::Application, backends: Backends, runtime: tokio::
     split_view.set_sidebar(Some(&sidebar_page));
     split_view.set_content(Some(&content_page));
 
+    // The welcome page comes before the wizard and must show none of it: no
+    // step rail, no header bar, no prev/next. A `Stack` ahead of the whole
+    // `NavigationSplitView` is the only placement that gives that — a page
+    // inside `nav_view` would still sit under the header and beside the rail.
+    let root_stack = gtk::Stack::builder()
+        .transition_type(gtk::StackTransitionType::Crossfade)
+        .transition_duration(400)
+        .build();
+    let welcome_page = crate::welcome::build_page({
+        let root_stack = root_stack.clone();
+        move || root_stack.set_visible_child_name(WIZARD_STACK_NAME)
+    });
+    root_stack.add_named(&welcome_page, Some(WELCOME_STACK_NAME));
+    root_stack.add_named(&split_view, Some(WIZARD_STACK_NAME));
+    root_stack.set_visible_child_name(WELCOME_STACK_NAME);
+
     let toast_overlay = adw::ToastOverlay::new();
-    toast_overlay.set_child(Some(&split_view));
+    toast_overlay.set_child(Some(&root_stack));
 
     let window = adw::ApplicationWindow::builder()
         .application(app)
