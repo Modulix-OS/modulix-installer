@@ -118,6 +118,14 @@ let
         xkb_layout us
     }
 
+    # The installer's lists (locales, timezones, keyboard layouts) are long and
+    # libinput's default touchpad scroll overshoots them by several screens per
+    # flick. Slowing it down here covers every window of the session, GParted
+    # included.
+    input type:touchpad {
+        scroll_factor 0.4
+    }
+
     # GParted (manual partitioning) and the captive-portal window are second
     # toplevels — give them the whole screen instead of a tiled half.
     for_window [app_id="gparted"] fullscreen enable
