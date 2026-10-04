@@ -23,6 +23,9 @@
 //!   generated locale first, or every later [`set_language`] call is a
 //!   silent no-op for messages too.
 //!
+//! The startup language is [`DEFAULT_LANGUAGE`] (English) and never the host
+//! locale — see that constant for why.
+//!
 //! SAFETY-critical invariant for the whole module: [`init`] seeds the
 //! `LANGUAGE` slot in `environ` exactly once, before `main.rs` starts the
 //! tokio runtime — so later [`set_language`] calls only swap the pointer of
@@ -51,10 +54,24 @@ fn locale_dir() -> String {
         .unwrap_or_else(|_| env!("MODULIX_LOCALE_DIR_DEFAULT").to_string())
 }
 
-/// Locales tried, in order, when `setlocale(LC_ALL, "")` (i.e. the host
-/// environment) doesn't resolve to anything but `C`/`POSIX` — e.g. the live
-/// ISO, which runs under the kiosk session as root with no `$LANG` at all.
-const FALLBACK_LOCALES: &[&str] = &["en_US.UTF-8", "en_US.utf8", "C.UTF-8"];
+/// Message language the installer always starts in, whatever the host
+/// environment says. The live ISO runs the kiosk session as root with no
+/// usable `$LANG`, and on a dev machine the host locale would otherwise pick
+/// both the startup language and the language step's pre-selection; pinning
+/// it keeps the first screens deterministic. The user changes it at step 2.
+///
+/// Kept a *full* locale code on purpose: the language step matches it against
+/// `list_locales()` entries (all of which carry a territory) to pre-select the
+/// dropdown, and a bare `"en"` would match none of them.
+pub const DEFAULT_LANGUAGE: &str = "en_US.UTF-8";
+
+/// Locales tried, in order, for *formatting* when none of
+/// [`DEFAULT_LANGUAGE`]'s own spellings is generated on this machine. Their
+/// only job is to get `LC_MESSAGES` off `C`/`POSIX`, which `LANGUAGE` is
+/// ignored under; the message language never depends on this list. The last
+/// entry is the host environment — a locale generated under a spelling we
+/// can't guess still beats staying on `C`.
+const FALLBACK_LOCALES: &[&str] = &["en_GB.UTF-8", "en_GB.utf8", ""];
 
 thread_local! {
     static CURRENT_LANGUAGE: RefCell<String> = const { RefCell::new(String::new()) };
@@ -203,33 +220,40 @@ fn set_language_env(value: &str) {
     unsafe { _nl_msg_cat_cntr += 1 };
 }
 
+/// Binds the message catalogs and seeds the startup language.
+///
+/// # Post-conditions
+/// The message language is [`DEFAULT_LANGUAGE`] — the host locale is never
+/// consulted for it, so the installer always opens in English and the
+/// language step comes up pre-selected on it. `setlocale` is applied
+/// best-effort, for formatting only; if nothing generated on this machine
+/// resolves, `LC_*` stays on `C` and a warning goes to stderr (under the
+/// kiosk: to the journal).
 pub fn init() {
-    let resolved = setlocale_lcall("")
-        .filter(|locale| !is_c_or_posix(locale))
-        .or_else(|| {
-            let host_lang = std::env::var("LANG").ok();
-            host_lang
-                .iter()
-                .map(String::as_str)
-                .chain(FALLBACK_LOCALES.iter().copied())
-                .find_map(|candidate| setlocale_lcall(candidate).filter(|l| !is_c_or_posix(l)))
-        });
+    // Formatting only — but it has to happen before the `LANGUAGE` seed
+    // below: glibc ignores `LANGUAGE` entirely while `LC_MESSAGES` is
+    // `C`/`POSIX`, which would make every later `set_language` call a silent
+    // no-op for messages too (see module docs).
+    let applied = setlocale_candidates(DEFAULT_LANGUAGE)
+        .iter()
+        .map(String::as_str)
+        .chain(FALLBACK_LOCALES.iter().copied())
+        .find_map(|candidate| setlocale_lcall(candidate).filter(|l| !is_c_or_posix(l)));
 
     let _ = bindtextdomain(DOMAIN, locale_dir());
     let _ = bind_textdomain_codeset(DOMAIN, "UTF-8");
     let _ = textdomain(DOMAIN);
 
-    let startup_code = resolved.unwrap_or_else(|| {
+    if applied.is_none() {
         eprintln!(
-            "i18n: no generated non-C locale found ($LANG={:?}); starting in English \
-             (message catalogs only — LC_* formatting stays C)",
+            "i18n: no generated non-C locale found ($LANG={:?}); LC_* formatting stays C, \
+             and so will the messages — every later language switch is a no-op",
             std::env::var("LANG").unwrap_or_default()
         );
-        "en".to_string()
-    });
+    }
 
-    set_language_env(&language_env_value(&startup_code));
-    set_current_language(&startup_code);
+    set_language_env(&language_env_value(DEFAULT_LANGUAGE));
+    set_current_language(DEFAULT_LANGUAGE);
 }
 
 /// Switches the message language. Always changes what [`tr`] returns
@@ -267,6 +291,14 @@ mod tests {
             "sr_RS@latin:sr_RS:sr"
         );
         assert_eq!(language_env_value("eo"), "eo");
+    }
+
+    #[test]
+    fn default_language_is_a_full_english_locale() {
+        // A bare "en" would match none of `list_locales()`'s territory-carrying
+        // codes, leaving the language step's dropdown on whatever sorts first.
+        assert_eq!(language_env_value(DEFAULT_LANGUAGE), "en_US:en");
+        assert!(normalized_eq(DEFAULT_LANGUAGE, "en_US.utf8"));
     }
 
     #[test]
