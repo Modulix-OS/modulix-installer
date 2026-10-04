@@ -29,11 +29,18 @@ pub struct ProgressPage {
     log_view: gtk::TextView,
     log_expander: gtk::Expander,
     result_box: gtk::Box,
-    result_icon: gtk::Image,
     result_label: gtk::Label,
     /// Where the full log was persisted. Hidden until the install fails,
     /// which is the only time the user needs to go read it.
     log_path_label: gtk::Label,
+    /// Offered once the install succeeded: the live session has no other
+    /// way out, the installer is the only app in the kiosk.
+    restart_button: gtk::Button,
+    /// Also offered once the install failed: the way out of a failed install
+    /// is the same reboot the success path offers, behind the same
+    /// remove-the-medium warning. Destructive-looking on purpose — nothing was
+    /// installed, so leaving costs the user their session.
+    quit_button: gtk::Button,
     log_scroller: gtk::ScrolledWindow,
     slideshow: std::rc::Rc<Slideshow>,
 }
@@ -49,7 +56,6 @@ impl ProgressPage {
             .build();
         let progress_bar = gtk::ProgressBar::builder().show_text(false).build();
 
-        let result_icon = gtk::Image::builder().pixel_size(32).build();
         // Selectable, `WordChar`-wrapped and inside a scroller: a failed
         // `nixos-install` reports Nix traces and device paths that have no
         // space to break on, and the whole message has to stay readable
@@ -80,15 +86,31 @@ impl ProgressPage {
             .max_content_height(220)
             .hscrollbar_policy(gtk::PolicyType::Never)
             .build();
+        let restart_button = gtk::Button::builder()
+            .label(tr("Restart now"))
+            .css_classes(["suggested-action", "pill"])
+            .halign(gtk::Align::End)
+            .valign(gtk::Align::Center)
+            .visible(false)
+            .build();
+
+        let quit_button = gtk::Button::builder()
+            .label(tr("Quit the installer"))
+            .css_classes(["destructive-action", "pill"])
+            .halign(gtk::Align::End)
+            .valign(gtk::Align::Center)
+            .visible(false)
+            .build();
+
+        // The outcome row takes the progress bar's place once the pipeline is
+        // done — outcome text on the left, the actions on the right — rather
+        // than stacking a card on top of a bar that no longer moves. Success
+        // shows `restart_button`, failure `quit_button`.
         let result_box = gtk::Box::new(gtk::Orientation::Horizontal, 12);
-        result_box.append(&result_icon);
         result_box.append(&result_scroller);
+        result_box.append(&quit_button);
+        result_box.append(&restart_button);
         result_box.set_visible(false);
-        result_box.add_css_class("card");
-        result_box.set_margin_top(6);
-        result_box.set_margin_bottom(6);
-        result_box.set_margin_start(6);
-        result_box.set_margin_end(6);
 
         let log_view = gtk::TextView::builder()
             .editable(false)
@@ -119,10 +141,10 @@ impl ProgressPage {
         content.set_margin_start(24);
         content.set_margin_end(24);
         content.append(&slideshow.widget());
-        content.append(&result_box);
         content.append(&log_expander);
         content.append(&status_label);
         content.append(&progress_bar);
+        content.append(&result_box);
 
         // No `HeaderBar` of its own: `app.rs` already wraps the whole
         // `NavigationView` in one, and a second bar only stacks a duplicate row
@@ -130,7 +152,7 @@ impl ProgressPage {
         let page = adw::NavigationPage::new(&content, &tr("Installing"));
         page.set_can_pop(false);
 
-        Self {
+        let this = Self {
             page,
             progress_bar,
             pulse_source: std::rc::Rc::new(std::cell::RefCell::new(None)),
@@ -139,12 +161,16 @@ impl ProgressPage {
             log_view,
             log_expander,
             result_box,
-            result_icon,
             result_label,
             log_path_label,
+            restart_button,
+            quit_button,
             log_scroller,
             slideshow,
-        }
+        };
+        this.wire_reboot_button(&this.restart_button);
+        this.wire_reboot_button(&this.quit_button);
+        this
     }
 
     pub fn page(&self) -> adw::NavigationPage {
@@ -165,7 +191,15 @@ impl ProgressPage {
         self.status_label.set_label(&tr("Starting installation…"));
         self.log_buffer.set_text("");
         self.result_box.set_visible(false);
+        self.restart_button.set_visible(false);
+        self.restart_button.set_sensitive(true);
+        self.quit_button.set_visible(false);
+        self.quit_button.set_sensitive(true);
+        self.quit_button.set_label(&tr("Quit the installer"));
         self.log_path_label.set_visible(false);
+        self.status_label.set_visible(true);
+        self.progress_bar.set_visible(true);
+        self.result_label.remove_css_class("title-4");
         self.log_scroller.set_min_content_height(180);
         self.page.set_title(&tr("Installing"));
         self.log_expander.set_label(Some(&tr("Details")));
@@ -243,17 +277,68 @@ impl ProgressPage {
                 this.result_box.set_visible(true);
                 match outcome {
                     Ok(Ok(())) => {
-                        this.progress_bar.set_fraction(1.0);
-                        this.status_label.set_label(&tr("Installation complete"));
-                        this.result_icon.set_icon_name(Some("emblem-ok-symbolic"));
-                        this.result_label
-                            .set_label(&tr("Modulix OS is ready. You can restart into it now."));
+                        // Success needs no running commentary: the progress bar
+                        // and the per-task status line give way to the outcome
+                        // row they were sitting above.
+                        this.status_label.set_visible(false);
+                        this.progress_bar.set_visible(false);
+                        this.result_label.add_css_class("title-4");
+                        this.result_label.set_label(&tr("Installation complete"));
+                        this.restart_button.set_visible(true);
                     }
                     Ok(Err(e)) => this.show_failure(&mx::render(&e)),
                     Err(_) => this.show_failure(&tr("The installer stopped unexpectedly")),
                 }
             });
         }
+    }
+
+    /// Connects a button that reboots the machine behind the
+    /// remove-the-medium confirmation. The dialog is not a formality: the
+    /// firmware would boot the live ISO again and the user would believe the
+    /// install failed, so the medium has to be unplugged *before* the reboot,
+    /// while the running system still lives in the RAM overlay and no longer
+    /// needs the USB drive.
+    ///
+    /// Shared by the success path's "Restart now" and the failure path's
+    /// "Quit the installer": leaving a failed install means rebooting too, and
+    /// the same warning applies.
+    ///
+    /// * `button` - button to connect.
+    ///
+    /// # Post-conditions
+    /// Nothing runs unless the user confirms. On confirmation `systemctl
+    /// reboot` is spawned once (the button goes insensitive so a double click
+    /// cannot stack two reboots); a failed spawn re-enables the button and is
+    /// reported in the result label instead of leaving a dead button.
+    fn wire_reboot_button(&self, button: &gtk::Button) {
+        let result_label = self.result_label.clone();
+        button.connect_clicked(move |button| {
+            let dialog = adw::AlertDialog::builder()
+                .heading(tr("Remove the installation medium"))
+                .body(tr(
+                    "Unplug the USB drive now, then confirm. Leaving it plugged in boots the installer again instead of Modulix OS.",
+                ))
+                .build();
+            dialog.add_response("cancel", &tr("Cancel"));
+            dialog.add_response("restart", &tr("Restart"));
+            dialog.set_response_appearance("restart", adw::ResponseAppearance::Suggested);
+            dialog.set_default_response(Some("cancel"));
+            dialog.set_close_response("cancel");
+
+            let result_label = result_label.clone();
+            let button = button.clone();
+            glib::spawn_future_local(async move {
+                if dialog.choose_future(Some(&button)).await != "restart" {
+                    return;
+                }
+                button.set_sensitive(false);
+                if let Err(e) = std::process::Command::new("systemctl").arg("reboot").spawn() {
+                    button.set_sensitive(true);
+                    result_label.set_label(&format!("{} {e}", tr("Could not restart:")));
+                }
+            });
+        });
     }
 
     /// Appends one line to the log and keeps the view pinned to the bottom,
@@ -316,8 +401,8 @@ impl ProgressPage {
     /// `log_path_label` is visible iff at least one persisted copy exists.
     fn show_failure(&self, message: &str) {
         self.status_label.set_label(&tr("Installation failed"));
-        self.result_icon
-            .set_icon_name(Some("dialog-error-symbolic"));
+        self.progress_bar.set_visible(false);
+        self.result_label.remove_css_class("title-4");
         self.result_label.set_label(message);
         self.log_expander.set_expanded(true);
         self.log_scroller.set_min_content_height(260);
@@ -339,6 +424,8 @@ impl ProgressPage {
             self.log_path_label.set_label(&paths.join("\n"));
             self.log_path_label.set_visible(true);
         }
+
+        self.quit_button.set_visible(true);
     }
 }
 
