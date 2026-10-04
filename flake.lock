@@ -186,11 +186,11 @@
     "modulix-core-utils": {
       "flake": false,
       "locked": {
-        "lastModified": 1790342376,
-        "narHash": "sha256-43JrUKg7L9qCCbos0xzlj9/zNAXwPA/fOb4dqb27sJk=",
+        "lastModified": 1791075735,
+        "narHash": "sha256-OINBi0mA3vXAzY7fKlgqq4zNhGdqV84OIIhpNn+VZdc=",
         "owner": "Modulix-OS",
         "repo": "modulix-core-utils",
-        "rev": "2d730d3d3f561bfc6567efd44106f702afe177ba",
+        "rev": "eb541cc593f36f3325a53e5db72eb9df1edcd1e0",
         "type": "github"
       },
       "original": {

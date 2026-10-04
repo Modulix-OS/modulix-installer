@@ -238,8 +238,10 @@ impl DesktopEnvironment {
     }
 }
 
-/// Independent of the desktop environment: browser + printing stack.
-const COMMON_BASE_PACKAGES: &[&str] = &["firefox", "cups", "gutenprint", "system-config-printer"];
+/// Independent of the desktop environment. Printing is not in here: it needs
+/// `services.printing.enable` plus a driver set, which the `services.printer`
+/// module provides and a bare package list cannot — see [`AppPack::modules`].
+const COMMON_BASE_PACKAGES: &[&str] = &["firefox"];
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
 pub enum AppPack {
@@ -253,7 +255,8 @@ impl AppPack {
     pub const ALL: [AppPack; 2] = [AppPack::None, AppPack::Base];
 
     /// nixpkgs packages installed on top of the DE. Consumed by
-    /// `engine::tasks::ExtraConfigTask`, which renders them into `apps.nix`.
+    /// `engine::tasks::InitConfigTask`, which hands them to
+    /// `modulix_core_utils::init` for `package.nix`.
     pub fn packages(self, de: DesktopEnvironment) -> Vec<&'static str> {
         match self {
             AppPack::None => Vec::new(),
@@ -262,6 +265,23 @@ impl AppPack {
                 .copied()
                 .chain(de.base_pack_packages().iter().copied())
                 .collect(),
+        }
+    }
+
+    /// Modulix modules enabled on top of the DE, dotted as in mxpkgs'
+    /// `modules/index.json`. Consumed by `engine::tasks::InitConfigTask`,
+    /// which hands them to `modulix_core_utils::init` for `module.nix`, one
+    /// `mx.<name>.enable = true` each.
+    ///
+    /// These are the half of the pack a package list cannot express:
+    /// `services.flatpak` registers the Flathub remote and puts its exports on
+    /// `XDG_DATA_DIRS`, `services.printer` turns CUPS on and pulls the driver
+    /// set — which is why the printing packages are no longer in
+    /// [`COMMON_BASE_PACKAGES`].
+    pub fn modules(self) -> Vec<&'static str> {
+        match self {
+            AppPack::None => Vec::new(),
+            AppPack::Base => vec!["services.flatpak", "services.printer"],
         }
     }
 }
@@ -282,6 +302,27 @@ mod tests {
         for de in DesktopEnvironment::ALL {
             assert!(!AppPack::Base.packages(de).is_empty());
             assert!(AppPack::None.packages(de).is_empty());
+        }
+    }
+
+    #[test]
+    fn app_pack_modules_are_consistent() {
+        assert!(AppPack::None.modules().is_empty());
+        let base = AppPack::Base.modules();
+        assert!(base.contains(&"services.flatpak"));
+        assert!(base.contains(&"services.printer"));
+    }
+
+    /// The printing stack moved from the package list to the
+    /// `services.printer` module; leaving the packages behind would install
+    /// CUPS twice and still never enable it.
+    #[test]
+    fn the_base_pack_no_longer_ships_printing_packages() {
+        for de in DesktopEnvironment::ALL {
+            let packages = AppPack::Base.packages(de);
+            for stale in ["cups", "gutenprint", "system-config-printer"] {
+                assert!(!packages.contains(&stale), "{stale} is now module-provided");
+            }
         }
     }
 }

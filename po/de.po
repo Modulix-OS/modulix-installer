@@ -787,10 +787,11 @@ msgstr "Im Hintergrund wird alles eingerichtet — das dauert nicht lange."
 
 msgid ""
 "Web browser, file manager, terminal, printing, PDF reader, image viewer, "
-"archive manager, text editor, media player"
+"archive manager, text editor, media player, and the Flathub app store"
 msgstr ""
 "Webbrowser, Dateiverwaltung, Terminal, Drucken, PDF-Betrachter, "
-"Bildbetrachter, Archivverwaltung, Texteditor, Medienwiedergabe"
+"Bildbetrachter, Archivverwaltung, Texteditor, Medienwiedergabe und der "
+"Flathub-App-Store"
 
 msgid "Welcome to Modulix OS"
 msgstr "Willkommen bei Modulix OS"

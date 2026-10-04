@@ -43,8 +43,8 @@ impl Task for NixosInstallTask {
     }
 
     /// # Pre-conditions
-    /// `InitConfigTask`/`ExtraConfigTask` have committed the configuration
-    /// repository, and the target root is mounted at `/mnt`.
+    /// `InitConfigTask` has committed the configuration repository, and the
+    /// target root is mounted at `/mnt`.
     ///
     /// # Post-conditions
     /// The target system is built and its bootloader installed. No password

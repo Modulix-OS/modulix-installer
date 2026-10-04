@@ -27,7 +27,7 @@ fn details_for(pack: AppPack) -> Option<&'static str> {
     match pack {
         AppPack::None => None,
         AppPack::Base => Some(
-            "Web browser, file manager, terminal, printing, PDF reader, image viewer, archive manager, text editor, media player",
+            "Web browser, file manager, terminal, printing, PDF reader, image viewer, archive manager, text editor, media player, and the Flathub app store",
         ),
     }
 }

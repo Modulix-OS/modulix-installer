@@ -772,11 +772,11 @@ msgstr "Estamos preparando todo en segundo plano: no tardará mucho."
 
 msgid ""
 "Web browser, file manager, terminal, printing, PDF reader, image viewer, "
-"archive manager, text editor, media player"
+"archive manager, text editor, media player, and the Flathub app store"
 msgstr ""
 "Navegador web, gestor de archivos, terminal, impresión, lector de PDF, visor "
 "de imágenes, gestor de archivos comprimidos, editor de texto, reproductor "
-"multimedia"
+"multimedia y la tienda de aplicaciones Flathub"
 
 msgid "Welcome to Modulix OS"
 msgstr "Le damos la bienvenida a Modulix OS"

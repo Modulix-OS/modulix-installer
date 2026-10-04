@@ -170,9 +170,10 @@ impl Pipeline {
 /// * `EncryptTask` runs right after `PartitionTask` and before
 ///   `FormatTask`/`MountTask` — `luksFormat`/`luksOpen` need the bare
 ///   partition, not one already `mkfs`'d and mounted on `/mnt`.
-/// * `InitConfigTask` needs the target mounted, `ExtraConfigTask` needs the
-///   configuration repository it creates, and `NixosInstallTask` needs both
-///   committed.
+/// * `InitConfigTask` needs the target mounted — and it needs `EnrollTpmTask`
+///   to have run, because it writes the LUKS `crypttabExtraOpts` that a TPM2
+///   unlock depends on. `NixosInstallTask` needs the configuration repository
+///   it creates, already committed.
 /// * `SetPasswordsTask` needs an installed system to `nixos-enter` into, so
 ///   it cannot move earlier.
 /// * `EfiEntryTask` needs limine's loader already on the ESP, so it follows
@@ -186,7 +187,6 @@ pub fn full_pipeline() -> Pipeline {
         Box::new(tasks::MountTask),
         Box::new(tasks::EnrollTpmTask),
         Box::new(tasks::InitConfigTask),
-        Box::new(tasks::ExtraConfigTask),
         Box::new(tasks::NixosInstallTask),
         Box::new(tasks::EfiEntryTask),
         Box::new(tasks::SetPasswordsTask),

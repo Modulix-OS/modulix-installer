@@ -6,13 +6,15 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 `modulixos-installer` is the installer for Modulix OS (NixOS-based distro): a single **fullscreen Rust + GTK4/libadwaita app** running as root inside a minimal `sway` kiosk session (Windows-installer style), replacing the older Calamares-based flow.
 
-**Current state: the whole wizard plus a real, destructive install run end to end** — partition → encrypt → format → mount → TPM2 enroll → write the NixOS configuration → `nixos-install` → set passwords → release the target. Steps 7-9 (user, desktop environment, application pack) still have a minimal UI, but their answers now really reach the installed system.
+**Current state: the whole wizard plus a real, destructive install run end to end** — partition → encrypt → format → mount → TPM2 enroll → write the NixOS configuration → `nixos-install` → set passwords → release the target. Steps 7-9 (user, desktop environment, application pack) still have a minimal UI, but their answers now really reach the installed system. Caveat on "end to end": that was only ever true of an *unencrypted* install — the removed `luks.nix` defined `boot.initrd.luks.devices."modulixroot".device` a second time and made the encrypted path fail at evaluation. It should work now; nobody has booted one yet.
 
 **The installed system's configuration belongs to mxpkgs, not to this repo.** Anything that
 describes how Modulix OS behaves once installed — bootloader, limine, kernel, desktop,
 defaults — goes in `mxpkgs/modulixos/`. The installer only generates what is specific to
-*this* machine and cannot be known in advance (`luks.nix`, `apps.nix`, hostname, users). So a
-limine or `boot.loader` change is an mxpkgs change, even when the reason for it lives here.
+*this* machine and cannot be known in advance (hostname, users, the encrypted root, the
+application pack) — and it generates all of it *through* `modulix-core-utils`, into that
+crate's own files (`fstab.nix`, `package.nix`, `module.nix`), never into files of its own
+invention. So a limine or `boot.loader` change is an mxpkgs change, even when the reason for it lives here.
 Caveat: the generated `flake.nix` resolves `github:Modulix-OS/mxpkgs` with no rev, so such a
 change reaches installs only once pushed.
 
@@ -103,11 +105,11 @@ pub trait Task {
 }
 ```
 
-Pipeline: `PartitionTask` → `EncryptTask` → `FormatTask` → `MountTask` → `EnrollTpmTask` → `InitConfigTask` → `ExtraConfigTask` → `NixosInstallTask` → `EfiEntryTask` → `SetPasswordsTask` → `PostInstallTask`.
+Pipeline: `PartitionTask` → `EncryptTask` → `FormatTask` → `MountTask` → `EnrollTpmTask` → `InitConfigTask` → `NixosInstallTask` → `EfiEntryTask` → `SetPasswordsTask` → `PostInstallTask`.
 
 - `EncryptTask` must run right after `PartitionTask` and before `FormatTask`/`MountTask` — `luksFormat`/`luksOpen` need the bare partition, not one already `mkfs`'d and mounted on `/mnt`.
-- `InitConfigTask` calls `modulix_core_utils::init::init` (synchronous, so `spawn_blocking`) with `config_dir = /mnt/etc/modulix-os`, which writes and commits the config repo but **deliberately skips the rebuild** — it holds core-utils' skip-rebuild lock precisely so the installer drives the build itself.
-- `ExtraConfigTask` adds what `init` knows nothing about: `luks.nix` (without it an encrypted install is unbootable) and `apps.nix` (the application pack). Both are new files, so they escape `init`'s immutable seal; only `configuration.nix` is unsealed with `chattr -i`, extended with the extra `imports`, resealed, and everything is committed — Nix ignores untracked files in a git tree.
+- `InitConfigTask` calls `modulix_core_utils::init::init` (synchronous, so `spawn_blocking`) with `config_dir = /mnt/etc/modulix-os`, which writes and commits the config repo but **deliberately skips the rebuild** — it holds core-utils' skip-rebuild lock precisely so the installer drives the build itself. **It is the only writer of that repo**: `InitParams` carries `packages` → `package.nix`, `modules` → `module.nix` (one `mx.<name>.enable = true` per dotted name from mxpkgs' `modules/index.json`) and `luks` → the root container's `crypttabExtraOpts` in `fstab.nix`, so everything lands inside core-utils' single seed transaction, written by core-utils' own `install_package`/`install_module`/`filesystem` writers and committed once. Nothing after it touches the configuration, which is why the installer no longer unseals `configuration.nix` with `chattr`, splices `imports` by hand, or runs `git commit` itself.
+  There used to be an `ExtraConfigTask` doing exactly that, with a `luks.nix` and an `apps.nix` of its own invention. Both were wrong: `apps.nix` spelled packages `with pkgs; [ firefox ]` where `install_package` reads and writes `pkgs.firefox`, so a post-install `mx` would not have found them; and `luks.nix` re-declared `boot.initrd.luks.devices."modulixroot".device`, which **`nixos-generate-config` already emits** (it reads `/sys/class/block/<dm>/dm/name`, and `filesystem::fstab_module` copies that block into `fstab.nix` verbatim) — two definitions of one `types.str` option make the NixOS module system fail even at equal values, so an encrypted install could never evaluate.
 - `NixosInstallTask` runs `nixos-install --root /mnt --flake /mnt/etc/modulix-os#default --no-root-password` with both streams piped, forwarding each line as `ProgressEvent::Log`. This is why the pipeline does not go through core-utils' `rebuild_config`, which inherits stdout and could never feed the log view.
 - `EfiEntryTask` is the only writer of EFI boot variables in the whole chain, and it writes them **once**: it deletes any stale `ModulixOS` entry, runs `efibootmgr --create … --loader \EFI\BOOT\BOOTX64.EFI --label ModulixOS`, then sets `BootOrder` explicitly to its own boot number followed by the previous order verbatim — Windows Boot Manager and friends keep their entry, one position down. Nothing is ever re-imposed afterwards, so a user who puts Windows back in front in their firmware is not contradicted on the next boot. Everything is best-effort: a BIOS boot, a missing ESP or an `efibootmgr` failure lands in the install log and the install still succeeds.
 - `SetPasswordsTask` pipes `root:…`/`user:…` into `chpasswd` under `nixos-enter`, so no password — hashed or not — ever reaches the Nix store.
@@ -141,9 +143,8 @@ src/
                         install log), live_input.rs (shared
                         live-disk-state → `plan::PlanInput` fetch), plan.rs (pure
                         partitioning planner), tasks/ (partition.rs, encrypt.rs, format.rs,
-                        mount.rs, enroll_tpm.rs, init_config.rs, extra_config.rs,
-                        nixos_install.rs, efi_entry.rs, set_passwords.rs,
-                        post_install.rs)
+                        mount.rs, enroll_tpm.rs, init_config.rs, nixos_install.rs,
+                        efi_entry.rs, set_passwords.rs, post_install.rs)
   widgets/              timezone_map.rs, disk_bar.rs, partition_editor.rs, password_entry.rs,
                         ap_row.rs, wifi_dialog.rs, portal_window.rs, slideshow.rs,
                         qr_code.rs (QR matrix + its `DrawingArea` and dialog),
@@ -283,11 +284,18 @@ collation). Two consequences to keep in mind when touching this code:
    selection and advances straight to the **application pack** step, via the `AdvanceHook`
    the app wires up (`steps::new_advance_hook`) — see `src/app.rs`.
 9. **Application pack** — two big cards: "No applications" (bare system) vs "Base pack"
-   (browser, file manager, printing, PDF reader, image viewer, archive manager, text
-   editor, media player — the package list is per-DE, hardcoded in `config.rs`, no office
-   suite). Same pattern as step 8: no outer "Next" button (`Step::shows_next` returns
-   `false`), a card click commits `InstallConfig::app_pack` and advances straight to the
-   summary via the same `AdvanceHook`.
+   (browser, file manager, PDF reader, image viewer, archive manager, text editor, media
+   player, printing, Flathub — no office suite). The pack has **two halves**, and they land
+   in two different files: `AppPack::packages(de)` is a per-DE nixpkgs list hardcoded in
+   `config.rs` and goes to `package.nix`, while `AppPack::modules()` returns mxpkgs module
+   names (`services.flatpak`, `services.printer`, dotted as in
+   `mxpkgs/modules/index.json`) and goes to `module.nix`. Printing in particular *has* to be
+   the module: `services.printing.enable` plus a driver set is not something
+   `environment.systemPackages` can express, which is why `cups`/`gutenprint`/
+   `system-config-printer` are no longer in `COMMON_BASE_PACKAGES` — they were installed but
+   the service was never switched on. Same pattern as step 8: no outer "Next" button
+   (`Step::shows_next` returns `false`), a card click commits `InstallConfig::app_pack` and
+   advances straight to the summary via the same `AdvanceHook`.
 
 Then a summary (its "Install" button uses `suggested-action`, not `destructive-action` — the
 confirmation dialog it opens stays destructive) → install-progress screen (an auto-advancing
@@ -334,21 +342,23 @@ modulix-core-utils = { path = "../modulix-core-utils", features = ["init", "file
 
 - **`CONFIG_DIRECTORY`** (`modulix-core-utils/src/lib.rs`) is `/etc/modulix-os/` in release, `<repo>/test/` in debug — a real NixOS fixture repo used by examples/tests. See `modulix-core-utils/CLAUDE.md` for details.
 - **`BuildCommand::as_str()`** collapses to `"build-vm"` for every variant in debug builds — a debug run never touches the host, it builds a VM image instead. Only release builds actually run `nixos-install`.
-- `init(&InitParams)` does the whole seed in **one transaction** (main config + locale + keyboard + user) and is what `InitConfigTask` calls. It is synchronous (`std::process`, `git2`), so it must go through `spawn_blocking`. There is no `init_all` and none is needed.
-- `init()` **never rebuilds**: outside debug it holds core-utils' skip-rebuild lock for its whole run, and its own doc says the installer drives the build. `rebuild_config` is private and unreachable anyway — hence `NixosInstallTask`.
+- `init(&InitParams)` does the whole seed in **one transaction** (main config + locale + keyboard + user + `package.nix` + `module.nix` + the LUKS `crypttabExtraOpts`) and is what `InitConfigTask` calls. It is synchronous (`std::process`, `git2`), so it must go through `spawn_blocking`. There is no `init_all` and none is needed.
+- **Everything the installer writes into the config repo goes through `InitParams`.** The three fields that carry it: `packages: Vec<String>` → `package.nix` (`install_package::install_no_transaction`, so the `pkgs.<attr>` spelling matches what a later `install_package::uninstall` looks for), `modules: Vec<String>` → `module.nix` (`install_module::install_no_transaction`, one `mx.<name>.enable = true` each; names are *not* validated against `modules/index.json`, a typo only fails at build time), and `luks: Option<LuksInit>` → `filesystem::set_luks_tpm2_no_transaction` on `fstab.nix`. An empty list writes no file and adds no import. `LuksInit::name` must be the **live mapper name** (`engine::LUKS_MAPPER_NAME`, `modulixroot`), because that is what `nixos-generate-config` keyed its own entry on.
+- **`install_package`/`install_module` are each split in two features.** Their public `install`/`uninstall` force `BuildCommand::Switch` and so are unusable from the installer, and their full features drag in `reqwest`/`memmap2`/`phf`. The light `install-package-file`/`install-module-file` (`["core-nix-file"]`) expose only the `*_no_transaction` halves and the `pub FILE_*_PATH` constants; `init` depends on those two, so the installer links no HTTP client. Verify with `cargo tree -p modulixos-installer | grep reqwest` — it must stay empty.
+- `init()` **never rebuilds**: outside debug it holds core-utils' skip-rebuild lock for its whole run, and its own doc says the installer drives the build. `rebuild_config` is private and unreachable anyway — hence `NixosInstallTask`. This is also why the installer cannot call `install_package::install` directly: that one commits *and* switches, and `hold_skip_rebuild_lock` is private.
 - `InitParams::config_dir` is passed explicitly (`/mnt/etc/modulix-os`) so `resolve_config_path` behaves the same in debug and release; left to `None`, a debug build would write into core-utils' own `test/` tree.
 - `--root /mnt` is hardcoded in `rebuild_config` (`modulix-core-utils/src/core/transaction/transaction.rs:226`) — the installer must mount the install target at `/mnt`, not a configurable path.
 - `rebuild_config` inherits stdout and only captures stderr for the error message — no live streaming. This is precisely why `NixosInstallTask` spawns `nixos-install` itself with both streams piped.
 
 ### Pitfall: `configuration.nix` imports vs. file overwrite
 
-`Transaction::begin()` auto-inserts any newly-created file into `configuration.nix`'s `imports` list — but `init()` then overwrites `configuration.nix` wholesale, discarding that insertion, which is why its `configuration_nix()` lists `./hardware-configuration.nix`, `./fstab.nix`, `./locale.nix`, `./users.nix` explicitly. `ExtraConfigTask` adds its own files to that list for the same reason, after the fact. (Existing side effect this masks today: `flake.nix` is in `add_file`, so `begin()` inserts a nonsensical `./flake.nix` into `imports` — currently hidden only because the overwrite wipes it.)
+`Transaction::begin()` auto-inserts any newly-created file into `configuration.nix`'s `imports` list — but `init()` then overwrites `configuration.nix` wholesale, discarding that insertion, which is why its `configuration_nix()` lists `./hardware-configuration.nix`, `./fstab.nix`, `./locale.nix`, `./users.nix` explicitly, plus `./package.nix`/`./module.nix` whenever the matching `InitParams` list is non-empty. The trap is therefore fully handled inside core-utils now; the installer no longer patches that list after the fact. (Existing side effect this masks today: `flake.nix` is in `add_file`, so `begin()` inserts a nonsensical `./flake.nix` into `imports` — currently hidden only because the overwrite wipes it.)
 
 ## Security / data-loss risk points to handle explicitly
 
 - **Passwords must never land in the Nix store in plaintext.** `user::add_no_transaction` writes `initialPassword`, and `init()` passes an empty one. The installer therefore never puts a password in the configuration at all: `SetPasswordsTask` pipes `chpasswd` into `nixos-enter` after the install, writing `/etc/shadow` directly. This depends on `users.mutableUsers` staying `true`.
 - **NTFS resize ("alongside Windows" mode)**: refuse if BitLocker is detected (can't be shrunk from Linux), if Windows fast-startup/hibernation left the volume dirty (`hiberfil.sys`, dirty flag), or if `ntfsresize --no-action` fails. Mandatory preflight before any partition-table write.
-- **TPM2 + Limine**: Modulix uses `boot.loader.limine`. TPM2 unlock requires `boot.initrd.systemd.enable = true` and `crypttabExtraOpts = [ "tpm2-device=auto" ]`, both of which `ExtraConfigTask` now writes into `luks.nix`. `EnrollTpmTask` runs `systemd-cryptenroll --tpm2-device=auto` for real. **Still unverified**: treat TPM2 unlock as unconfirmed until an encrypted install has actually been booted on real hardware or a VM with Limine.
+- **TPM2 + Limine**: Modulix uses `boot.loader.limine`. TPM2 unlock needs `boot.initrd.systemd.enable` plus `boot.initrd.systemd.tpm2.enable`, and both come from **mxpkgs** (`mxpkgs/modulixos/boot.nix:109` and `:117`) — the installer writes neither. What it does write is the `crypttabExtraOpts = [ "tpm2-device=auto" ]` half, through `InitParams::luks` → `filesystem::set_luks_tpm2_no_transaction`, onto the `boot.initrd.luks.devices."modulixroot"` entry `nixos-generate-config` already put in `fstab.nix`. It must add *only* that attribute: re-declaring `.device` is what the removed `luks.nix` did, and two definitions of one `types.str` option make the module system fail. `EnrollTpmTask` runs `systemd-cryptenroll --tpm2-device=auto` for real, and runs *before* `InitConfigTask` so `tpm2_enabled` is settled by the time the configuration is written. **Still unverified**: treat TPM2 unlock as unconfirmed until an encrypted install has actually been booted on real hardware or a VM with Limine — the double definition above means no encrypted install can ever have got that far.
 - **The EFI boot entry is the installer's, not nixpkgs'** — and the half that belongs to the
   installed system lives in **mxpkgs**, not here: `mxpkgs/modulixos/boot.nix` sets
   `boot.loader.efi.canTouchEfiVariables = lib.mkMxDefault false` on purpose. nixpkgs'
@@ -377,7 +387,7 @@ modulix-core-utils = { path = "../modulix-core-utils", features = ["init", "file
   `org.freedesktop.UDisks2` D-Bus service itself), `gparted` (manual mode's partition
   editor, needed only to resize or delete a partition the user already created — carving a
   new one out of free space happens in-app, see step 6 above), plus `git` (the config repo),
-  `e2fsprogs` (`chattr`, for `ExtraConfigTask`'s unseal/reseal) and `sway` (`swaymsg`, for
+  `e2fsprogs` (`mkfs.ext4`, which udisks2 shells out to) and `sway` (`swaymsg`, for
   the keyboard step). Also `nixos-install-tools` (`nixos-generate-config` for
   `InitConfigTask`, plus `nixos-install` and `nixos-enter`) and `pciutils`/`usbutils`/`cpuid`
   (core-utils' `DriverConfig::new()`, reached from the same task). On the ISO, the session
