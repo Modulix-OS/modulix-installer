@@ -251,6 +251,16 @@ impl ProgressPage {
         runtime.spawn(async move {
             let mut writer = install_log::Writer::open().await;
             while let Ok(event) = raw_rx.recv().await {
+                // `[FAKE] `-tags every line when `--fake-disks=`/
+                // `--fake-error=` is active, so the file, journald and the
+                // on-screen log all carry the marker — see `debugsim`'s doc
+                // comment on why this is never a silent fallback.
+                #[cfg(debug_assertions)]
+                let event = if crate::debugsim::active().is_some() {
+                    crate::debugsim::prefix_event(event)
+                } else {
+                    event
+                };
                 writer.record(&event).await;
                 // A closed UI must not truncate the file.
                 let _ = ui_tx.send(event).await;
@@ -264,7 +274,13 @@ impl ProgressPage {
 
         runtime.spawn(async move {
             let ctx = TaskCtx::new(backends, config);
-            let result = engine::full_pipeline().run(&ctx, &raw_tx).await;
+            #[cfg(debug_assertions)]
+            let pipeline = crate::debugsim::active()
+                .map(|sim| crate::debugsim::fake_pipeline(sim.faults.clone()))
+                .unwrap_or_else(engine::full_pipeline);
+            #[cfg(not(debug_assertions))]
+            let pipeline = engine::full_pipeline();
+            let result = pipeline.run(&ctx, &raw_tx).await;
             // Untranslated on purpose: this line lands in the log file and in
             // journald, which are read by whoever debugs the install. The UI
             // gets the translated message from `done_rx`.

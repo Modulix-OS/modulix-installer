@@ -44,4 +44,25 @@ impl Backends {
             crypt: Arc::new(crypt::CryptsetupBackend::new()),
         })
     }
+
+    /// `--fake-disks=`/`--fake-error=` variant of [`Backends::new`], debug
+    /// builds only: `disk` and `crypt` are `debugsim`'s fakes, but network,
+    /// locale and accessibility stay real — a dev machine's NetworkManager
+    /// and locale data are not what the fake disk/encryption scenarios exist
+    /// to avoid touching. A `NetworkManagerBackend::connect` failure is still
+    /// fatal, same as [`Backends::new`]: faking the disks is not a reason to
+    /// also fake away a genuinely unreachable D-Bus service.
+    #[cfg(debug_assertions)]
+    pub async fn with_fake_disks(
+        disk: Arc<dyn disk::DiskBackend>,
+        crypt: Arc<dyn crypt::CryptBackend>,
+    ) -> mx::Result<Self> {
+        Ok(Self {
+            disk,
+            network: Arc::new(net::NetworkManagerBackend::connect().await?),
+            locale: Arc::new(locale::SystemLocaleBackend::new()),
+            a11y: Arc::new(a11y::OrcaBackend::new()),
+            crypt,
+        })
+    }
 }

@@ -1,8 +1,8 @@
 pub mod layout;
 pub mod ntfs;
-/// Disk fixtures driving `engine::plan`'s scenario matrix. Test-only: they
-/// used to back the `--fake-disk=` CLI flag, which no longer exists.
-#[cfg(test)]
+/// Disk fixtures driving `engine::plan`'s scenario matrix, also used by
+/// `debugsim::disks` in a debug build to back the `--fake-disks=` CLI flag.
+#[cfg(any(test, debug_assertions))]
 pub mod scenario;
 mod udisks2;
 pub mod usage;
@@ -113,8 +113,9 @@ pub trait DiskBackend: Send + Sync {
     /// Resolves a `list_disks`/`list_partitions` path into a real `/dev/...`
     /// device node. On the real backend `DiskInfo::path`/`PartitionInfo::path`
     /// are udisks2 object paths, not device nodes — but `cryptsetup`,
-    /// `mkswap`, `swapon`, `ntfsresize` all need the latter. The fake backend
-    /// already uses `/dev/...` paths, so it returns the input unchanged.
+    /// `mkswap`, `swapon`, `ntfsresize` all need the latter. `debugsim`'s
+    /// `FakeDiskBackend` already uses `/dev/...` paths, so it returns the
+    /// input unchanged.
     async fn device_node(&self, path: &str) -> mx::Result<String>;
     /// Inverse of `device_node`, for a `/dev/...` node that only starts
     /// existing at runtime rather than coming from `list_partitions` — the
@@ -122,8 +123,8 @@ pub trait DiskBackend: Send + Sync {
     /// polls udisks2 (which notices new kernel devices via udev, not
     /// instantaneously) for a Block object backing it and returns *that*
     /// object path, so `format_partition`/`mount` keep working on it like on
-    /// any other partition. Fake backend: registers a synthetic partition
-    /// entry for it and returns the node unchanged.
+    /// any other partition. `FakeDiskBackend`: registers a synthetic
+    /// partition entry for it and returns the node unchanged.
     async fn resolve_device(&self, device_node: &str) -> mx::Result<String>;
     /// Reads the filesystem/container UUID udev probed for a
     /// `list_partitions` path (udisks2' `Block.IdUUID`), as the

@@ -47,6 +47,28 @@ fn render_backend_error(e: &mx::Error) -> String {
     }
 }
 
+/// `--fake-disks=`/`--fake-error=` runs a real pipeline against fake
+/// backends — no actual disk is touched — so the confirmation dialog must
+/// say so plainly instead of threatening data loss that cannot happen. Never
+/// translated: it only ever appears on a developer's own machine. `None` in
+/// a release build, where `debugsim` does not exist at all.
+#[cfg(debug_assertions)]
+fn fake_dialog_text() -> Option<(String, String)> {
+    let sim = crate::debugsim::active()?;
+    Some((
+        "SIMULATION — run a fake install?".to_string(),
+        format!(
+            "Disk scenario(s): {}\nInjected fault: {}\n\nNo real disk will be touched.",
+            sim.scenario_names().join(", "),
+            sim.fault_name(),
+        ),
+    ))
+}
+#[cfg(not(debug_assertions))]
+fn fake_dialog_text() -> Option<(String, String)> {
+    None
+}
+
 #[derive(Clone)]
 pub struct SummaryPage {
     page: adw::NavigationPage,
@@ -242,37 +264,46 @@ impl SummaryPage {
             let erases = pending_erases.borrow().clone();
             let disk_label = pending_disk_label.borrow().clone();
 
-            let heading = tr("Erase disk and install Modulix OS?");
-            let mut body = format!(
-                "{}\n\n{}: {}",
-                tr("This cannot be undone."),
-                tr("Target disk"),
-                disk_label
-            );
-            if erases.is_empty() {
-                body.push_str(&format!(
-                    "\n\n{}",
-                    tr("No existing partitions will be deleted.")
-                ));
-            } else {
-                body.push_str(&format!(
-                    "\n\n{}:\n{}",
-                    tr("The following partitions will be permanently erased"),
-                    erases
-                        .iter()
-                        .map(|p| format!("• {p}"))
-                        .collect::<Vec<_>>()
-                        .join("\n")
-                ));
-            }
+            let is_fake = fake_dialog_text().is_some();
+            let (heading, body, install_label) = match fake_dialog_text() {
+                Some((heading, body)) => (heading, body, "Simulate".to_string()),
+                None => {
+                    let heading = tr("Erase disk and install Modulix OS?");
+                    let mut body = format!(
+                        "{}\n\n{}: {}",
+                        tr("This cannot be undone."),
+                        tr("Target disk"),
+                        disk_label
+                    );
+                    if erases.is_empty() {
+                        body.push_str(&format!(
+                            "\n\n{}",
+                            tr("No existing partitions will be deleted.")
+                        ));
+                    } else {
+                        body.push_str(&format!(
+                            "\n\n{}:\n{}",
+                            tr("The following partitions will be permanently erased"),
+                            erases
+                                .iter()
+                                .map(|p| format!("• {p}"))
+                                .collect::<Vec<_>>()
+                                .join("\n")
+                        ));
+                    }
+                    (heading, body, tr("Erase and Install"))
+                }
+            };
 
             let dialog = adw::AlertDialog::builder()
                 .heading(heading)
                 .body(body)
                 .build();
             dialog.add_response("cancel", &tr("Cancel"));
-            dialog.add_response("install", &tr("Erase and Install"));
-            dialog.set_response_appearance("install", adw::ResponseAppearance::Destructive);
+            dialog.add_response("install", &install_label);
+            if !is_fake {
+                dialog.set_response_appearance("install", adw::ResponseAppearance::Destructive);
+            }
             dialog.set_default_response(Some("cancel"));
             dialog.set_close_response("cancel");
 

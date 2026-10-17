@@ -3,7 +3,10 @@ mod encrypt;
 mod enroll_tpm;
 mod format;
 mod init_config;
-mod mount;
+/// `pub(crate)`, not private: `debugsim::tasks::FakeMountTask` reuses
+/// `mount::mount_filesystems` (the backend-only half) and fakes only
+/// `activate_swap`'s real `swapon(8)` call.
+pub(crate) mod mount;
 mod nixos_install;
 mod partition;
 mod post_install;

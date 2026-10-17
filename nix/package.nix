@@ -4,6 +4,7 @@
   naerskLib,
   modulixCoreUtilsSrc,
   self,
+  release ? true,
 }:
 
 let
@@ -18,6 +19,7 @@ naerskLib.buildPackage {
   src = mergedSrc;
   root = "${mergedSrc}/modulixos-installer";
   singleStep = true;
+  inherit release;
   cargoBuildOptions = def: def ++ [ "--manifest-path" "modulixos-installer/Cargo.toml" ];
   cargoTestOptions = def: def ++ [ "--manifest-path" "modulixos-installer/Cargo.toml" ];
 

@@ -1,9 +1,7 @@
 //! Shared, read-only catalog lookups. Locale/timezone/keyboard-layout lists
-//! are static system data, not hardware — safe to read the same way whether
-//! or not `--fake` is set, unlike disk/network/crypt operations. Both
-//! [`super::SystemLocaleBackend`] and [`super::FakeLocaleBackend`] go through
-//! here; only [`super::LocaleBackend::apply_keyboard_layout`] (an actual
-//! side effect) differs between them.
+//! are static system data, not hardware — the locale backend stays real even
+//! when `--fake-disks=`/`--fake-error=` are set, unlike disk/crypt
+//! operations (see `debugsim`).
 
 use super::{KeyboardLayout, LocaleEntry, TimezoneEntry, parse_evdev_xml, parse_zone_tab};
 use crate::mx;
@@ -57,8 +55,8 @@ pub async fn read_timezones() -> mx::Result<Vec<TimezoneEntry>> {
 }
 
 pub async fn read_keyboard_layouts() -> mx::Result<Vec<KeyboardLayout>> {
-    // Not a standard env var (unlike `TZDIR`) — a dev-only override so
-    // `cargo run --fake` can find evdev.xml inside a `nix develop` shell,
+    // Not a standard env var (unlike `TZDIR`) — a dev-only override so a
+    // plain `cargo run` can find evdev.xml inside a `nix develop` shell,
     // which has no `/run/current-system` NixOS profile to symlink it under.
     let dev_override = std::env::var("MODULIX_DEV_EVDEV_XML").into_iter();
     let candidates = dev_override.chain(EVDEV_XML_PATHS.iter().map(|s| s.to_string()));

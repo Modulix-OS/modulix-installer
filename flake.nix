@@ -118,9 +118,15 @@
             modulixCoreUtilsSrc = modulix-core-utils;
             self = ./.;
           };
+          modulixos-installer-debug = pkgs.callPackage ./nix/package.nix {
+            inherit naerskLib;
+            modulixCoreUtilsSrc = modulix-core-utils;
+            self = ./.;
+            release = false;
+          };
           isoImage = self.nixosConfigurations."modulixos-iso-${system}".config.system.build.isoImage;
         in {
-          inherit modulixos-installer;
+          inherit modulixos-installer modulixos-installer-debug;
           default = modulixos-installer;
           iso = isoImage;
         });

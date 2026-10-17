@@ -2,17 +2,20 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+**All documentation in this repo — this file, `README.md`, doc comments, commit messages — is
+written in English**, regardless of the language a conversation about the codebase happens in.
+
 ## What this is
 
 `modulixos-installer` is the installer for Modulix OS (NixOS-based distro): a single **fullscreen Rust + GTK4/libadwaita app** running as root inside a minimal `sway` kiosk session (Windows-installer style), replacing the older Calamares-based flow.
 
-**Current state: the whole wizard plus a real, destructive install run end to end** — partition → encrypt → format → mount → TPM2 enroll → write the NixOS configuration → `nixos-install` → set passwords → release the target. Steps 7-9 (user, desktop environment, application pack) still have a minimal UI, but their answers now really reach the installed system. Caveat on "end to end": that was only ever true of an *unencrypted* install, and for two reasons. The removed `luks.nix` defined `boot.initrd.luks.devices."modulixroot".device` a second time and made the encrypted path fail at evaluation; and `EncryptTask`/`EnrollTpmTask` handed `cryptsetup` the udisks2 **object path** out of `PipelineState` instead of a `/dev` node, so `luksFormat` died with exit status 4 long before evaluation was reached. Both are fixed, and `CryptsetupBackend::require_device_node` now refuses an object path with an error naming it. Nobody has booted an encrypted install yet.
+**Current state: the whole wizard plus a real, destructive install run end to end** — partition → encrypt → format → mount → TPM2 enroll → write the NixOS configuration → `nixos-install` → set passwords → release the target. Steps 7-9 (user, desktop environment, application pack) still have a minimal UI, but their answers now really reach the installed system. Caveat on "end to end": that was only ever true of an _unencrypted_ install, and for two reasons. The removed `luks.nix` defined `boot.initrd.luks.devices."modulixroot".device` a second time and made the encrypted path fail at evaluation; and `EncryptTask`/`EnrollTpmTask` handed `cryptsetup` the udisks2 **object path** out of `PipelineState` instead of a `/dev` node, so `luksFormat` died with exit status 4 long before evaluation was reached. Both are fixed, and `CryptsetupBackend::require_device_node` now refuses an object path with an error naming it. Nobody has booted an encrypted install yet.
 
 **The installed system's configuration belongs to mxpkgs, not to this repo.** Anything that
 describes how Modulix OS behaves once installed — bootloader, limine, kernel, desktop,
 defaults — goes in `mxpkgs/modulixos/`. The installer only generates what is specific to
-*this* machine and cannot be known in advance (hostname, users, the encrypted root, the
-application pack) — and it generates all of it *through* `modulix-core-utils`, into that
+_this_ machine and cannot be known in advance (hostname, users, the encrypted root, the
+application pack) — and it generates all of it _through_ `modulix-core-utils`, into that
 crate's own files (`fstab.nix`, `package.nix`, `module.nix`), never into files of its own
 invention. So a limine or `boot.loader` change is an mxpkgs change, even when the reason for it lives here.
 Caveat: the generated `flake.nix` resolves `github:Modulix-OS/mxpkgs` with no rev, so such a
@@ -21,7 +24,8 @@ change reaches installs only once pushed.
 **mxpkgs has no ISO/installer module** — `mxpkgs/installer/default.nix` does not exist and never did. The live ISO is defined here, in `nix/iso.nix`, on top of nixpkgs' `installation-cd-minimal.nix`, and imports `modulixos/branding.nix`, `modulixos/boot.nix` and `modulixos/options` from mxpkgs (a flake input) for the Modulix identity and boot configuration. Moving the ISO into mxpkgs is a later step, not a prerequisite.
 
 `branding.nix` carries **no** boot configuration: everything Modulix about the boot lives in `mxpkgs/modulixos/boot.nix`, which `nix/iso.nix` **imports directly** rather than copying — along with `mxpkgs/modulixos/options`, which declares the `mx.mode.server.enable` that `boot.nix` reads (importing `boot.nix` alone fails with `error: attribute 'mode' missing` as soon as anything forces `boot.plymouth.enable`). The import is guarded by two lines, and those are the only reason the copy ever existed:
-- `mx.bootloader.enable = false` — the option defaults to `true`, which would enable limine next to the ISO image builder. Nothing *conflicts* (`iso-image.nix` only does `boot.loader.grub.enable = mkImageMediaOverride false` and never claims `system.build.installBootLoader`), so limine would evaluate and build; it would just be dead weight in a closure whose boot actually goes through the isolinux/grub-efi written into the image.
+
+- `mx.bootloader.enable = false` — the option defaults to `true`, which would enable limine next to the ISO image builder. Nothing _conflicts_ (`iso-image.nix` only does `boot.loader.grub.enable = mkImageMediaOverride false` and never claims `system.build.installBootLoader`), so limine would evaluate and build; it would just be dead weight in a closure whose boot actually goes through the isolinux/grub-efi written into the image.
 - `boot.tmp.useTmpfs = lib.mkForce false` — `boot.nix` sets it `true`, and the live ISO's root is already a tmpfs overlay.
 
 Everything else comes from `boot.nix` unchanged and must **not** be restated here: the `boot.plymouth` block (theme `modulix` = a `bgrt` clone with the Modulix logo as watermark, so on real hardware the firmware vendor logo shows through by design), the quiet-boot `boot.kernelParams` — including `iommu=pt`, which mxpkgs carries as a fix for some AMD CPUs — `consoleLogLevel`, `initrd.verbose`, and `initrd.systemd.enable` (already `true` on the ISO before the import, so this is not a change). `isoImage.splashImage`/`efiSplashImage` read `config.mx.bootloader.splash.image` for the same reason. Note `vt.global_cursor_default=0` is in the kernel-params list: a failed kiosk start leaves a completely black VT, which is why the tty1 recovery shell below is not optional.
@@ -36,14 +40,34 @@ One duplication is left on purpose: `system.nixos.label` recomputes `branding.ni
 cargo fmt && cargo clippy -- -D warnings   # mandatory before any commit (global rule)
 cargo test                                  # pure logic only — swap sizing, partition planner,
                                              # zone.tab/evdev.xml parsing, step-registry is_relevant()
-cargo run                                   # no CLI flags at all; connects the REAL backends
+cargo run                                   # no CLI flags: connects the REAL backends
+cargo run -- --fake-disks=multi-disk        # debug build only: synthetic disks, see below
+cargo run -- --fake-error=list              # prints the --fake-error= catalog and exits
 ```
 
-**There is no simulation mode and no dev-machine workflow with safe disks.** `cargo run` on a
-dev box does start (udisks2 and NetworkManager answer on the system bus) and enumerates **your
-real disks**. Steps 1-9 are safe to click through; **never press Install** — the confirmation
-dialog is the only thing between the wizard and your partition table. Exercising the wizard end
-to end is what the VM is for:
+**`cargo run` with no flags enumerates your real disks — never press Install.** udisks2 and
+NetworkManager answer on the system bus, so steps 1-9 are safe to click through, but the
+confirmation dialog is the only thing between the wizard and your partition table.
+
+**A debug build also accepts `--fake-disks=<scenario>[,<scenario>...]`,
+`--fake-error=<id>|list|random` and `--fake-instant`** (`src/debugsim/`), so the 9 steps and a
+full install run can be exercised without touching a real disk. `--fake-disks=` composes one or
+more of `backend::disk::scenario::DiskScenario`'s 11 fixtures (aliases `fragmented` →
+`Fragmented`, `half-partitioned` → `FreeSpaceTail`) into a synthetic `/dev/fakeN` disk set;
+`--fake-error=` injects exactly one failure from a fixed catalog (`cargo run --
+--fake-error=list` prints it) at a specific pipeline stage, so every failure path the progress
+page, the QR error report and the install-log copy exist to handle can be reproduced on demand;
+`--fake-instant` zeroes the fake install's sleeps. This is gated by `#[cfg(debug_assertions)]`
+end to end — none of it is compiled into a release binary (the live ISO's), and it is never a
+fallback: only `disk`/`crypt` are faked (`backend::Backends::with_fake_disks`), network/locale/
+accessibility stay real, and a release binary refuses to start at all if handed any `--fake*` or
+otherwise-unrecognized flag (routed through the same fatal-error window a real backend
+connection failure uses, since the kiosk has no terminal to print to). See
+`src/debugsim/mod.rs`'s doc comment for why this is not a repeat of the `--fake` mode `eb6840b`
+removed for silently degrading a real connection failure into a reported success.
+
+Exercising the wizard against **real hardware/VM disks** end to end — booting the result, TPM2
+unlock, hibernation resume, the EFI boot entry — is still what the VM is for:
 
 ```bash
 nix build .#iso     # the live ISO (nix/iso.nix)
@@ -87,15 +111,15 @@ Object-safe. `StepValidity` is exposed as a GObject property observed by the "Ne
 
 ### Backends (`src/backend/`) — one trait per subsystem, one impl each
 
-| Trait | Real impl | Role |
-|---|---|---|
-| `DiskBackend` | `Udisks2Backend` (zbus) | enumerate disks/partitions/free space, create/delete/resize/format/mount |
-| `NetworkBackend` | `NetworkManagerBackend` (zbus) | ethernet, Wi-Fi scan/connect, `Connectivity` → captive-portal detection |
-| `LocaleBackend` | `SystemLocaleBackend` | locales (`locale.gen`), timezones (`zone.tab` lat/lon for the map), keyboard layouts (`evdev.xml` from xkeyboard-config) |
-| `A11yBackend` | `OrcaBackend` | narrator (speech-dispatcher/orca) — the only method that does anything in the kiosk session; the other four are best-effort GNOME a11y `gsettings` calls (silently `Ok(())` if `gsettings` isn't on `PATH`, real errors otherwise), useful only on a dev machine under a full GNOME session. What actually applies live to the installer itself (high contrast, large text) is `src/a11y.rs`'s `A11ySettings`, not this trait |
-| `CryptBackend` | `CryptsetupBackend` | `cryptsetup luksFormat`, `systemd-cryptenroll --tpm2-device` (± `--tpm2-with-pin`). Takes `/dev` nodes only — `require_device_node` rejects a `PipelineState` object path instead of letting `cryptsetup` fail opaquely. `systemd-cryptenroll` gets its two secrets through files in a `0700` tmpfs directory under `/run` (`--unlock-key-file` for the existing passphrase, the `cryptenroll.new-tpm2-pin` credential for a new PIN), never argv and never stdin: it asks through `ask_password`, which does not read the pipe it is handed |
+| Trait            | Real impl                      | Role                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
+| ---------------- | ------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `DiskBackend`    | `Udisks2Backend` (zbus)        | enumerate disks/partitions/free space, create/delete/resize/format/mount                                                                                                                                                                                                                                                                                                                                                                                                                                                                     |
+| `NetworkBackend` | `NetworkManagerBackend` (zbus) | ethernet, Wi-Fi scan/connect, `Connectivity` → captive-portal detection                                                                                                                                                                                                                                                                                                                                                                                                                                                                      |
+| `LocaleBackend`  | `SystemLocaleBackend`          | locales (`locale.gen`), timezones (`zone.tab` lat/lon for the map), keyboard layouts (`evdev.xml` from xkeyboard-config)                                                                                                                                                                                                                                                                                                                                                                                                                     |
+| `A11yBackend`    | `OrcaBackend`                  | narrator (speech-dispatcher/orca) — the only method that does anything in the kiosk session; the other four are best-effort GNOME a11y `gsettings` calls (silently `Ok(())` if `gsettings` isn't on `PATH`, real errors otherwise), useful only on a dev machine under a full GNOME session. What actually applies live to the installer itself (high contrast, large text) is `src/a11y.rs`'s `A11ySettings`, not this trait                                                                                                                |
+| `CryptBackend`   | `CryptsetupBackend`            | `cryptsetup luksFormat`, `systemd-cryptenroll --tpm2-device` (± `--tpm2-with-pin`). Takes `/dev` nodes only — `require_device_node` rejects a `PipelineState` object path instead of letting `cryptsetup` fail opaquely. `systemd-cryptenroll` gets its two secrets through files in a `0700` tmpfs directory under `/run` (`--unlock-key-file` for the existing passphrase, the `cryptenroll.new-tpm2-pin` credential for a new PIN), never argv and never stdin: it asks through `ask_password`, which does not read the pipe it is handed |
 
-There is no second implementation of any of these: the fake backends, the `--fake` flag and the `is_fake` gate are gone. `Backends::new()` is fallible and a failure is **fatal** — `main` shows a fullscreen, selectable error page and exits non-zero rather than degrading into a simulation.
+`Backends::new()` is fallible and a failure is **fatal** — `main` shows a fullscreen, selectable error page and exits non-zero rather than degrading into a simulation. A debug build's only second implementation of any of these is `src/debugsim/`'s `FakeDiskBackend`/`FakeCryptBackend`, behind the explicit `--fake-disks=`/`--fake-error=` flags (see "Commands" above) — `NetworkBackend`/`LocaleBackend`/`A11yBackend` have none, real or fake, beyond the table above.
 
 ### `trait Task` (`src/engine/mod.rs`) — install pipeline
 
@@ -182,7 +206,7 @@ build.rs                glib_build_tools::compile_resources
 ### i18n: `LANGUAGE` drives messages, `setlocale` drives formatting
 
 `setlocale(LC_ALL, code)` silently no-ops (`NULL`, locale left untouched) for any locale glibc
-hasn't *generated* on the running machine — which is most of the ~470 entries the language-step
+hasn't _generated_ on the running machine — which is most of the ~470 entries the language-step
 dropdown offers. `src/i18n.rs` therefore drives message-catalog selection through the `LANGUAGE`
 env var instead (gettext resolves it as a directory name under the bound text domain — no
 generated locale needed) and only uses `setlocale` best-effort, for formatting (dates, numbers,
@@ -202,7 +226,7 @@ collation). Two consequences to keep in mind when touching this code:
   `DEFAULT_LANGUAGE` spellings, then `FALLBACK_LOCALES`, then the host environment — to get
   `LC_MESSAGES` off `C` for formatting. This is also what pre-selects the language step's
   dropdown (`steps/language.rs` matches `current_language_code()` with `normalized_eq`), hence
-  `DEFAULT_LANGUAGE` being a *full* locale code: a bare `"en"` matches none of
+  `DEFAULT_LANGUAGE` being a _full_ locale code: a bare `"en"` matches none of
   `list_locales()`'s territory-carrying entries and the dropdown would fall back to index 0.
 - `po/` ships `fr.po`, `es.po` and `de.po` — French, Spanish, German and English (gettext's
   `msgid` fallback) are the four languages that visibly differ today, even though the dropdown
@@ -211,8 +235,8 @@ collation). Two consequences to keep in mind when touching this code:
   Nothing in the build system enumerates them: `build.rs::compile_translations` and
   `nix/package.nix`'s `postInstall` both glob `po/*.po`, so a new language is one file.
   `nix/kiosk-module.nix`'s `i18n.supportedLocales` is the one place that does list them, and only
-  so that *formatting* follows the choice (messages need no generated locale).
-  There is no extraction script: a new msgid goes into `po/modulixos-installer.pot` *and* every
+  so that _formatting_ follows the choice (messages need no generated locale).
+  There is no extraction script: a new msgid goes into `po/modulixos-installer.pot` _and_ every
   `po/<lang>.po` by hand (`msgcat --use-first --sort-output --no-location` keeps them ordered),
   and `xgettext` would need `--keyword=tr` since `tr` is a plain function, not a macro.
 - `src/welcome.rs`'s `GREETINGS` is the one place that is **not** gettext-driven: the pre-wizard
@@ -220,7 +244,7 @@ collation). Two consequences to keep in mind when touching this code:
   `Greeting` entry there too.
 - **A second text domain is bound: `xkeyboard-config`** (`i18n::tr_xkb`). `evdev.xml` carries
   English `<description>` text only — no `xml:lang` variants — and xkeyboard-config ships the
-  translations as catalogs whose msgids *are* those English strings, which is how GNOME localizes
+  translations as catalogs whose msgids _are_ those English strings, which is how GNOME localizes
   the same list. The catalog directory comes from `MODULIX_XKB_LOCALE_DIR` (set by `nix/package.nix`
   and the devShell), falling back to the `share/locale` sibling of `MODULIX_DEV_EVDEV_XML` and then
   to the system prefixes; not finding it just leaves layout names in English. The
@@ -245,7 +269,7 @@ collation). Two consequences to keep in mind when touching this code:
 3. **Timezone** — `gtk::DrawingArea` world map, equirectangular projection of `zone.tab` coordinates, click → nearest zone (same approach as Calamares) + region/city fallback list.
 4. **Keyboard** — layout + variant from `evdev.xml`, live typing test area, applies the layout
    immediately. Names are localized through xkeyboard-config's own catalogs (`i18n::tr_xkb`, see
-   the i18n section) and the list is sorted by the *displayed* name, so a language change re-sorts
+   the i18n section) and the list is sorted by the _displayed_ name, so a language change re-sorts
    and rebuilds both dropdowns — selections are restored by code, never by index. The default
    layout follows the language step through `steps::LanguageHook` →
    `KeyboardStep::locale_hook` → `backend::locale::keyboard_default::layout_for_locale` (curated
@@ -268,7 +292,7 @@ collation). Two consequences to keep in mind when touching this code:
    `adw::AlertDialog` to carve a new partition (mount point, filesystem, size) straight
    out of that gap — no GParted round-trip needed for that; GParted (launched from a
    button on the manual page, `steps/partitioning.rs`'s `run_gparted`) is only needed to
-   resize or delete an *existing* partition. Formatting is
+   resize or delete an _existing_ partition. Formatting is
    forced for `/`, `/boot`, and swap (`engine::plan::format_is_forced`) — only `/home` can
    be kept as-is. The editor collects `Vec<plan::ManualItem>` (`Existing` assignment or
    `New` creation) and preserves the user's assignments/pending creations across a
@@ -293,7 +317,7 @@ collation). Two consequences to keep in mind when touching this code:
    in two different files: `AppPack::packages(de)` is a per-DE nixpkgs list hardcoded in
    `config.rs` and goes to `package.nix`, while `AppPack::modules()` returns mxpkgs module
    names (`services.flatpak`, `services.printer`, dotted as in
-   `mxpkgs/modules/index.json`) and goes to `module.nix`. Printing in particular *has* to be
+   `mxpkgs/modules/index.json`) and goes to `module.nix`. Printing in particular _has_ to be
    the module: `services.printing.enable` plus a driver set is not something
    `environment.systemPackages` can express, which is why `cups`/`gutenprint`/
    `system-config-printer` are no longer in `COMMON_BASE_PACKAGES` — they were installed but
@@ -327,7 +351,7 @@ module renders blurry and a blurry code does not scan).
 minimise/maximise/close). The summary and progress pages deliberately carry no `ToolbarView` of
 their own; two header bars used to stack, each drawing its own window controls. Consequences:
 the outer header's title has to be re-set from the visible page (`content_page.set_title`, in the
-`visible-page` handler *and* in the retranslate hook, which also re-titles the step
+`visible-page` handler _and_ in the retranslate hook, which also re-titles the step
 `NavigationPage`s), and the back chevron those pages used to get for free is now the outer
 "Previous" button, shown on non-step pages only when `visible.can_pop()` — which is why the
 progress page never clears its `can_pop(false)`.
@@ -347,9 +371,9 @@ modulix-core-utils = { path = "../modulix-core-utils", features = ["init", "file
 - **`CONFIG_DIRECTORY`** (`modulix-core-utils/src/lib.rs`) is `/etc/modulix-os/` in release, `<repo>/test/` in debug — a real NixOS fixture repo used by examples/tests. See `modulix-core-utils/CLAUDE.md` for details.
 - **`BuildCommand::as_str()`** collapses to `"build-vm"` for every variant in debug builds — a debug run never touches the host, it builds a VM image instead. Only release builds actually run `nixos-install`.
 - `init(&InitParams)` does the whole seed in **one transaction** (main config + locale + keyboard + user + `package.nix` + `module.nix` + the LUKS entries + `boot.resumeDevice`) and is what `InitConfigTask` calls. It is synchronous (`std::process`, `git2`), so it must go through `spawn_blocking`. There is no `init_all` and none is needed.
-- **Everything the installer writes into the config repo goes through `InitParams`.** The three fields that carry it: `packages: Vec<String>` → `package.nix` (`install_package::install_no_transaction`, so the `pkgs.<attr>` spelling matches what a later `install_package::uninstall` looks for), `modules: Vec<String>` → `module.nix` (`install_module::install_no_transaction`, one `mx.<name>.enable = true` each; names are *not* validated against `modules/index.json`, a typo only fails at build time), `luks: Vec<LuksInit>` → `write_fstab_extras` on `fstab.nix`, and `resume_device: Option<String>` → `filesystem::set_resume_device_no_transaction`. An empty list writes no file and adds no import. `LuksInit::name` must be the **live mapper name** (`engine::LUKS_MAPPER_NAME` / `::LUKS_SWAP_MAPPER_NAME`), because that is what `nixos-generate-config` keyed its own entry on. `LuksInit::container` is the asymmetry between the two: `None` for root, whose `.device` the generator already wrote, and `Some("/dev/disk/by-uuid/…")` for the swap container, which the generator never mentions at all — it only emits LUKS entries while walking the mount points it found, and a swap device is not one, so without this the installed system has nothing to unlock the swap with. `InitConfigTask::luks_and_resume` builds both from `PipelineState`, reading the UUIDs through `DiskBackend::partition_uuid` (udisks2' `Block.IdUUID`, no shell-out).
+- **Everything the installer writes into the config repo goes through `InitParams`.** The three fields that carry it: `packages: Vec<String>` → `package.nix` (`install_package::install_no_transaction`, so the `pkgs.<attr>` spelling matches what a later `install_package::uninstall` looks for), `modules: Vec<String>` → `module.nix` (`install_module::install_no_transaction`, one `mx.<name>.enable = true` each; names are _not_ validated against `modules/index.json`, a typo only fails at build time), `luks: Vec<LuksInit>` → `write_fstab_extras` on `fstab.nix`, and `resume_device: Option<String>` → `filesystem::set_resume_device_no_transaction`. An empty list writes no file and adds no import. `LuksInit::name` must be the **live mapper name** (`engine::LUKS_MAPPER_NAME` / `::LUKS_SWAP_MAPPER_NAME`), because that is what `nixos-generate-config` keyed its own entry on. `LuksInit::container` is the asymmetry between the two: `None` for root, whose `.device` the generator already wrote, and `Some("/dev/disk/by-uuid/…")` for the swap container, which the generator never mentions at all — it only emits LUKS entries while walking the mount points it found, and a swap device is not one, so without this the installed system has nothing to unlock the swap with. `InitConfigTask::luks_and_resume` builds both from `PipelineState`, reading the UUIDs through `DiskBackend::partition_uuid` (udisks2' `Block.IdUUID`, no shell-out).
 - **`install_package`/`install_module` are each split in two features.** Their public `install`/`uninstall` force `BuildCommand::Switch` and so are unusable from the installer, and their full features drag in `reqwest`/`memmap2`/`phf`. The light `install-package-file`/`install-module-file` (`["core-nix-file"]`) expose only the `*_no_transaction` halves and the `pub FILE_*_PATH` constants; `init` depends on those two, so the installer links no HTTP client. Verify with `cargo tree -p modulixos-installer | grep reqwest` — it must stay empty.
-- `init()` **never rebuilds**: outside debug it holds core-utils' skip-rebuild lock for its whole run, and its own doc says the installer drives the build. `rebuild_config` is private and unreachable anyway — hence `NixosInstallTask`. This is also why the installer cannot call `install_package::install` directly: that one commits *and* switches, and `hold_skip_rebuild_lock` is private.
+- `init()` **never rebuilds**: outside debug it holds core-utils' skip-rebuild lock for its whole run, and its own doc says the installer drives the build. `rebuild_config` is private and unreachable anyway — hence `NixosInstallTask`. This is also why the installer cannot call `install_package::install` directly: that one commits _and_ switches, and `hold_skip_rebuild_lock` is private.
 - `InitParams::config_dir` is passed explicitly (`/mnt/etc/modulix-os`) so `resolve_config_path` behaves the same in debug and release; left to `None`, a debug build would write into core-utils' own `test/` tree.
 - `--root /mnt` is hardcoded in `rebuild_config` (`modulix-core-utils/src/core/transaction/transaction.rs:226`) — the installer must mount the install target at `/mnt`, not a configurable path.
 - `rebuild_config` inherits stdout and only captures stderr for the error message — no live streaming. This is precisely why `NixosInstallTask` spawns `nixos-install` itself with both streams piped.
@@ -362,7 +386,7 @@ modulix-core-utils = { path = "../modulix-core-utils", features = ["init", "file
 
 - **Passwords must never land in the Nix store in plaintext.** `user::add_no_transaction` writes `initialPassword`, and `init()` passes an empty one. The installer therefore never puts a password in the configuration at all: `SetPasswordsTask` pipes `chpasswd` into `nixos-enter` after the install, writing `/etc/shadow` directly. This depends on `users.mutableUsers` staying `true`.
 - **NTFS resize ("alongside Windows" mode)**: refuse if BitLocker is detected (can't be shrunk from Linux), if Windows fast-startup/hibernation left the volume dirty (`hiberfil.sys`, dirty flag), or if `ntfsresize --no-action` fails. Mandatory preflight before any partition-table write.
-- **TPM2 + Limine**: Modulix uses `boot.loader.limine`. TPM2 unlock needs `boot.initrd.systemd.enable` plus `boot.initrd.systemd.tpm2.enable`, and both come from **mxpkgs** (`mxpkgs/modulixos/boot.nix:109` and `:117`) — the installer writes neither. What it does write is the `crypttabExtraOpts = [ "tpm2-device=auto" ]` half, through `InitParams::luks`, onto the `boot.initrd.luks.devices."modulixroot"` entry `nixos-generate-config` already put in `fstab.nix`. For that entry it must add *only* that attribute: re-declaring `.device` is what the removed `luks.nix` did, and two definitions of one `types.str` option make the module system fail. The `modulixswap` entry is the exact opposite and the only place the installer does declare a `.device`, because the generator reports no LUKS entry for a swap-only container. `EnrollTpmTask` runs `systemd-cryptenroll --tpm2-device=auto` for real, and runs *before* `InitConfigTask` so `tpm2_enabled` is settled by the time the configuration is written. **Still unverified**: treat TPM2 unlock as unconfirmed until an encrypted install has actually been booted on real hardware or a VM with Limine — the double definition above means no encrypted install can ever have got that far.
+- **TPM2 + Limine**: Modulix uses `boot.loader.limine`. TPM2 unlock needs `boot.initrd.systemd.enable` plus `boot.initrd.systemd.tpm2.enable`, and both come from **mxpkgs** (`mxpkgs/modulixos/boot.nix:109` and `:117`) — the installer writes neither. What it does write is the `crypttabExtraOpts = [ "tpm2-device=auto" ]` half, through `InitParams::luks`, onto the `boot.initrd.luks.devices."modulixroot"` entry `nixos-generate-config` already put in `fstab.nix`. For that entry it must add _only_ that attribute: re-declaring `.device` is what the removed `luks.nix` did, and two definitions of one `types.str` option make the module system fail. The `modulixswap` entry is the exact opposite and the only place the installer does declare a `.device`, because the generator reports no LUKS entry for a swap-only container. `EnrollTpmTask` runs `systemd-cryptenroll --tpm2-device=auto` for real, and runs _before_ `InitConfigTask` so `tpm2_enabled` is settled by the time the configuration is written. **Still unverified**: treat TPM2 unlock as unconfirmed until an encrypted install has actually been booted on real hardware or a VM with Limine — the double definition above means no encrypted install can ever have got that far.
 - **The EFI boot entry is the installer's, not nixpkgs'** — and the half that belongs to the
   installed system lives in **mxpkgs**, not here: `mxpkgs/modulixos/boot.nix` sets
   `boot.loader.efi.canTouchEfiVariables = lib.mkMxDefault false` on purpose. nixpkgs'
@@ -410,10 +434,19 @@ modulix-core-utils = { path = "../modulix-core-utils", features = ["init", "file
   same as the WebKitGTK captive-portal window above.
 - **A failed backend connection must never silently become a simulation**: `main.rs` used to
   fall back to `Backends::fake()` with only an `eprintln!` nobody sees under the kiosk, so the
-  installer simulated a whole install and reported success. There is now **no simulation mode
-  at all** — no `--fake`, no fake backend impls, no `is_fake` gate, no "Simulation" banner to
-  forget. `Backends::new()` failing means `app::build_fatal_window` takes over: a fullscreen
-  error page with the full, selectable reason and a single Quit button, and a non-zero exit.
+  installer simulated a whole install and reported success (`eb6840b`, "drop the fake backends
+  and simulation mode"). `Backends::new()` failing means `app::build_fatal_window` takes over: a
+  fullscreen error page with the full, selectable reason and a single Quit button, and a
+  non-zero exit — still true today, fallback or not.
+  `src/debugsim/` (see "Commands" above) reintroduces a fake `DiskBackend`/`CryptBackend` pair
+  without reopening that hole, on three separate guarantees: it is `#[cfg(debug_assertions)]`
+  end to end, so a release binary (the only thing the live ISO ships) never links a line of it;
+  it only ever activates on an explicit `--fake-disks=`/`--fake-error=`/`--fake-instant` flag,
+  never as a fallback from a connection failure; and `Backends::new()`/`Backends::with_fake_disks()`
+  failing is fatal either way — faking the disks is not a reason to also fake away a genuinely
+  unreachable D-Bus service. A release binary additionally refuses outright to start on any
+  `--fake*` flag (or any other unrecognized one), through the exact same `build_fatal_window`
+  path, since the kiosk has no terminal for a plain exit code to mean anything.
 - **A failed install must stay diagnosable after a reboot**: the live ISO root is a RAM
   overlay and journald on it is volatile, so `engine::install_log` mirrors every
   `ProgressEvent` to `/var/log/modulixos-install.log`, to `stderr` (→ journald, tty2 is still
@@ -424,7 +457,7 @@ modulix-core-utils = { path = "../modulix-core-utils", features = ["init", "file
 - **HiDPI is handled by the compositor, not the app**: there is no `scale_factor()`,
   `GDK_SCALE` or DPI logic anywhere in `src/` — at scale 1 the wizard is unreadable on a
   1440p or 4K panel. `nix/kiosk-module.nix`'s `applyOutputScale` script runs from inside
-  `runInstaller`, *before* the binary, so the window gets its size on its first frame; it is
+  `runInstaller`, _before_ the binary, so the window gets its size on its first frame; it is
   not a second `exec` in `swayConfig`, because two `exec` lines race. Per active output it
   reads `swaymsg -t get_outputs -r` through `jq`, takes the physical width from byte 21 (cm)
   of `/sys/class/drm/card*-<name>/edid` — sway names outputs after DRM connectors, so the
@@ -458,7 +491,7 @@ modulix-core-utils = { path = "../modulix-core-utils", features = ["init", "file
   (`aperture_remove_conflicting_pci_devices`) before its own card appears — a window with no
   `/dev/dri/card*` at all. sway started inside it logs `Found 0 GPUs, cannot create backend`
   and exits, which is indistinguishable from a dead boot. `systemd-udev-settle` is gone and
-  `multi-user.target` is *not* ordered before the session, so the module's `ExecStartPre`
+  `multi-user.target` is _not_ ordered before the session, so the module's `ExecStartPre`
   (`waitForGpu`) does `udevadm settle` plus a 15 s poll for a render node, and always exits
   0 — a machine with no render node at all (BMC GPUs, the EFI framebuffer stub) must still
   reach the pixman path, which `startSession` selects up front when `/dev/dri/renderD*` is
@@ -471,12 +504,12 @@ modulix-core-utils = { path = "../modulix-core-utils", features = ["init", "file
   in `nix/kiosk-module.nix`: `StandardOutput`/`StandardError` are `journal+console`,
   `TTYVTDisallocate` is `no` (the `yes` cage uses reallocates the VT on stop and wipes the
   message), the unit is ordered `After=plymouth-quit-wait.service` (not just
-  `plymouth-quit.service`, which merely *asks* plymouthd to stop), and
+  `plymouth-quit.service`, which merely _asks_ plymouthd to stop), and
   `OnFailure=`/`OnSuccess=modulix-installer-fallback.service` prints `systemctl status`, the
   last 60 journal lines and `ls /dev/dri` on tty1, then hands over a root `agetty`
   (`OnSuccess` too: the installer has no reboot button, so quitting it normally also drops
   to a bare VT). The VT-existence check is `AssertPathExists`, **not**
-  `ConditionPathExists` — an unmet condition makes systemd *skip* the unit and call that a
+  `ConditionPathExists` — an unmet condition makes systemd _skip_ the unit and call that a
   success, so `OnFailure=` would never fire. `runInstaller` touches
   `/run/modulix-installer.started` and writes the installer's exit status to
   `/run/modulix-installer.status`; `startSession` reads both back, since sway `exec`s the
