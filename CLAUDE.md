@@ -71,7 +71,8 @@ Exercising the wizard against **real hardware/VM disks** end to end — booting 
 unlock, hibernation resume, the EFI boot entry — is still what the VM is for:
 
 ```bash
-nix build .#iso     # the live ISO (nix/iso.nix)
+nix build .#iso     # the live ISO (nix/iso.nix) — the result carries iso/*.iso plus a
+                    # `sha256sum -c`-ready iso/*.iso.sha256 (nix/iso-checksum.nix)
 nix run  .#vm       # boot that ISO in qemu: UEFI, scratch 40 GiB disk, swtpm, virgl on
 MODULIXOS_VM_GL=0 nix run .#vm   # same, virtio-gpu without 3D — the libvirt-like case the
                                  # kiosk's software-renderer fallback exists for
@@ -194,6 +195,9 @@ data/
   resources.gresource.xml
 nix/
   iso.nix               live ISO: installation-cd-minimal + mxpkgs branding/boot/options + kiosk
+  iso-checksum.nix      thin wrapper around nixpkgs' `system.build.isoImage`: re-exports
+                        its `iso/` directory as symlinks and adds one `*.iso.sha256`
+                        beside each image. This is what `packages.iso` points at
   kiosk-module.nix      the sway kiosk session (systemd unit + PAM + tty1 recovery
                         shell), ISO runtime deps, and the session's input config —
                         `input type:touchpad { scroll_factor 0.4 }`, because libinput's

@@ -124,11 +124,11 @@
             self = ./.;
             release = false;
           };
-          isoImage = self.nixosConfigurations."modulixos-iso-${system}".config.system.build.isoImage;
+          rawIsoImage = self.nixosConfigurations."modulixos-iso-${system}".config.system.build.isoImage;
         in {
           inherit modulixos-installer modulixos-installer-debug;
           default = modulixos-installer;
-          iso = isoImage;
+          iso = pkgs.callPackage ./nix/iso-checksum.nix { isoImage = rawIsoImage; };
         });
 
       nixosModules.installer-kiosk = ./nix/kiosk-module.nix;
