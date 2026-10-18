@@ -27,6 +27,7 @@ pub struct KeyboardStep {
     layout_row: adw::ActionRow,
     variant_row: adw::ActionRow,
     test_row: adw::ActionRow,
+    test_entry: gtk::Entry,
     error_banner: adw::Banner,
     layout_dropdown: gtk::DropDown,
     variant_dropdown: gtk::DropDown,
@@ -316,6 +317,7 @@ impl KeyboardStep {
             layout_row,
             variant_row,
             test_row,
+            test_entry,
             layout_dropdown,
             variant_dropdown,
             layouts,
@@ -399,6 +401,8 @@ impl Step for KeyboardStep {
         self.layout_row.set_title(&tr("Layout"));
         self.variant_row.set_title(&tr("Variant"));
         self.test_row.set_title(&tr("Typing test"));
+        self.test_entry
+            .set_placeholder_text(Some(&tr("Type here to test your layout")));
         if self.error_banner.is_revealed() {
             self.error_banner.set_title(&tr(
                 "This layout could not be applied to the running session.",
