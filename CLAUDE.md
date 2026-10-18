@@ -39,7 +39,8 @@ One duplication is left on purpose: `system.nixos.label` recomputes `branding.ni
 ```bash
 cargo fmt && cargo clippy -- -D warnings   # mandatory before any commit (global rule)
 cargo test                                  # pure logic only — swap sizing, partition planner,
-                                             # zone.tab/evdev.xml parsing, step-registry is_relevant()
+                                             # zone.tab/evdev.xml parsing, step-registry is_relevant(),
+                                             # plus tests/po_coverage.rs (gettext catalogs)
 cargo run                                   # no CLI flags: connects the REAL backends
 cargo run -- --fake-disks=multi-disk        # debug build only: synthetic disks, see below
 cargo run -- --fake-error=list              # prints the --fake-error= catalog and exits
@@ -239,6 +240,13 @@ collation). Two consequences to keep in mind when touching this code:
   There is no extraction script: a new msgid goes into `po/modulixos-installer.pot` _and_ every
   `po/<lang>.po` by hand (`msgcat --use-first --sort-output --no-location` keeps them ordered),
   and `xgettext` would need `--keyword=tr` since `tr` is a plain function, not a macro.
+  `tests/po_coverage.rs` is the guard rail for that hand-maintenance: `cargo test` fails if a
+  `tr("…")` literal in `src/` has no msgid in the `.pot`, if a `.pot` msgid is missing from
+  `fr`/`es`/`de`, or if any `msgstr` is left empty. It only sees _literal_ arguments, so the
+  msgids reaching `tr` through a constant (`Task::label`, `widgets::slideshow`,
+  `config.rs`' desktop descriptions) are still on their own — the pot is a superset of the
+  literals, never an equal. Ten msgids, including the user step's whole `Computer name`
+  field, had silently fallen back to English before it existed.
 - `src/welcome.rs`'s `GREETINGS` is the one place that is **not** gettext-driven: the pre-wizard
   page cycles through every shipped language at once, so adding a catalog means adding a
   `Greeting` entry there too.
