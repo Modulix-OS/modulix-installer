@@ -206,6 +206,7 @@ pub fn build_window(app: &adw::Application, backends: Backends, runtime: tokio::
         let a11y_rows = a11y_rows.clone();
         let calc_button = calc_button.clone();
         let summary_page = summary_page.clone();
+        let progress_page = progress_page.clone();
         let content_page = content_page.clone();
         let nav_view_for_title = nav_view.clone();
         let pages_for_title = pages.clone();
@@ -226,6 +227,7 @@ pub fn build_window(app: &adw::Application, backends: Backends, runtime: tokio::
                 page.set_title(&step.title());
             }
             summary_page.retranslate();
+            progress_page.retranslate();
             if let Some(visible) = nav_view_for_title.visible_page() {
                 content_page.set_title(&visible.title());
             }

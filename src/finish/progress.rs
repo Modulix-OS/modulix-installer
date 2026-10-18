@@ -203,6 +203,29 @@ impl ProgressPage {
         self.page.clone()
     }
 
+    /// Re-applies every static label after a language change.
+    ///
+    /// The page is built once at startup, before the user has even reached the
+    /// language step, so unlike a `Step` it is never rebuilt — without this its
+    /// title and its buttons stay frozen in the boot locale. Only the fixed
+    /// labels are touched: the status, outcome and log-path texts are results,
+    /// translated as they are produced, and re-setting them here would wipe
+    /// them.
+    ///
+    /// # Post-conditions
+    /// Page title, log-expander label, the three outcome-row buttons and the
+    /// slideshow are in the current language.
+    pub fn retranslate(&self) {
+        self.page.set_title(&tr("Installing"));
+        self.log_expander.set_label(Some(&tr("Details")));
+        self.restart_button.set_label(&tr("Restart now"));
+        self.quit_button.set_label(&tr("Quit the installer"));
+        if let Some(content) = self.qr_button.child().and_downcast::<adw::ButtonContent>() {
+            content.set_label(&tr("Error report QR code"));
+        }
+        self.slideshow.retranslate();
+    }
+
     /// Starts `engine::full_pipeline()` on `runtime` and streams its
     /// `ProgressEvent`s back onto the GTK main loop. The pipeline's overall
     /// `Result` travels over its own one-shot channel (`done_rx`) rather than
@@ -222,19 +245,13 @@ impl ProgressPage {
         self.qr_button.set_visible(false);
         self.quit_button.set_visible(false);
         self.quit_button.set_sensitive(true);
-        self.quit_button.set_label(&tr("Quit the installer"));
         self.qr_button.set_sensitive(true);
-        if let Some(content) = self.qr_button.child().and_downcast::<adw::ButtonContent>() {
-            content.set_label(&tr("Error report QR code"));
-        }
         self.log_path_label.set_visible(false);
         self.status_label.set_visible(true);
         self.progress_bar.set_visible(true);
         self.result_label.remove_css_class("title-4");
         self.log_scroller.set_min_content_height(180);
-        self.page.set_title(&tr("Installing"));
-        self.log_expander.set_label(Some(&tr("Details")));
-        self.slideshow.retranslate();
+        self.retranslate();
         self.slideshow.start();
         self.set_pulsing(false);
 
