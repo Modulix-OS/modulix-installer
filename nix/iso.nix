@@ -49,5 +49,5 @@ in
 
   boot.tmp.useTmpfs = lib.mkForce false;
 
-  boot.loader.timeout = lib.mkDefault 5;
+  boot.loader.timeout = lib.mkDefault 0;
 }
