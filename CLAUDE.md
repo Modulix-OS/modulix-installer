@@ -249,7 +249,18 @@ collation). Two consequences to keep in mind when touching this code:
   field, had silently fallen back to English before it existed.
 - `src/welcome.rs`'s `GREETINGS` is the one place that is **not** gettext-driven: the pre-wizard
   page cycles through every shipped language at once, so adding a catalog means adding a
-  `Greeting` entry there too.
+  `Greeting` entry there too. Each entry also carries the `locale` it is written in, because
+  **the start button adopts the language of the greeting then on screen**: it hands that code to
+  `steps::SelectLanguageHook`, which `steps::build_registry` fills from
+  `LanguageStep::select_hook` — the programmatic twin of the dropdown's `notify::selected`
+  handler, so the message language, the retranslate pass, the keyboard default, the language
+  step's own dropdown and therefore `InstallConfig::language` all move together (`app.rs` calls
+  it _before_ swapping the root stack, so the wizard's first frame is already translated).
+  English is first on purpose — it is `i18n::DEFAULT_LANGUAGE`, so clicking the first greeting is
+  a no-op the hook returns out of early, and a `#[cfg(test)]` test in `welcome.rs` pins that
+  invariant. The rotation is unconditional and must stay so: pausing it while the button is
+  hovered _or focused_ froze it for the whole session, because the button is the page's only
+  focusable widget and GTK focuses it on the first frame.
 - **A second text domain is bound: `xkeyboard-config`** (`i18n::tr_xkb`). `evdev.xml` carries
   English `<description>` text only — no `xml:lang` variants — and xkeyboard-config ships the
   translations as catalogs whose msgids _are_ those English strings, which is how GNOME localizes

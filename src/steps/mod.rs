@@ -37,6 +37,18 @@ pub fn new_language_hook() -> LanguageHook {
     Rc::new(RefCell::new(Box::new(|_| {})))
 }
 
+/// The opposite direction of [`LanguageHook`]: fired *at* the language step
+/// with a locale code to adopt, by something outside the wizard that already
+/// knows which language the user picked — today only the welcome page's start
+/// button (see `crate::welcome::build_page`). Filled in by [`build_registry`]
+/// from `language::LanguageStep::select_hook`, so the caller needs no access to
+/// the concrete step behind `Box<dyn Step>`.
+pub type SelectLanguageHook = Rc<RefCell<Box<dyn Fn(&str)>>>;
+
+pub fn new_select_language_hook() -> SelectLanguageHook {
+    Rc::new(RefCell::new(Box::new(|_| {})))
+}
+
 /// Fired by a step that supplies its own advancement control instead of the
 /// outer "Next" button (see [`Step::shows_next`]) — currently just the
 /// desktop-environment step's zoom-dialog "Choose this desktop environment"
@@ -117,27 +129,30 @@ pub trait Step {
 /// backend calls are dispatched onto (see `src/bridge.rs`). `retranslate_hook`
 /// is empty until the caller fills it in once every step is built (see
 /// [`new_retranslate_hook`]); `advance_hook` likewise (see [`new_advance_hook`]).
+/// `select_language_hook` goes the other way: it is empty on the way in and
+/// this function installs the language step's own setter into it (see
+/// [`new_select_language_hook`]).
 pub fn build_registry(
     backends: &Backends,
     runtime: &tokio::runtime::Handle,
     retranslate_hook: RetranslateHook,
     advance_hook: AdvanceHook,
+    select_language_hook: SelectLanguageHook,
     a11y: &A11ySettings,
 ) -> Vec<Box<dyn Step>> {
     // Built out of order on purpose: the language step needs a hook that only
-    // exists once the keyboard step does. The `vec!` below still assembles
-    // them in `StepId::ALL` order.
+    // exists once the keyboard step does, and the language step itself has to
+    // be reachable as its concrete type to publish `select_hook`. The `vec!`
+    // below still assembles them in `StepId::ALL` order.
     let keyboard = keyboard::KeyboardStep::new(backends, runtime);
     let language_hook = new_language_hook();
     *language_hook.borrow_mut() = keyboard.locale_hook();
 
+    let language = language::LanguageStep::new(backends, runtime, retranslate_hook, language_hook);
+    *select_language_hook.borrow_mut() = language.select_hook();
+
     let registry: Vec<Box<dyn Step>> = vec![
-        Box::new(language::LanguageStep::new(
-            backends,
-            runtime,
-            retranslate_hook,
-            language_hook,
-        )) as Box<dyn Step>,
+        Box::new(language) as Box<dyn Step>,
         Box::new(accessibility::AccessibilityStep::new(
             backends, runtime, a11y,
         )) as Box<dyn Step>,

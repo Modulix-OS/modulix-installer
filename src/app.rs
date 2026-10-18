@@ -60,11 +60,13 @@ pub fn build_window(app: &adw::Application, backends: Backends, runtime: tokio::
 
     let retranslate_hook = steps::new_retranslate_hook();
     let advance_hook = steps::new_advance_hook();
+    let select_language_hook = steps::new_select_language_hook();
     let step_list: Rc<Vec<Box<dyn Step>>> = Rc::new(steps::build_registry(
         &backends,
         &runtime,
         retranslate_hook.clone(),
         advance_hook.clone(),
+        select_language_hook.clone(),
         &a11y,
     ));
 
@@ -165,9 +167,18 @@ pub fn build_window(app: &adw::Application, backends: Backends, runtime: tokio::
         .transition_type(gtk::StackTransitionType::Crossfade)
         .transition_duration(400)
         .build();
+    // The greeting the user clicked is the language they asked for: apply it
+    // through the language step (dropdown, `InstallConfig::language`,
+    // retranslate pass, keyboard default) *before* revealing the wizard, so its
+    // first frame is already translated. The retranslate hook is installed
+    // further down, long before any click can happen.
     let welcome_page = crate::welcome::build_page({
         let root_stack = root_stack.clone();
-        move || root_stack.set_visible_child_name(WIZARD_STACK_NAME)
+        let select_language_hook = select_language_hook.clone();
+        move |locale: &str| {
+            (select_language_hook.borrow())(locale);
+            root_stack.set_visible_child_name(WIZARD_STACK_NAME);
+        }
     });
     root_stack.add_named(&welcome_page, Some(WELCOME_STACK_NAME));
     root_stack.add_named(&split_view, Some(WIZARD_STACK_NAME));

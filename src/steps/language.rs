@@ -13,11 +13,20 @@ use std::rc::Rc;
 
 /// Step 2 — changing the selection retranslates every already-built step
 /// (via `retranslate_hook`) without rebuilding any of them.
+///
+/// The dropdown and the two hooks are kept as fields, not merely captured by
+/// the `notify::selected` handler, because [`LanguageStep::select_hook`] has to
+/// drive the exact same switch from outside the page (the welcome button).
 pub struct LanguageStep {
     widget: gtk::Widget,
     group: adw::PreferencesGroup,
     row: adw::ActionRow,
+    dropdown: gtk::DropDown,
+    codes: Rc<RefCell<Vec<String>>>,
+    populating: Rc<Cell<bool>>,
     selected: Rc<RefCell<String>>,
+    retranslate_hook: RetranslateHook,
+    language_hook: LanguageHook,
     validity: ValidityTracker,
 }
 
@@ -125,8 +134,11 @@ impl LanguageStep {
 
         let selected_state = selected.clone();
         let codes_for_signal = codes.clone();
+        let populating_for_signal = populating.clone();
+        let retranslate_for_signal = retranslate_hook.clone();
+        let language_for_signal = language_hook.clone();
         dropdown.connect_selected_notify(move |dd| {
-            if populating.get() {
+            if populating_for_signal.get() {
                 return;
             }
             let idx = dd.selected() as usize;
@@ -143,11 +155,11 @@ impl LanguageStep {
                          (not generated on this machine) — formatting stays on the previous locale"
                     );
                 }
-                (retranslate_hook.borrow())();
+                (retranslate_for_signal.borrow())();
                 // After the retranslate pass, so a step that rebuilds a list
                 // from this hook does it with names already in the new
                 // language.
-                (language_hook.borrow())(code);
+                (language_for_signal.borrow())(code);
             }
         });
 
@@ -155,9 +167,78 @@ impl LanguageStep {
             widget: page.upcast(),
             group,
             row,
+            dropdown,
+            codes,
+            populating,
             selected,
+            retranslate_hook,
+            language_hook,
             validity: ValidityTracker::ready(),
         }
+    }
+
+    /// Builds the callback the welcome page fires when the user starts the
+    /// installation, so the wizard adopts the language of the greeting that was
+    /// on screen (see [`crate::steps::SelectLanguageHook`]).
+    ///
+    /// # Post-conditions
+    /// The returned closure is the programmatic twin of the dropdown handler:
+    /// it records `code`, moves the dropdown onto it, switches the message
+    /// language, then runs the retranslate pass and the language hook, in that
+    /// order. It does nothing at all when `code` is already the active
+    /// language, so starting on the English greeting costs no retranslate pass.
+    ///
+    /// Called before `list_locales()` has answered, there is no model to select
+    /// into yet; recording the code is still enough, because the population
+    /// callback pre-selects from that same cell (under `populating`, so it does
+    /// not re-enter this path).
+    pub fn select_hook(&self) -> Box<dyn Fn(&str)> {
+        let dropdown = self.dropdown.clone();
+        let codes = self.codes.clone();
+        let populating = self.populating.clone();
+        let selected = self.selected.clone();
+        let retranslate_hook = self.retranslate_hook.clone();
+        let language_hook = self.language_hook.clone();
+
+        Box::new(move |code: &str| {
+            if i18n::normalized_eq(&selected.borrow(), code) {
+                return;
+            }
+
+            // Prefer the model's own spelling of the locale, so `selected` —
+            // and therefore `InstallConfig::language` — carries what
+            // `list_locales()` reported rather than the hardcoded welcome one.
+            let hit = codes
+                .borrow()
+                .iter()
+                .position(|known| i18n::normalized_eq(known, code));
+            let target = match hit {
+                Some(idx) => codes.borrow()[idx].clone(),
+                None => {
+                    eprintln!(
+                        "i18n: {code:?} is not in the locale list; keeping it as the selection \
+                         anyway (messages are LANGUAGE-driven and need no generated locale)"
+                    );
+                    code.to_string()
+                }
+            };
+            *selected.borrow_mut() = target.clone();
+
+            if let Some(idx) = hit {
+                populating.set(true);
+                dropdown.set_selected(idx as u32);
+                populating.set(false);
+            }
+
+            if i18n::set_language(&target) == i18n::LanguageOutcome::MessagesOnly {
+                eprintln!(
+                    "i18n: switched messages to {target:?} but setlocale() couldn't apply it \
+                     (not generated on this machine) — formatting stays on the previous locale"
+                );
+            }
+            (retranslate_hook.borrow())();
+            (language_hook.borrow())(&target);
+        })
     }
 }
 
