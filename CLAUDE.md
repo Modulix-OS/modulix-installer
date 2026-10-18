@@ -293,7 +293,12 @@ collation). Two consequences to keep in mind when touching this code:
    layout follows the language step through `steps::LanguageHook` →
    `KeyboardStep::locale_hook` → `backend::locale::keyboard_default::layout_for_locale` (curated
    exceptions, then territory, then language code, then `us`), and stops following it as soon as
-   the user picks a layout by hand.
+   the user picks a layout by hand. A layout does not necessarily start on its bare form:
+   `keyboard_default::DEFAULT_VARIANTS` maps a layout code to the variant it should default
+   to, which is `fr` -> `oss` ("French (alt.)", "Français (variante)") and nothing else today
+   — the bare `fr` map is the legacy one. The default is applied wherever the selected layout
+   changes, so it covers both the language hook and a hand-picked layout, and it silently
+   degrades to "Default" if this `evdev.xml` does not offer the listed variant.
 5. **Network** — ethernet/Wi-Fi via NetworkManager; if `Connectivity == Portal`, opens an `adw::Dialog` with embedded WebKitGTK, auto-closed once `Connectivity == Full`. Fully implemented (`backend/net/network_manager.rs`): open/secured/hidden Wi-Fi, WPA2/WPA3 (transition-safe), live connectivity watch, "Next" gated on `Connectivity` (`Full` → ready, `Limited`/`Unknown` → blocked with a "Continue anyway" override, `Portal`/`None` → hard block). When NM reports no connectivity-check URI there is no way to know the portal's address, and `widgets::portal_window`'s `no_portal_uri_html` says so instead of showing a fake sign-in button.
 6. **Partitioning** — Fully implemented. `engine::plan::plan` is the single pure function
    both the UI (live "before"/"after" `DiskBar` preview + blocked-reason row subtitles)

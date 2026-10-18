@@ -1,6 +1,6 @@
 use crate::backend::Backends;
 use crate::backend::locale::KeyboardLayout;
-use crate::backend::locale::keyboard_default::layout_for_locale;
+use crate::backend::locale::keyboard_default::{default_variant_for_layout, layout_for_locale};
 use crate::bridge;
 use crate::config::InstallConfig;
 use crate::i18n::{tr, tr_xkb};
@@ -222,10 +222,11 @@ impl KeyboardStep {
                 let Some(layout) = layouts_ref.get(index) else {
                     return;
                 };
+                let variant = default_variant_for_layout(layout);
                 *selected_layout.borrow_mut() = layout.code.clone();
-                *selected_variant.borrow_mut() = NO_VARIANT.to_string();
-                fill_variant_dropdown(&variant_dropdown, Some(layout), NO_VARIANT, &populating);
-                apply_layout(layout.code.clone(), NO_VARIANT.to_string());
+                *selected_variant.borrow_mut() = variant.to_string();
+                fill_variant_dropdown(&variant_dropdown, Some(layout), variant, &populating);
+                apply_layout(layout.code.clone(), variant.to_string());
             }
         });
 

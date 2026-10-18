@@ -13,6 +13,13 @@ use super::display_name::split_locale_code;
 /// Last resort when nothing matches — and the layout the ISO boots with.
 const FALLBACK_LAYOUT: &str = "us";
 
+/// Layouts whose expected default is *not* their bare form, keyed by layout
+/// code. `fr` is the case this exists for: French installs default to
+/// `fr(oss)` — "French (alt.)" in `evdev.xml`, "Français (variante)" once
+/// localized — which is the azerty map French users expect, the bare `fr`
+/// one being the legacy map missing the extra dead keys and `ŒœÆæ`.
+const DEFAULT_VARIANTS: &[(&str, &str)] = &[("fr", "oss")];
+
 /// Locales whose layout is *not* what the mechanical rules below would pick.
 /// Matched on `language_territory`, or on `language` alone when the territory
 /// is absent or unlisted (the `""` territory entries).
@@ -48,6 +55,23 @@ const OVERRIDES: &[(&str, &str, &str)] = &[
     ("nn", "", "no"),
     ("et", "", "ee"),
 ];
+
+/// The variant a layout should start on when nothing has been picked by hand.
+///
+/// * `layout` - the layout about to become the selected one.
+///
+/// # Post-conditions
+/// Returns a variant code present in `layout.variants`, or `""` (the "Default"
+/// sentinel of the variant dropdown) when [`DEFAULT_VARIANTS`] lists none for
+/// this layout or this `evdev.xml` does not offer the listed one.
+pub fn default_variant_for_layout(layout: &KeyboardLayout) -> &'static str {
+    DEFAULT_VARIANTS
+        .iter()
+        .find(|(code, _)| *code == layout.code)
+        .map(|(_, variant)| *variant)
+        .filter(|variant| layout.variants.iter().any(|v| v.code == *variant))
+        .unwrap_or("")
+}
 
 fn has_layout(layouts: &[KeyboardLayout], code: &str) -> bool {
     layouts.iter().any(|layout| layout.code == code)
@@ -159,5 +183,37 @@ mod tests {
     #[test]
     fn empty_catalog_yields_nothing() {
         assert_eq!(layout_for_locale("fr_FR.UTF-8", &[]), None);
+    }
+
+    fn layout_with_variants(code: &str, variants: &[&str]) -> KeyboardLayout {
+        KeyboardLayout {
+            code: code.to_string(),
+            description: code.to_string(),
+            variants: variants
+                .iter()
+                .map(|variant| super::super::KeyboardVariant {
+                    code: variant.to_string(),
+                    description: variant.to_string(),
+                })
+                .collect(),
+        }
+    }
+
+    #[test]
+    fn french_defaults_to_the_oss_variant() {
+        let layout = layout_with_variants("fr", &["nodeadkeys", "oss", "bepo"]);
+        assert_eq!(default_variant_for_layout(&layout), "oss");
+    }
+
+    #[test]
+    fn a_layout_without_a_listed_default_starts_bare() {
+        let layout = layout_with_variants("de", &["nodeadkeys"]);
+        assert_eq!(default_variant_for_layout(&layout), "");
+    }
+
+    #[test]
+    fn a_missing_variant_is_not_forced() {
+        let layout = layout_with_variants("fr", &["bepo"]);
+        assert_eq!(default_variant_for_layout(&layout), "");
     }
 }
