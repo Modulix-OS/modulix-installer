@@ -21,6 +21,9 @@ msgid "A powerful, customizable desktop with a traditional layout"
 msgstr ""
 "Un escritorio potente y personalizable, con una disposición tradicional"
 
+msgid "A required system service could not be reached."
+msgstr "No se ha podido contactar con un servicio del sistema necesario."
+
 msgid "Accessibility"
 msgstr "Accesibilidad"
 
@@ -58,6 +61,9 @@ msgstr ""
 "Asigne las particiones existentes o cree nuevas en el espacio libre de "
 "abajo. Para redimensionar o eliminar una partición existente, utilice "
 "GParted."
+
+msgid "Back"
+msgstr "Atrás"
 
 msgid "Base pack"
 msgstr "Paquete básico"
@@ -103,6 +109,9 @@ msgstr "Cerrar"
 
 msgid "Completing the system configuration"
 msgstr "Completando la configuración del sistema"
+
+msgid "Computer name"
+msgstr "Nombre del equipo"
 
 msgid "Confirm password"
 msgstr "Confirmar la contraseña"
@@ -207,6 +216,9 @@ msgstr ""
 
 msgid "Enrolling TPM2"
 msgstr "Registrando TPM2"
+
+msgid "Enter a computer name"
+msgstr "Introduzca un nombre de equipo"
 
 msgid "Enter a username"
 msgstr "Introduzca un nombre de usuario"
@@ -350,6 +362,9 @@ msgstr "Distribución"
 msgid "Lightweight"
 msgstr "Ligero"
 
+msgid "Lowercase letters, digits, - and _ only"
+msgstr "Solo letras minúsculas, dígitos, - y _"
+
 msgid "Manual"
 msgstr "Manual"
 
@@ -487,6 +502,9 @@ msgstr "Texto de vista previa"
 msgid "Previous"
 msgstr "Atrás"
 
+msgid "Quit"
+msgstr "Salir"
+
 msgid "Quit the installer"
 msgstr "Salir del instalador"
 
@@ -611,6 +629,9 @@ msgstr ""
 "El chip TPM2 guarda la clave y desbloquea el disco automáticamente al "
 "arrancar. Añada un PIN para exigir además un código."
 
+msgid "The computer name cannot start or end with a hyphen"
+msgstr "El nombre del equipo no puede empezar ni terminar con un guion"
+
 msgid "The disk layout changed — refresh the disk and try again"
 msgstr ""
 "La disposición del disco ha cambiado: actualice el disco e inténtelo de nuevo"
@@ -621,6 +642,9 @@ msgstr "Lo esencial, listo para usar"
 msgid "The following partitions will be permanently erased"
 msgstr "Las siguientes particiones se borrarán de forma permanente"
 
+msgid "The installer cannot start"
+msgstr "El instalador no puede iniciarse"
+
 msgid "The installer stopped unexpectedly"
 msgstr "El instalador se ha detenido de forma inesperada"
 
@@ -630,6 +654,9 @@ msgid ""
 msgstr ""
 "Para la hibernación, la partición swap debe ser al menos tan grande como la "
 "RAM de este equipo"
+
+msgid "The username must start with a letter or an underscore"
+msgstr "El nombre de usuario debe empezar por una letra o un guion bajo"
 
 msgid "These take effect after installation, not in the installer"
 msgstr "Se aplican después de la instalación, no en el instalador"
@@ -666,6 +693,9 @@ msgstr ""
 
 msgid "This free space region is too small"
 msgstr "Esta región de espacio libre es demasiado pequeña"
+
+msgid "This layout could not be applied to the running session."
+msgstr "No se ha podido aplicar esta distribución a la sesión actual."
 
 msgid ""
 "This network requires signing in through a captive portal, but "

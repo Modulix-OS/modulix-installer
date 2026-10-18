@@ -21,6 +21,9 @@ msgstr "Un système modulaire"
 msgid "A powerful, customizable desktop with a traditional layout"
 msgstr "Un bureau puissant et personnalisable, à la disposition traditionnelle"
 
+msgid "A required system service could not be reached."
+msgstr "Un service système requis est injoignable."
+
 msgid "Accessibility"
 msgstr "Accessibilité"
 
@@ -58,6 +61,9 @@ msgstr ""
 "Assignez les partitions existantes ou créez-en de nouvelles dans l'espace "
 "libre ci-dessous. Pour redimensionner ou supprimer une partition existante, "
 "utilisez GParted."
+
+msgid "Back"
+msgstr "Retour"
 
 msgid "Base pack"
 msgstr "Pack de base"
@@ -103,6 +109,9 @@ msgstr "Fermer"
 
 msgid "Completing the system configuration"
 msgstr "Finalisation de la configuration du système"
+
+msgid "Computer name"
+msgstr "Nom de l'ordinateur"
 
 msgid "Confirm password"
 msgstr "Confirmer le mot de passe"
@@ -207,6 +216,9 @@ msgstr ""
 
 msgid "Enrolling TPM2"
 msgstr "Enregistrement dans le TPM2"
+
+msgid "Enter a computer name"
+msgstr "Saisissez un nom d'ordinateur"
 
 msgid "Enter a username"
 msgstr "Saisissez un nom d'utilisateur"
@@ -352,6 +364,9 @@ msgstr "Disposition"
 msgid "Lightweight"
 msgstr "Léger"
 
+msgid "Lowercase letters, digits, - and _ only"
+msgstr "Uniquement des minuscules, des chiffres, - et _"
+
 msgid "Manual"
 msgstr "Manuel"
 
@@ -489,6 +504,9 @@ msgstr "Exemple de texte"
 msgid "Previous"
 msgstr "Précédent"
 
+msgid "Quit"
+msgstr "Quitter"
+
 msgid "Quit the installer"
 msgstr "Quitter l'installeur"
 
@@ -613,6 +631,9 @@ msgstr ""
 "La puce TPM2 conserve la clé et déverrouille le disque automatiquement au "
 "démarrage. Ajoutez un code PIN pour exiger aussi un code."
 
+msgid "The computer name cannot start or end with a hyphen"
+msgstr "Le nom de l'ordinateur ne peut pas commencer ni finir par un tiret"
+
 msgid "The disk layout changed — refresh the disk and try again"
 msgstr "La disposition du disque a changé — actualisez le disque et réessayez"
 
@@ -621,6 +642,9 @@ msgstr "L'essentiel, prêt à l'emploi"
 
 msgid "The following partitions will be permanently erased"
 msgstr "Les partitions suivantes seront définitivement effacées"
+
+msgid "The installer cannot start"
+msgstr "L'installateur ne peut pas démarrer"
 
 msgid "The installer stopped unexpectedly"
 msgstr "L'installateur s'est arrêté de manière inattendue"
@@ -631,6 +655,9 @@ msgid ""
 msgstr ""
 "La partition swap doit être au moins aussi grande que la RAM de cette "
 "machine pour l'hibernation"
+
+msgid "The username must start with a letter or an underscore"
+msgstr "Le nom d'utilisateur doit commencer par une lettre ou un tiret bas"
 
 msgid "These take effect after installation, not in the installer"
 msgstr ""
@@ -669,6 +696,9 @@ msgstr ""
 
 msgid "This free space region is too small"
 msgstr "Cette zone d'espace libre est trop petite"
+
+msgid "This layout could not be applied to the running session."
+msgstr "Cette disposition n'a pas pu être appliquée à la session en cours."
 
 msgid ""
 "This network requires signing in through a captive portal, but "

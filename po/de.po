@@ -22,6 +22,9 @@ msgid "A powerful, customizable desktop with a traditional layout"
 msgstr ""
 "Eine leistungsfähige, anpassbare Arbeitsumgebung mit klassischem Aufbau"
 
+msgid "A required system service could not be reached."
+msgstr "Ein erforderlicher Systemdienst konnte nicht erreicht werden."
+
 msgid "Accessibility"
 msgstr "Barrierefreiheit"
 
@@ -59,6 +62,9 @@ msgstr ""
 "Vorhandene Partitionen zuweisen oder unten im freien Speicherplatz neue "
 "anlegen. Zum Verkleinern oder Löschen einer vorhandenen Partition GParted "
 "verwenden."
+
+msgid "Back"
+msgstr "Zurück"
 
 msgid "Base pack"
 msgstr "Basispaket"
@@ -104,6 +110,9 @@ msgstr "Schließen"
 
 msgid "Completing the system configuration"
 msgstr "Systemkonfiguration wird abgeschlossen"
+
+msgid "Computer name"
+msgstr "Computername"
 
 msgid "Confirm password"
 msgstr "Passwort bestätigen"
@@ -209,6 +218,9 @@ msgstr ""
 
 msgid "Enrolling TPM2"
 msgstr "TPM2 wird registriert"
+
+msgid "Enter a computer name"
+msgstr "Einen Computernamen eingeben"
 
 msgid "Enter a username"
 msgstr "Einen Benutzernamen eingeben"
@@ -355,6 +367,9 @@ msgstr "Belegung"
 msgid "Lightweight"
 msgstr "Schlank"
 
+msgid "Lowercase letters, digits, - and _ only"
+msgstr "Nur Kleinbuchstaben, Ziffern, - und _"
+
 msgid "Manual"
 msgstr "Manuell"
 
@@ -495,6 +510,9 @@ msgstr "Vorschautext"
 msgid "Previous"
 msgstr "Zurück"
 
+msgid "Quit"
+msgstr "Beenden"
+
 msgid "Quit the installer"
 msgstr "Installationsprogramm beenden"
 
@@ -620,6 +638,9 @@ msgstr ""
 "Der TPM2-Chip speichert den Schlüssel und entsperrt die Festplatte beim "
 "Start automatisch. Mit einer PIN wird zusätzlich ein Code verlangt."
 
+msgid "The computer name cannot start or end with a hyphen"
+msgstr "Der Computername darf nicht mit einem Bindestrich beginnen oder enden"
+
 msgid "The disk layout changed — refresh the disk and try again"
 msgstr ""
 "Die Partitionierung hat sich geändert — Festplatte aktualisieren und erneut "
@@ -631,6 +652,9 @@ msgstr "Das Wichtigste, sofort einsatzbereit"
 msgid "The following partitions will be permanently erased"
 msgstr "Die folgenden Partitionen werden unwiderruflich gelöscht"
 
+msgid "The installer cannot start"
+msgstr "Das Installationsprogramm kann nicht gestartet werden"
+
 msgid "The installer stopped unexpectedly"
 msgstr "Das Installationsprogramm wurde unerwartet beendet"
 
@@ -640,6 +664,10 @@ msgid ""
 msgstr ""
 "Für den Ruhezustand muss die Swap-Partition mindestens so groß sein wie der "
 "Arbeitsspeicher dieses Rechners"
+
+msgid "The username must start with a letter or an underscore"
+msgstr ""
+"Der Benutzername muss mit einem Buchstaben oder einem Unterstrich beginnen"
 
 msgid "These take effect after installation, not in the installer"
 msgstr ""
@@ -678,6 +706,11 @@ msgstr ""
 
 msgid "This free space region is too small"
 msgstr "Dieser Bereich mit freiem Speicherplatz ist zu klein"
+
+msgid "This layout could not be applied to the running session."
+msgstr ""
+"Diese Tastaturbelegung konnte nicht auf die laufende Sitzung angewendet "
+"werden."
 
 msgid ""
 "This network requires signing in through a captive portal, but "

@@ -17,6 +17,9 @@ msgstr ""
 msgid "A powerful, customizable desktop with a traditional layout"
 msgstr ""
 
+msgid "A required system service could not be reached."
+msgstr ""
+
 msgid "Accessibility"
 msgstr ""
 
@@ -50,6 +53,9 @@ msgstr ""
 msgid ""
 "Assign existing partitions or create new ones in free space below. To resize "
 "or delete an existing partition, use GParted."
+msgstr ""
+
+msgid "Back"
 msgstr ""
 
 msgid "Base pack"
@@ -92,6 +98,9 @@ msgid "Close"
 msgstr ""
 
 msgid "Completing the system configuration"
+msgstr ""
+
+msgid "Computer name"
 msgstr ""
 
 msgid "Confirm password"
@@ -192,6 +201,9 @@ msgid ""
 msgstr ""
 
 msgid "Enrolling TPM2"
+msgstr ""
+
+msgid "Enter a computer name"
 msgstr ""
 
 msgid "Enter a username"
@@ -325,6 +337,9 @@ msgid "Layout"
 msgstr ""
 
 msgid "Lightweight"
+msgstr ""
+
+msgid "Lowercase letters, digits, - and _ only"
 msgstr ""
 
 msgid "Manual"
@@ -461,6 +476,9 @@ msgstr ""
 msgid "Previous"
 msgstr ""
 
+msgid "Quit"
+msgstr ""
+
 msgid "Quit the installer"
 msgstr ""
 
@@ -576,6 +594,9 @@ msgid ""
 "a PIN to require a code as well."
 msgstr ""
 
+msgid "The computer name cannot start or end with a hyphen"
+msgstr ""
+
 msgid "The disk layout changed — refresh the disk and try again"
 msgstr ""
 
@@ -585,12 +606,18 @@ msgstr ""
 msgid "The following partitions will be permanently erased"
 msgstr ""
 
+msgid "The installer cannot start"
+msgstr ""
+
 msgid "The installer stopped unexpectedly"
 msgstr ""
 
 msgid ""
 "The swap partition must be at least as large as this machine's RAM for "
 "hibernation"
+msgstr ""
+
+msgid "The username must start with a letter or an underscore"
 msgstr ""
 
 msgid "These take effect after installation, not in the installer"
@@ -622,6 +649,9 @@ msgid ""
 msgstr ""
 
 msgid "This free space region is too small"
+msgstr ""
+
+msgid "This layout could not be applied to the running session."
 msgstr ""
 
 msgid ""
