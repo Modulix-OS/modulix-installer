@@ -17,6 +17,7 @@ mod username;
 pub struct UserStep {
     widget: gtk::Widget,
     group: adw::PreferencesGroup,
+    hostname_group: adw::PreferencesGroup,
     username_row: adw::EntryRow,
     fullname_row: adw::EntryRow,
     hostname_row: adw::EntryRow,
@@ -29,7 +30,7 @@ impl UserStep {
         let fullname_row = adw::EntryRow::builder().title(tr("Full name")).build();
         let username_row = adw::EntryRow::builder().title(tr("Username")).build();
         username_row.set_tooltip_text(Some(&tr("Lowercase letters, digits, - and _ only")));
-        let hostname_row = adw::EntryRow::builder().title(tr("Computer name")).build();
+        let hostname_row = adw::EntryRow::builder().title(tr("Name")).build();
         hostname_row.set_text(hostname::DEFAULT);
         let password_widget = PasswordConfirmEntry::new();
 
@@ -38,11 +39,17 @@ impl UserStep {
             .build();
         group.add(&fullname_row);
         group.add(&username_row);
-        group.add(&hostname_row);
         password_widget.attach_to_group(&group);
+
+        let hostname_group = adw::PreferencesGroup::builder()
+            .title(tr("Computer name"))
+            .description(tr("Name used to identify this computer on the network"))
+            .build();
+        hostname_group.add(&hostname_row);
 
         let page = adw::PreferencesPage::new();
         page.add(&group);
+        page.add(&hostname_group);
 
         let container = gtk::Box::new(gtk::Orientation::Vertical, 12);
         container.append(&page);
@@ -146,6 +153,7 @@ impl UserStep {
         Self {
             widget: container.upcast(),
             group,
+            hostname_group,
             username_row,
             fullname_row,
             hostname_row,
@@ -196,7 +204,11 @@ impl Step for UserStep {
         self.username_row
             .set_tooltip_text(Some(&tr("Lowercase letters, digits, - and _ only")));
         self.fullname_row.set_title(&tr("Full name"));
-        self.hostname_row.set_title(&tr("Computer name"));
+        self.hostname_group.set_title(&tr("Computer name"));
+        self.hostname_group.set_description(Some(&tr(
+            "Name used to identify this computer on the network",
+        )));
+        self.hostname_row.set_title(&tr("Name"));
         self.password_widget.retranslate();
     }
 }

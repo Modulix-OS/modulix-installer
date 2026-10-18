@@ -398,6 +398,12 @@ msgstr "Einhängepunkt"
 msgid "Mounting target filesystems"
 msgstr "Zieldateisysteme werden eingehängt"
 
+msgid "Name"
+msgstr "Name"
+
+msgid "Name used to identify this computer on the network"
+msgstr "Name, der diesen Computer im Netzwerk identifiziert"
+
 msgid "Narrator"
 msgstr "Bildschirmleser"
 

@@ -369,6 +369,12 @@ msgstr ""
 msgid "Mounting target filesystems"
 msgstr ""
 
+msgid "Name"
+msgstr ""
+
+msgid "Name used to identify this computer on the network"
+msgstr ""
+
 msgid "Narrator"
 msgstr ""
 

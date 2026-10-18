@@ -394,6 +394,12 @@ msgstr "Point de montage"
 msgid "Mounting target filesystems"
 msgstr "Montage des systèmes de fichiers cibles"
 
+msgid "Name"
+msgstr "Nom"
+
+msgid "Name used to identify this computer on the network"
+msgstr "Nom utilisé pour identifier cet ordinateur sur le réseau"
+
 msgid "Narrator"
 msgstr "Narrateur"
 
