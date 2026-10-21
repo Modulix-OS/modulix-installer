@@ -210,6 +210,35 @@ impl Task for FakeSetPasswordsTask {
     }
 }
 
+pub struct FakeFlatpakRemoteTask {
+    faults: Arc<FaultPlan>,
+}
+
+#[async_trait]
+impl Task for FakeFlatpakRemoteTask {
+    fn label(&self) -> String {
+        "Registering the Flathub remote".to_string()
+    }
+
+    fn weight(&self) -> u32 {
+        1
+    }
+
+    /// Best-effort like the real task: a `remote-add` fault is logged and
+    /// swallowed, never returned.
+    async fn run(&self, _ctx: &TaskCtx, tx: &ProgressSink) -> mx::Result<()> {
+        let line = if self.faults.is(Fault::FlatpakRemoteAdd) {
+            "flatpak remote-add: skipped (error: Can't load uri \
+             https://dl.flathub.org/repo/flathub.flatpakrepo)"
+                .to_string()
+        } else {
+            "flatpak remote-add: done".to_string()
+        };
+        let _ = tx.send(ProgressEvent::Log(line)).await;
+        Ok(())
+    }
+}
+
 pub struct FakePostInstallTask {
     faults: Arc<FaultPlan>,
 }
@@ -276,6 +305,9 @@ pub fn fake_pipeline(faults: Arc<FaultPlan>) -> Pipeline {
             faults: faults.clone(),
         }),
         Box::new(FakeSetPasswordsTask {
+            faults: faults.clone(),
+        }),
+        Box::new(FakeFlatpakRemoteTask {
             faults: faults.clone(),
         }),
         Box::new(FakePostInstallTask { faults }),
@@ -441,6 +473,16 @@ mod tests {
     #[tokio::test]
     async fn efi_fault_does_not_fail_the_install() {
         let (backends, faults) = backends(&[DiskScenario::Linux], Some(Fault::EfiEfibootmgr));
+        let config = config_for("/dev/fake0", PartitionMode::EntireDisk);
+        let ctx = TaskCtx::with_uefi(backends, config, true);
+        let (tx, _rx) = async_channel::unbounded();
+
+        fake_pipeline(faults).run(&ctx, &tx).await.unwrap();
+    }
+
+    #[tokio::test]
+    async fn flatpak_remote_fault_does_not_fail_the_install() {
+        let (backends, faults) = backends(&[DiskScenario::Linux], Some(Fault::FlatpakRemoteAdd));
         let config = config_for("/dev/fake0", PartitionMode::EntireDisk);
         let ctx = TaskCtx::with_uefi(backends, config, true);
         let (tx, _rx) = async_channel::unbounded();

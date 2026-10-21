@@ -523,6 +523,9 @@ msgstr "Listo para instalar"
 msgid "Refresh"
 msgstr "Actualizar"
 
+msgid "Registering the Flathub remote"
+msgstr "Registrando el repositorio Flathub"
+
 msgid "Registering the boot entry"
 msgstr "Registrando la entrada de arranque"
 

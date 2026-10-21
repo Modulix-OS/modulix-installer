@@ -202,6 +202,9 @@ impl Pipeline {
 /// * `EfiEntryTask` needs limine's loader already on the ESP, so it follows
 ///   `NixosInstallTask`, and it needs `/mnt` still mounted, so it precedes
 ///   `PostInstallTask`.
+/// * `FlatpakRemoteTask` `nixos-enter`s into the installed system as well,
+///   and also needs `/mnt` mounted, so it sits between those two for both
+///   reasons at once.
 pub fn full_pipeline() -> Pipeline {
     Pipeline::new(vec![
         Box::new(tasks::PartitionTask),
@@ -213,6 +216,7 @@ pub fn full_pipeline() -> Pipeline {
         Box::new(tasks::NixosInstallTask),
         Box::new(tasks::EfiEntryTask),
         Box::new(tasks::SetPasswordsTask),
+        Box::new(tasks::FlatpakRemoteTask),
         Box::new(tasks::PostInstallTask),
     ])
 }

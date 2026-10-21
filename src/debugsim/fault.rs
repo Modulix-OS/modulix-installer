@@ -30,11 +30,12 @@ pub enum Fault {
     InstallDiskFull,
     EfiEfibootmgr,
     PasswdChpasswd,
+    FlatpakRemoteAdd,
     PostUmountBusy,
 }
 
 impl Fault {
-    pub const ALL: [Fault; 22] = [
+    pub const ALL: [Fault; 23] = [
         Fault::PartitionUnmountBusy,
         Fault::PartitionCreateTable,
         Fault::PartitionCreate,
@@ -56,6 +57,7 @@ impl Fault {
         Fault::InstallDiskFull,
         Fault::EfiEfibootmgr,
         Fault::PasswdChpasswd,
+        Fault::FlatpakRemoteAdd,
         Fault::PostUmountBusy,
     ];
 
@@ -82,6 +84,7 @@ impl Fault {
             Fault::InstallDiskFull => "install:disk-full",
             Fault::EfiEfibootmgr => "efi:efibootmgr",
             Fault::PasswdChpasswd => "passwd:chpasswd",
+            Fault::FlatpakRemoteAdd => "flatpak:remote-add",
             Fault::PostUmountBusy => "post:umount-busy",
         }
     }
@@ -121,6 +124,9 @@ impl Fault {
             Fault::InstallDiskFull => "nixos-install fails with \"No space left on device\"",
             Fault::EfiEfibootmgr => "efibootmgr fails (NON-BLOCKING: the install still succeeds)",
             Fault::PasswdChpasswd => "chpasswd fails to set the account passwords",
+            Fault::FlatpakRemoteAdd => {
+                "flatpak remote-add cannot reach dl.flathub.org (NON-BLOCKING: the install still succeeds)"
+            }
             Fault::PostUmountBusy => {
                 "the final umount fails (NON-BLOCKING: the install still succeeds)"
             }

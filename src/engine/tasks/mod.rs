@@ -1,6 +1,7 @@
 mod efi_entry;
 mod encrypt;
 mod enroll_tpm;
+mod flatpak;
 mod format;
 mod init_config;
 /// `pub(crate)`, not private: `debugsim::tasks::FakeMountTask` reuses
@@ -15,6 +16,7 @@ mod set_passwords;
 pub use efi_entry::EfiEntryTask;
 pub use encrypt::EncryptTask;
 pub use enroll_tpm::EnrollTpmTask;
+pub use flatpak::FlatpakRemoteTask;
 pub use format::FormatTask;
 pub use init_config::InitConfigTask;
 pub use mount::MountTask;

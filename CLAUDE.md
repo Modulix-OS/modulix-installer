@@ -134,7 +134,7 @@ pub trait Task {
 }
 ```
 
-Pipeline: `PartitionTask` → `EncryptTask` → `FormatTask` → `MountTask` → `EnrollTpmTask` → `InitConfigTask` → `NixosInstallTask` → `EfiEntryTask` → `SetPasswordsTask` → `PostInstallTask`.
+Pipeline: `PartitionTask` → `EncryptTask` → `FormatTask` → `MountTask` → `EnrollTpmTask` → `InitConfigTask` → `NixosInstallTask` → `EfiEntryTask` → `SetPasswordsTask` → `FlatpakRemoteTask` → `PostInstallTask`.
 
 - `EncryptTask` must run right after `PartitionTask` and before `FormatTask`/`MountTask` — `luksFormat`/`luksOpen` need the bare partition, not one already `mkfs`'d and mounted on `/mnt`. It encrypts **two** containers when the install has swap: root as `modulixroot` and swap as `modulixswap` (`engine::LUKS_MAPPER_NAME`, `::LUKS_SWAP_MAPPER_NAME`), both with the same passphrase, then rewrites `root_partition`/`swap_partition` to the mappers so the later stages mkfs and mount the decrypted devices. A plaintext swap beside an encrypted root would hold the root key in a page-out; a second container rather than LVM-inside-one keeps the partition layout, the preview and `engine::plan` untouched. `EnrollTpmTask` enrols both — enrolling root alone would unlock it silently through the TPM and then prompt for the swap, nothing having put a passphrase in the kernel keyring. `PostInstallTask` closes both.
 - `InitConfigTask` calls `modulix_core_utils::init::init` (synchronous, so `spawn_blocking`) with `config_dir = /mnt/etc/modulix-os`, which writes and commits the config repo but **deliberately skips the rebuild** — it holds core-utils' skip-rebuild lock precisely so the installer drives the build itself. **It is the only writer of that repo**: `InitParams` carries `packages` → `package.nix`, `modules` → `module.nix` (one `mx.<name>.enable = true` per dotted name from mxpkgs' `modules/index.json`) `luks` → one `boot.initrd.luks.devices` entry per container in `fstab.nix` and `resume_device` → `boot.resumeDevice`, so everything lands inside core-utils' single seed transaction, written by core-utils' own `install_package`/`install_module`/`filesystem` writers and committed once. Nothing after it touches the configuration, which is why the installer no longer unseals `configuration.nix` with `chattr`, splices `imports` by hand, or runs `git commit` itself.
@@ -142,6 +142,7 @@ Pipeline: `PartitionTask` → `EncryptTask` → `FormatTask` → `MountTask` →
 - `NixosInstallTask` runs `nixos-install --root /mnt --flake /mnt/etc/modulix-os#default --no-root-password` with both streams piped, forwarding each line as `ProgressEvent::Log`. This is why the pipeline does not go through core-utils' `rebuild_config`, which inherits stdout and could never feed the log view.
 - `EfiEntryTask` is the only writer of EFI boot variables in the whole chain, and it writes them **once**: it deletes any stale `ModulixOS` entry, runs `efibootmgr --create … --loader \EFI\BOOT\BOOTX64.EFI --label ModulixOS`, then sets `BootOrder` explicitly to its own boot number followed by the previous order verbatim — Windows Boot Manager and friends keep their entry, one position down. Nothing is ever re-imposed afterwards, so a user who puts Windows back in front in their firmware is not contradicted on the next boot. Everything is best-effort: a BIOS boot, a missing ESP or an `efibootmgr` failure lands in the install log and the install still succeeds.
 - `SetPasswordsTask` pipes `root:…`/`user:…` into `chpasswd` under `nixos-enter`, so no password — hashed or not — ever reaches the Nix store.
+- `FlatpakRemoteTask` runs `flatpak remote-add --if-not-exists flathub …` under `nixos-enter`, so the app store already has its remote on the first session even if that first boot has no network. It duplicates mxpkgs' `mx.services.flatpak` `flatpak-repo` unit on purpose — `--if-not-exists` makes the overlap a no-op. Guarded on the `flatpak` binary existing in the target (`/mnt/nix/var/nix/profiles/system/sw/bin/flatpak`), not on the chosen application pack, so it also covers a flatpak that arrived another way; best-effort from end to end (the mxpkgs unit is the fallback), so it never fails an install already on disk.
 - Every stage always runs for real; `Pipeline::run` aborts on the first error and that error is what the progress page renders.
 - Every `ProgressEvent` is teed to `engine::install_log` (file + stderr → journald) by a tokio task before reaching the GTK loop, so a failed install is still diagnosable after the app dies.
 
@@ -173,7 +174,7 @@ src/
                         live-disk-state → `plan::PlanInput` fetch), plan.rs (pure
                         partitioning planner), tasks/ (partition.rs, encrypt.rs, format.rs,
                         mount.rs, enroll_tpm.rs, init_config.rs, nixos_install.rs,
-                        efi_entry.rs, set_passwords.rs, post_install.rs)
+                        efi_entry.rs, set_passwords.rs, flatpak.rs, post_install.rs)
   widgets/              timezone_map.rs, disk_bar.rs, partition_editor.rs, password_entry.rs,
                         ap_row.rs, wifi_dialog.rs, portal_window.rs, slideshow.rs,
                         qr_code.rs (QR matrix + its `DrawingArea` and dialog),
@@ -349,7 +350,10 @@ collation). Two consequences to keep in mind when touching this code:
    the module: `services.printing.enable` plus a driver set is not something
    `environment.systemPackages` can express, which is why `cups`/`gutenprint`/
    `system-config-printer` are no longer in `COMMON_BASE_PACKAGES` — they were installed but
-   the service was never switched on. Same pattern as step 8: no outer "Next" button
+   the service was never switched on. The Flathub remote itself is registered twice over:
+   by mxpkgs' `flatpak-repo` unit on every boot, and once at install time by
+   `engine::tasks::FlatpakRemoteTask`, so the store is usable on the first session.
+   Same pattern as step 8: no outer "Next" button
    (`Step::shows_next` returns `false`), a card click commits `InstallConfig::app_pack` and
    advances straight to the summary via the same `AdvanceHook`.
 
