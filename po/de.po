@@ -8,6 +8,9 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=(n != 1);\n"
 
+msgid "3D modeling"
+msgstr "3D-Modellierung"
+
 msgid "A clean, modern desktop focused on simplicity"
 msgstr "Eine klare, moderne Arbeitsumgebung mit Fokus auf Einfachheit"
 
@@ -40,11 +43,11 @@ msgstr "Fast geschafft"
 msgid "An EFI System Partition of at least 100 MiB is required"
 msgstr "Eine EFI-Systempartition von mindestens 100 MiB ist erforderlich"
 
-msgid "Application pack"
-msgstr "Anwendungspaket"
-
 msgid "Applications"
 msgstr "Anwendungen"
+
+msgid "Applications to install"
+msgstr "Zu installierende Anwendungen"
 
 msgid "Applied now"
 msgstr "Sofort angewendet"
@@ -191,6 +194,9 @@ msgstr ""
 msgid "Don't use"
 msgstr "Nicht verwenden"
 
+msgid "Drawing and image editing"
+msgstr "Zeichnen und Bildbearbeitung"
+
 msgid "EFI System Partition"
 msgstr "EFI-Systempartition"
 
@@ -299,6 +305,12 @@ msgstr "Vollständiges Protokoll:"
 msgid "Full name"
 msgstr "Vollständiger Name"
 
+msgid "GIMP, Krita and Inkscape"
+msgstr "GIMP, Krita und Inkscape"
+
+msgid "Gaming"
+msgstr "Spiele"
+
 msgid "Hibernation swap doesn't fit — using standard swap instead"
 msgstr ""
 "Swap für den Ruhezustand passt nicht — stattdessen wird Standard-Swap "
@@ -340,6 +352,9 @@ msgstr "Installation läuft"
 msgid "Installing Modulix OS"
 msgstr "Modulix OS wird installiert"
 
+msgid "Kdenlive and DaVinci Resolve"
+msgstr "Kdenlive und DaVinci Resolve"
+
 msgid "Kept"
 msgstr "Beibehalten"
 
@@ -375,6 +390,9 @@ msgstr "Manuell"
 
 msgid "Mode"
 msgstr "Modus"
+
+msgid "Model, animate and render in 3D with Blender"
+msgstr "Mit Blender in 3D modellieren, animieren und rendern"
 
 msgid "Modern"
 msgstr "Modern"
@@ -451,6 +469,12 @@ msgstr ""
 "Es würde nicht genug Speicherplatz für die Installation von Modulix OS frei "
 "werden"
 
+msgid "Nothing selected — Modulix OS will install a bare system"
+msgstr "Nichts ausgewählt – Modulix OS installiert ein nacktes System"
+
+msgid "Office suite"
+msgstr "Office-Paket"
+
 msgid "Once this finishes, you'll be ready to restart into your new system."
 msgstr ""
 "Sobald dies abgeschlossen ist, kann in das neue System neu gestartet werden."
@@ -522,12 +546,21 @@ msgstr "Beenden"
 msgid "Quit the installer"
 msgstr "Installationsprogramm beenden"
 
+msgid "Racing wheels and pedals from Logitech, Fanatec and Thrustmaster"
+msgstr "Lenkräder und Pedale von Logitech, Fanatec und Thrustmaster"
+
 msgid "Reads each page aloud as you move through the installer"
 msgstr ""
 "Liest jede Seite vor, während das Installationsprogramm durchlaufen wird"
 
 msgid "Ready to install"
 msgstr "Bereit zur Installation"
+
+msgid "Record your screen and stream live with OBS Studio"
+msgstr "Mit OBS Studio den Bildschirm aufnehmen und live streamen"
+
+msgid "Recording and streaming"
+msgstr "Aufnahme und Streaming"
 
 msgid "Refresh"
 msgstr "Aktualisieren"
@@ -607,14 +640,14 @@ msgstr "Eine Zielfestplatte auswählen"
 msgid "Setting passwords"
 msgstr "Passwörter werden gesetzt"
 
+msgid "Simulation hardware"
+msgstr "Simulations-Hardware"
+
 msgid "Size (MiB)"
 msgstr "Größe (MiB)"
 
 msgid "Standard swap"
 msgstr "Standard-Swap"
-
-msgid "Start from a bare system and install everything yourself"
-msgstr "Mit einem nackten System beginnen und alles selbst installieren"
 
 msgid "Starting installation…"
 msgstr "Installation wird gestartet …"
@@ -622,11 +655,17 @@ msgstr "Installation wird gestartet …"
 msgid "Status"
 msgstr "Status"
 
+msgid "Steam, Lutris, Heroic and UMU, with controller support"
+msgstr "Steam, Lutris, Heroic und UMU, mit Controller-Unterstützung"
+
 msgid "Steps"
 msgstr "Schritte"
 
 msgid "Sticky keys"
 msgstr "Klebrige Tasten"
+
+msgid "Stream VR games to a standalone headset with ALVR"
+msgstr "Mit ALVR VR-Spiele auf eine autonome Brille streamen"
 
 msgid "Swap"
 msgstr "Swap"
@@ -818,6 +857,12 @@ msgstr "Benutzername"
 msgid "Variant"
 msgstr "Variante"
 
+msgid "Video editing"
+msgstr "Videobearbeitung"
+
+msgid "Virtual reality"
+msgstr "Virtuelle Realität"
+
 msgid "WPA/WPA2 Personal"
 msgstr "WPA/WPA2 Personal"
 
@@ -828,12 +873,12 @@ msgid "We're setting things up in the background — this won't take long."
 msgstr "Im Hintergrund wird alles eingerichtet — das dauert nicht lange."
 
 msgid ""
-"Web browser, file manager, terminal, printing, PDF reader, image viewer, "
-"archive manager, text editor, media player, and the Flathub app store"
+"Web browser, email, file manager, terminal, printing, PDF reader, image "
+"viewer, archive manager, text editor, media player, and the Flathub app store"
 msgstr ""
-"Webbrowser, Dateiverwaltung, Terminal, Drucken, PDF-Betrachter, "
-"Bildbetrachter, Archivverwaltung, Texteditor, Medienwiedergabe und der "
-"Flathub-App-Store"
+"Webbrowser, E-Mail, Dateimanager, Terminal, Drucken, PDF-Betrachter, "
+"Bildbetrachter, Archivmanager, Texteditor, Medienplayer und der Flathub-App-"
+"Store"
 
 msgid "Welcome to Modulix OS"
 msgstr "Willkommen bei Modulix OS"
@@ -853,11 +898,14 @@ msgstr "Kabelverbindung"
 msgid "World map"
 msgstr "Weltkarte"
 
+msgid "Write documents, build spreadsheets and presentations"
+msgstr "Dokumente schreiben, Tabellen und Präsentationen erstellen"
+
 msgid "Writing NixOS configuration"
 msgstr "NixOS-Konfiguration wird geschrieben"
 
-msgid "You can uninstall any of these afterwards"
-msgstr "Jede davon kann später wieder entfernt werden"
+msgid "You can install or remove any of this afterwards"
+msgstr "Alles davon lässt sich später installieren oder entfernen"
 
 msgid "Your choices, applied"
 msgstr "Die Auswahl, angewendet"

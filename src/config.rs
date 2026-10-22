@@ -3,6 +3,7 @@
 //! rather than `Arc<Mutex<_>>` (that's reserved for the concurrent backend side).
 
 use std::cell::RefCell;
+use std::collections::BTreeSet;
 use std::rc::Rc;
 
 pub type SharedConfig = Rc<RefCell<InstallConfig>>;
@@ -26,7 +27,7 @@ pub struct InstallConfig {
     pub partitioning: PartitioningConfig,
     pub user: UserConfig,
     pub desktop_environment: DesktopEnvironment,
-    pub app_pack: AppPack,
+    pub apps: AppSelection,
 }
 
 impl InstallConfig {
@@ -191,8 +192,9 @@ impl DesktopEnvironment {
     }
 
     /// File manager, terminal, PDF reader (no office suite), image viewer,
-    /// archive manager, text editor, media player — one native pick per DE,
-    /// consumed by [`AppPack::packages`] for the base pack.
+    /// archive manager, text editor, media player, disk tools and the GNOME
+    /// welcome tour — one native pick per DE, consumed by
+    /// [`AppCard::packages`] for the base pack.
     fn base_pack_packages(self) -> &'static [&'static str] {
         match self {
             DesktopEnvironment::Gnome => &[
@@ -206,6 +208,8 @@ impl DesktopEnvironment {
                 "showtime",
                 "gnome-calculator",
                 "baobab",
+                "gnome-disk-utility",
+                "gnome-tour",
             ],
             DesktopEnvironment::Plasma => &[
                 "kdePackages.dolphin",
@@ -238,51 +242,192 @@ impl DesktopEnvironment {
     }
 }
 
-/// Independent of the desktop environment. Printing is not in here: it needs
-/// `services.printing.enable` plus a driver set, which the `services.printer`
-/// module provides and a bare package list cannot — see [`AppPack::modules`].
-const COMMON_BASE_PACKAGES: &[&str] = &["firefox"];
+/// Independent of the desktop environment. Two of the base pack's staples are
+/// deliberately absent, because an `environment.systemPackages` entry cannot
+/// express them: printing needs `services.printing.enable` plus a driver set,
+/// and Firefox needs its language packs, hunspell dictionaries, VAAPI
+/// preferences and GNOME search provider. Both come in as mxpkgs modules
+/// instead — see [`AppCard::modules`].
+const COMMON_BASE_PACKAGES: &[&str] = &["thunderbird"];
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
-pub enum AppPack {
-    /// Bare system: no application package beyond the DE itself.
-    None,
-    #[default]
+/// One tick box of the application step, in the order the cards are laid out.
+///
+/// The derived `Ord` **is** that layout order, which is what makes
+/// [`AppSelection`]'s `BTreeSet` iterate in card order rather than
+/// alphabetically — pinned by `card_ord_matches_all`.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+pub enum AppCard {
+    /// The essentials, ticked by default: browser, mail, file manager,
+    /// terminal, printing and the Flathub store.
     Base,
+    /// Deliberately not named after one suite in the UI — the card enables the
+    /// child the `programs.desktop` group declares in mxpkgs'
+    /// `modules/index.json`, whichever that is.
+    OfficeSuite,
+    Modeling3D,
+    VideoEditing,
+    /// GIMP, Krita and Inkscape — raster retouching, painting and vector
+    /// drawing in one card.
+    Graphics,
+    /// OBS Studio: screen and webcam recording as much as live streaming,
+    /// which is what the card is named after.
+    Streaming,
+    /// Every launcher at once: Steam, Lutris, Heroic and UMU. Controller
+    /// support comes with mxpkgs' `programs.games` group, which auto-enables
+    /// from any of them.
+    Gaming,
+    VirtualReality,
+    /// Racing wheels, pedals and their force feedback.
+    SimHardware,
 }
 
-impl AppPack {
-    pub const ALL: [AppPack; 2] = [AppPack::None, AppPack::Base];
+impl AppCard {
+    /// Grid order, read left to right then top to bottom: the essentials and
+    /// the two "serious" cards first, then the creative row, then the gaming
+    /// row.
+    pub const ALL: [AppCard; 9] = [
+        AppCard::Base,
+        AppCard::OfficeSuite,
+        AppCard::Modeling3D,
+        AppCard::VideoEditing,
+        AppCard::Graphics,
+        AppCard::Streaming,
+        AppCard::Gaming,
+        AppCard::VirtualReality,
+        AppCard::SimHardware,
+    ];
 
-    /// nixpkgs packages installed on top of the DE. Consumed by
-    /// `engine::tasks::InitConfigTask`, which hands them to
-    /// `modulix_core_utils::init` for `package.nix`.
+    /// nixpkgs packages this card adds to `package.nix`.
+    ///
+    /// # Parameters
+    /// * `de` - desktop environment picked at step 8, which decides the
+    ///   base pack's native file manager, terminal, viewers and editors.
+    ///
+    /// # Returns
+    /// The attribute names, empty for every card but [`AppCard::Base`]: the
+    /// optional cards' software comes in through mxpkgs modules, which can
+    /// enable services and wire up hardware acceleration where a bare
+    /// package list cannot.
     pub fn packages(self, de: DesktopEnvironment) -> Vec<&'static str> {
         match self {
-            AppPack::None => Vec::new(),
-            AppPack::Base => COMMON_BASE_PACKAGES
+            AppCard::Base => COMMON_BASE_PACKAGES
                 .iter()
                 .copied()
                 .chain(de.base_pack_packages().iter().copied())
                 .collect(),
+            _ => Vec::new(),
         }
     }
 
-    /// Modulix modules enabled on top of the DE, dotted as in mxpkgs'
-    /// `modules/index.json`. Consumed by `engine::tasks::InitConfigTask`,
-    /// which hands them to `modulix_core_utils::init` for `module.nix`, one
-    /// `mx.<name>.enable = true` each.
+    /// Modulix modules this card enables in `module.nix`, dotted as in
+    /// mxpkgs' `modules/index.json` — one `mx.<name>.enable = true` each,
+    /// written by `modulix_core_utils::init`.
     ///
-    /// These are the half of the pack a package list cannot express:
-    /// `services.flatpak` registers the Flathub remote and puts its exports on
-    /// `XDG_DATA_DIRS`, `services.printer` turns CUPS on and pulls the driver
-    /// set — which is why the printing packages are no longer in
-    /// [`COMMON_BASE_PACKAGES`].
-    pub fn modules(self) -> Vec<&'static str> {
+    /// # Returns
+    /// The module names; never empty, every card carries at least one.
+    pub fn modules(self) -> &'static [&'static str] {
         match self {
-            AppPack::None => Vec::new(),
-            AppPack::Base => vec!["services.flatpak", "services.printer"],
+            AppCard::Base => &[
+                "programs.utilities.web-browser.firefox",
+                "services.flatpak",
+                "services.printer",
+            ],
+            AppCard::OfficeSuite => &["programs.desktop.onlyoffice"],
+            AppCard::Modeling3D => &["programs.creativity.blender"],
+            AppCard::VideoEditing => &[
+                "programs.studio.kdenlive",
+                "programs.studio.davinci-resolve",
+            ],
+            AppCard::Graphics => &[
+                "programs.creativity.gimp",
+                "programs.creativity.krita",
+                "programs.creativity.inkscape",
+            ],
+            AppCard::Streaming => &["programs.studio.obs-studio"],
+            AppCard::Gaming => &[
+                "programs.games.steam",
+                "programs.games.lutris",
+                "programs.games.heroic",
+                "programs.games.umu",
+            ],
+            AppCard::VirtualReality => &["programs.games.vr"],
+            AppCard::SimHardware => &["services.sim-hardware"],
         }
+    }
+}
+
+/// The application step's whole answer: which cards are ticked.
+///
+/// A `BTreeSet` so the selection is deduplicated and iterated in [`AppCard`]
+/// declaration order by construction, which makes the package and module
+/// lists handed to `modulix_core_utils::init` byte-stable across runs — they
+/// are committed into a git repository on the target.
+///
+/// The empty selection is legal and means a bare system: no `package.nix`, no
+/// `module.nix`, nothing beyond the desktop environment itself.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct AppSelection(BTreeSet<AppCard>);
+
+impl Default for AppSelection {
+    /// Base pack only — every optional card starts unticked. This is what
+    /// makes the base pack the answer even for an `InstallConfig` that never
+    /// reached the application step.
+    fn default() -> Self {
+        Self(BTreeSet::from([AppCard::Base]))
+    }
+}
+
+impl AppSelection {
+    /// Builds a selection out of the ticked cards, in any order and with
+    /// duplicates allowed.
+    pub fn from_cards(cards: impl IntoIterator<Item = AppCard>) -> Self {
+        Self(cards.into_iter().collect())
+    }
+
+    /// Whether nothing is ticked, i.e. a bare system was asked for.
+    pub fn is_empty(&self) -> bool {
+        self.0.is_empty()
+    }
+
+    /// The ticked cards, in [`AppCard::ALL`] order.
+    pub fn cards(&self) -> impl Iterator<Item = AppCard> + '_ {
+        self.0.iter().copied()
+    }
+
+    /// Union of every ticked card's packages.
+    ///
+    /// # Parameters
+    /// * `de` - desktop environment, forwarded to [`AppCard::packages`].
+    ///
+    /// # Returns
+    /// The attribute names, first occurrence winning, in card order rather
+    /// than alphabetised — `package.nix` is read by a human afterwards and the
+    /// base pack belongs at the top. Deduplicated with a linear scan: the
+    /// lists are a dozen entries long.
+    pub fn packages(&self, de: DesktopEnvironment) -> Vec<&'static str> {
+        let mut out: Vec<&'static str> = Vec::new();
+        for card in self.cards() {
+            for package in card.packages(de) {
+                if !out.contains(&package) {
+                    out.push(package);
+                }
+            }
+        }
+        out
+    }
+
+    /// Union of every ticked card's modules, with the same ordering and
+    /// deduplication contract as [`AppSelection::packages`].
+    pub fn modules(&self) -> Vec<&'static str> {
+        let mut out: Vec<&'static str> = Vec::new();
+        for card in self.cards() {
+            for module in card.modules() {
+                if !out.contains(module) {
+                    out.push(module);
+                }
+            }
+        }
+        out
     }
 }
 
@@ -298,31 +443,102 @@ mod tests {
     }
 
     #[test]
-    fn app_pack_packages_are_consistent() {
+    fn only_the_base_card_ships_packages() {
         for de in DesktopEnvironment::ALL {
-            assert!(!AppPack::Base.packages(de).is_empty());
-            assert!(AppPack::None.packages(de).is_empty());
+            assert!(!AppCard::Base.packages(de).is_empty());
+            for card in AppCard::ALL {
+                if card != AppCard::Base {
+                    assert!(card.packages(de).is_empty(), "{card:?} ships packages");
+                }
+            }
         }
     }
 
     #[test]
-    fn app_pack_modules_are_consistent() {
-        assert!(AppPack::None.modules().is_empty());
-        let base = AppPack::Base.modules();
-        assert!(base.contains(&"services.flatpak"));
-        assert!(base.contains(&"services.printer"));
+    fn every_card_contributes_at_least_one_module() {
+        for card in AppCard::ALL {
+            assert!(!card.modules().is_empty(), "{card:?} enables no module");
+        }
     }
 
-    /// The printing stack moved from the package list to the
-    /// `services.printer` module; leaving the packages behind would install
-    /// CUPS twice and still never enable it.
     #[test]
-    fn the_base_pack_no_longer_ships_printing_packages() {
+    fn the_base_card_enables_flatpak_printing_and_firefox() {
+        let base = AppCard::Base.modules();
+        assert!(base.contains(&"services.flatpak"));
+        assert!(base.contains(&"services.printer"));
+        assert!(base.contains(&"programs.utilities.web-browser.firefox"));
+    }
+
+    /// The printing stack and Firefox both moved from the package list to an
+    /// mxpkgs module; leaving the packages behind would install them twice and
+    /// still never enable the service or the search provider.
+    #[test]
+    fn the_base_pack_no_longer_ships_module_provided_packages() {
         for de in DesktopEnvironment::ALL {
-            let packages = AppPack::Base.packages(de);
-            for stale in ["cups", "gutenprint", "system-config-printer"] {
+            let packages = AppCard::Base.packages(de);
+            for stale in ["cups", "gutenprint", "system-config-printer", "firefox"] {
                 assert!(!packages.contains(&stale), "{stale} is now module-provided");
             }
         }
+    }
+
+    #[test]
+    fn the_gnome_base_pack_ships_disk_tools_and_the_tour() {
+        let packages = AppCard::Base.packages(DesktopEnvironment::Gnome);
+        assert!(packages.contains(&"gnome-disk-utility"));
+        assert!(packages.contains(&"gnome-tour"));
+        assert!(packages.contains(&"thunderbird"));
+    }
+
+    #[test]
+    fn default_selection_is_base_only() {
+        let selection = AppSelection::default();
+        assert!(selection.cards().any(|c| c == AppCard::Base));
+        for card in AppCard::ALL {
+            if card != AppCard::Base {
+                assert!(
+                    !selection.cards().any(|c| c == card),
+                    "{card:?} starts ticked"
+                );
+            }
+        }
+        assert_eq!(InstallConfig::default().apps, selection);
+    }
+
+    /// `AppSelection` leans on the derived `Ord` to iterate in layout order.
+    #[test]
+    fn card_ord_matches_all() {
+        let sorted: Vec<AppCard> = AppSelection::from_cards(AppCard::ALL).cards().collect();
+        assert_eq!(sorted, AppCard::ALL.to_vec());
+    }
+
+    #[test]
+    fn an_empty_selection_installs_nothing() {
+        let selection = AppSelection::from_cards([]);
+        assert!(selection.is_empty());
+        for de in DesktopEnvironment::ALL {
+            assert!(selection.packages(de).is_empty());
+        }
+        assert!(selection.modules().is_empty());
+    }
+
+    #[test]
+    fn the_union_is_deduplicated_in_card_order() {
+        let selection = AppSelection::from_cards(AppCard::ALL);
+        let modules = selection.modules();
+        let mut seen = modules.clone();
+        seen.sort_unstable();
+        seen.dedup();
+        assert_eq!(seen.len(), modules.len(), "duplicate module in the union");
+
+        let flatpak = modules
+            .iter()
+            .position(|m| *m == "services.flatpak")
+            .expect("the base card is ticked");
+        let steam = modules
+            .iter()
+            .position(|m| *m == "programs.games.steam")
+            .expect("the steam card is ticked");
+        assert!(flatpak < steam, "the base card's modules must come first");
     }
 }

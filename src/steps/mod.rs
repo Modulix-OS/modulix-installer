@@ -163,9 +163,9 @@ pub fn build_registry(
         Box::new(partitioning::PartitioningStep::new(backends, runtime, a11y)) as Box<dyn Step>,
         Box::new(user::UserStep::new()) as Box<dyn Step>,
         Box::new(desktop_environment::DesktopEnvironmentStep::new(
-            advance_hook.clone(),
+            advance_hook,
         )) as Box<dyn Step>,
-        Box::new(app_pack::AppPackStep::new(advance_hook)) as Box<dyn Step>,
+        Box::new(app_pack::AppPackStep::new()) as Box<dyn Step>,
     ];
     debug_assert!(
         registry.iter().map(|s| s.id()).eq(StepId::ALL),

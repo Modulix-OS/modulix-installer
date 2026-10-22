@@ -26,12 +26,29 @@
        whatever pixel size is requested instead of stretching a fixed-size
        bitmap — see `icon_widget_for` in src/steps/app_pack/mod.rs. -->
   <gresource prefix="/org/modulix/installer/icons/scalable/apps">
-    <file alias="modulix-app-pack-store.svg">apps/org.gnome.Software.svg</file>
     <file alias="modulix-app-pack-firefox.svg">apps/firefox.svg</file>
     <file
             alias="modulix-app-pack-nautilus.svg"
         >apps/org.gnome.Nautilus.svg</file>
+    <file alias="modulix-app-pack-thunderbird.svg">apps/thunderbird.svg</file>
+    <file alias="modulix-app-pack-steam.svg">apps/steam.svg</file>
+    <file alias="modulix-app-pack-lutris.svg">apps/lutris.svg</file>
+    <file alias="modulix-app-pack-heroic.svg">apps/heroic.svg</file>
+    <file alias="modulix-app-pack-kdenlive.svg">apps/kdenlive.svg</file>
+    <file
+            alias="modulix-app-pack-davinci-resolve.svg"
+        >apps/resolve.svg</file>
+    <file alias="modulix-app-pack-obs.svg">apps/obs.svg</file>
+    <file alias="modulix-app-pack-krita.svg">apps/krita.svg</file>
+    <file alias="modulix-app-pack-gimp.svg">apps/gimp.svg</file>
+    <file alias="modulix-app-pack-blender.svg">apps/blender.svg</file>
     <file alias="modulix-app-pack-papers.svg">apps/org.gnome.Papers.svg</file>
+    <file alias="modulix-app-pack-inkscape.svg">apps/inkscape.svg</file>
+    <file alias="modulix-app-pack-vr.svg">apps/steamvr.svg</file>
+    <file
+            alias="modulix-app-pack-sim-hardware.svg"
+        >apps/preferences-desktop-gaming.svg</file>
+    <file alias="modulix-app-pack-gamepad.svg">devices/input-gaming.svg</file>
     <file alias="modulix-app-pack-printer.svg">devices/printer.svg</file>
   </gresource>
   <gresource prefix="/org/modulix/installer/images">

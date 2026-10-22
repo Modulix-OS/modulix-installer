@@ -18,7 +18,7 @@ use modulix_core_utils::init::{Desktop, InitParams, LuksInit, init};
 /// skip-rebuild lock for its whole run precisely so the installer can drive
 /// the build itself — which `NixosInstallTask` does, two stages later.
 ///
-/// The application pack rides along in that same transaction: `packages` goes
+/// The application selection rides along in that same transaction: `packages` goes
 /// to `package.nix` and `modules` to `module.nix`, through core-utils' own
 /// `install_package`/`install_module` writers, so a post-install `mx` sees
 /// exactly the spelling it would have written itself.
@@ -69,14 +69,14 @@ impl Task for InitConfigTask {
             console_keymap: ctx.config.console_keymap.clone(),
             packages: ctx
                 .config
-                .app_pack
+                .apps
                 .packages(ctx.config.desktop_environment)
                 .into_iter()
                 .map(String::from)
                 .collect(),
             modules: ctx
                 .config
-                .app_pack
+                .apps
                 .modules()
                 .into_iter()
                 .map(String::from)

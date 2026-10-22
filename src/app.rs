@@ -24,6 +24,7 @@ const RAIL_CSS: &str = "
   padding: 12px;
 }
 .de-card { padding: 12px; }
+.de-card:checked { background-color: var(--card-bg-color); }
 .de-card-selected { outline: 2px solid var(--accent-bg-color); outline-offset: -2px; }
 flowboxchild { background: transparent; box-shadow: none; padding: 0; }
 flowboxchild:hover, flowboxchild:focus {

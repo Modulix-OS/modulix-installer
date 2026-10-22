@@ -5,11 +5,12 @@
 //! `plan.erases` is about to destroy.
 
 use crate::backend::Backends;
-use crate::config::{AppPack, InstallConfig, PartitionMode, SwapMode};
+use crate::config::{AppSelection, InstallConfig, PartitionMode, SwapMode};
 use crate::engine::live_input::{detect_uefi, gather_plan_input};
 use crate::engine::plan::{self, PlanError};
 use crate::finish::progress::ProgressPage;
 use crate::i18n::tr;
+use crate::steps::app_pack::card_title;
 use crate::widgets::disk_bar::human_bytes;
 use crate::{bridge, mx};
 use adw::prelude::*;
@@ -25,13 +26,22 @@ fn mode_label(mode: PartitionMode) -> String {
     }
 }
 
-fn pack_label(pack: AppPack) -> String {
-    match pack {
-        AppPack::None => tr("No applications"),
-        AppPack::Base => tr("Base pack"),
+/// The application step's answer as one line.
+///
+/// # Parameters
+/// * `selection` - the ticked cards.
+///
+/// # Returns
+/// The ticked cards' names in card order, comma-joined, or `No applications`
+/// when nothing is ticked — a bare system is a legitimate choice, not a
+/// missing answer.
+fn apps_label(selection: &AppSelection) -> String {
+    if selection.is_empty() {
+        return tr("No applications");
     }
+    let names: Vec<String> = selection.cards().map(card_title).collect();
+    names.join(", ")
 }
-
 fn swap_label(mode: SwapMode) -> String {
     match mode {
         SwapMode::None => tr("No swap"),
@@ -118,7 +128,10 @@ impl SummaryPage {
         let desktop_row = adw::ActionRow::builder()
             .title(tr("Desktop environment"))
             .build();
-        let apps_row = adw::ActionRow::builder().title(tr("Applications")).build();
+        let apps_row = adw::ActionRow::builder()
+            .title(tr("Applications"))
+            .subtitle_lines(0)
+            .build();
         for row in [
             &language_row,
             &timezone_row,
@@ -351,7 +364,7 @@ impl SummaryPage {
             tr(crate::steps::desktop_environment::display_label(de)),
             de.de_name()
         ));
-        self.apps_row.set_subtitle(&pack_label(cfg.app_pack));
+        self.apps_row.set_subtitle(&apps_label(&cfg.apps));
         self.mode_row
             .set_subtitle(&mode_label(cfg.partitioning.mode));
         self.swap_row

@@ -5,6 +5,9 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 
+msgid "3D modeling"
+msgstr ""
+
 msgid "A clean, modern desktop focused on simplicity"
 msgstr ""
 
@@ -35,10 +38,10 @@ msgstr ""
 msgid "An EFI System Partition of at least 100 MiB is required"
 msgstr ""
 
-msgid "Application pack"
+msgid "Applications"
 msgstr ""
 
-msgid "Applications"
+msgid "Applications to install"
 msgstr ""
 
 msgid "Applied now"
@@ -177,6 +180,9 @@ msgstr ""
 msgid "Don't use"
 msgstr ""
 
+msgid "Drawing and image editing"
+msgstr ""
+
 msgid "EFI System Partition"
 msgstr ""
 
@@ -273,6 +279,12 @@ msgstr ""
 msgid "Full name"
 msgstr ""
 
+msgid "GIMP, Krita and Inkscape"
+msgstr ""
+
+msgid "Gaming"
+msgstr ""
+
 msgid "Hibernation swap doesn't fit — using standard swap instead"
 msgstr ""
 
@@ -312,6 +324,9 @@ msgstr ""
 msgid "Installing Modulix OS"
 msgstr ""
 
+msgid "Kdenlive and DaVinci Resolve"
+msgstr ""
+
 msgid "Kept"
 msgstr ""
 
@@ -346,6 +361,9 @@ msgid "Manual"
 msgstr ""
 
 msgid "Mode"
+msgstr ""
+
+msgid "Model, animate and render in 3D with Blender"
 msgstr ""
 
 msgid "Modern"
@@ -420,6 +438,12 @@ msgstr ""
 msgid "Not enough space would be freed up to install Modulix OS"
 msgstr ""
 
+msgid "Nothing selected — Modulix OS will install a bare system"
+msgstr ""
+
+msgid "Office suite"
+msgstr ""
+
 msgid "Once this finishes, you'll be ready to restart into your new system."
 msgstr ""
 
@@ -488,10 +512,19 @@ msgstr ""
 msgid "Quit the installer"
 msgstr ""
 
+msgid "Racing wheels and pedals from Logitech, Fanatec and Thrustmaster"
+msgstr ""
+
 msgid "Reads each page aloud as you move through the installer"
 msgstr ""
 
 msgid "Ready to install"
+msgstr ""
+
+msgid "Record your screen and stream live with OBS Studio"
+msgstr ""
+
+msgid "Recording and streaming"
 msgstr ""
 
 msgid "Refresh"
@@ -565,13 +598,13 @@ msgstr ""
 msgid "Setting passwords"
 msgstr ""
 
+msgid "Simulation hardware"
+msgstr ""
+
 msgid "Size (MiB)"
 msgstr ""
 
 msgid "Standard swap"
-msgstr ""
-
-msgid "Start from a bare system and install everything yourself"
 msgstr ""
 
 msgid "Starting installation…"
@@ -580,10 +613,16 @@ msgstr ""
 msgid "Status"
 msgstr ""
 
+msgid "Steam, Lutris, Heroic and UMU, with controller support"
+msgstr ""
+
 msgid "Steps"
 msgstr ""
 
 msgid "Sticky keys"
+msgstr ""
+
+msgid "Stream VR games to a standalone headset with ALVR"
 msgstr ""
 
 msgid "Swap"
@@ -740,6 +779,12 @@ msgstr ""
 msgid "Variant"
 msgstr ""
 
+msgid "Video editing"
+msgstr ""
+
+msgid "Virtual reality"
+msgstr ""
+
 msgid "WPA/WPA2 Personal"
 msgstr ""
 
@@ -750,8 +795,8 @@ msgid "We're setting things up in the background — this won't take long."
 msgstr ""
 
 msgid ""
-"Web browser, file manager, terminal, printing, PDF reader, image viewer, "
-"archive manager, text editor, media player, and the Flathub app store"
+"Web browser, email, file manager, terminal, printing, PDF reader, image "
+"viewer, archive manager, text editor, media player, and the Flathub app store"
 msgstr ""
 
 msgid "Welcome to Modulix OS"
@@ -772,10 +817,13 @@ msgstr ""
 msgid "World map"
 msgstr ""
 
+msgid "Write documents, build spreadsheets and presentations"
+msgstr ""
+
 msgid "Writing NixOS configuration"
 msgstr ""
 
-msgid "You can uninstall any of these afterwards"
+msgid "You can install or remove any of this afterwards"
 msgstr ""
 
 msgid "Your choices, applied"
