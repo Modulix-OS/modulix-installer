@@ -44,7 +44,7 @@
     <file alias="modulix-app-pack-blender.svg">apps/blender.svg</file>
     <file alias="modulix-app-pack-papers.svg">apps/org.gnome.Papers.svg</file>
     <file alias="modulix-app-pack-inkscape.svg">apps/inkscape.svg</file>
-    <file alias="modulix-app-pack-vr.svg">apps/steamvr.svg</file>
+    <file alias="modulix-app-pack-ue5.svg">apps/ue4editor.svg</file>
     <file alias="modulix-app-pack-vscode.svg">apps/vscode.svg</file>
     <file alias="modulix-app-pack-git.svg">apps/git.svg</file>
     <file

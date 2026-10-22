@@ -23,9 +23,9 @@ change reaches installs only once pushed.
 
 Two concrete consequences of that rule, both added for the step-9 application grid: the
 `programs.studio.kdenlive`, `programs.creativity.{krita,gimp,inkscape}`,
-`programs.games.vr` (ALVR) and `programs.dev.{vscode,git,distrobox}` modules the
-grid enables live in **mxpkgs** (`modules/programs/…`, `modules/services/…`, registered in
-`modules/index.json` and `index.fr.json`), as does the controller support the
+`programs.dev.{vscode,git,distrobox}` and `programs.dev.ue5` (Unreal Engine 5)
+modules the grid enables live in **mxpkgs** (`modules/programs/…`, `modules/services/…`, registered
+in `modules/index.json` and `index.fr.json`), as does the controller support the
 `programs.games` group now applies to every launcher, and the GNOME app-grid arrangement — the
 `org/gnome/desktop/app-folders` folders and `org/gnome/shell` `favorite-apps` a fresh
 install opens with — is declarative dconf in `mxpkgs/modulixos/desktop/gnome/custom.nix`,
@@ -397,9 +397,12 @@ collation). Two consequences to keep in mind when touching this code:
    lives: `hardware.xone`, `hardware.steam-hardware`, the `xpadneo` out-of-tree module, the
    DualSense touchpad `LIBINPUT_IGNORE_DEVICE` rules and `joystickwake`, ported from glf-os'
    gaming socle;
-   `VirtualReality` → `programs.games.vr` (ALVR with its firewall ports, OpenComposite, the
-   SteamVR udev rules, and `mx.programs.games.steam` on by `mkMxDefault` since the games run
-   through SteamVR);
+   `GameDevelopment` → `programs.dev.ue5`, which replaced the virtual-reality card
+   (`programs.games.vr` still exists in mxpkgs, it is simply no longer reachable from the
+   installer). mxpkgs installs the editor from an Epic archive into a Distrobox container of
+   its own (`mx.programs.dev.distrobox` comes on by `mkMxDefault`), and like the Ubuntu
+   container nothing is downloaded during `nixos-install`: the launcher's first run on the
+   installed system creates the container and asks for the `.zip`;
    `Development` → `programs.dev.{vscode,git,distrobox}`, which replaced the racing-wheel
    card (`services.sim-hardware` still exists in mxpkgs and is still in `modules/index.json`
    — it is simply no longer reachable from the installer, only from the post-install store

@@ -71,6 +71,9 @@ msgstr "Paquete básico"
 msgid "Boot (/boot, EFI)"
 msgstr "Arranque (/boot, EFI)"
 
+msgid "Build games with the Unreal Engine 5 editor"
+msgstr "Crea juegos con el editor de Unreal Engine 5"
+
 msgid "Calculator"
 msgstr "Calculadora"
 
@@ -307,6 +310,9 @@ msgstr "Nombre completo"
 
 msgid "GIMP, Krita and Inkscape"
 msgstr "GIMP, Krita e Inkscape"
+
+msgid "Game development"
+msgstr "Desarrollo de juegos"
 
 msgid "Gaming"
 msgstr "Juegos"
@@ -652,9 +658,6 @@ msgstr "Pasos"
 msgid "Sticky keys"
 msgstr "Teclas persistentes"
 
-msgid "Stream VR games to a standalone headset with ALVR"
-msgstr "Transmite juegos de RV a unas gafas autónomas con ALVR"
-
 msgid "Studio"
 msgstr "Studio"
 
@@ -847,9 +850,6 @@ msgstr "Variante"
 
 msgid "Video editing"
 msgstr "Edición de vídeo"
-
-msgid "Virtual reality"
-msgstr "Realidad virtual"
 
 msgid "WPA/WPA2 Personal"
 msgstr "WPA/WPA2 Personal"

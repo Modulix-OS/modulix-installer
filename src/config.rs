@@ -282,7 +282,12 @@ pub enum AppCard {
     /// support comes with mxpkgs' `programs.games` group, which auto-enables
     /// from any of them.
     Gaming,
-    VirtualReality,
+    /// The Unreal Engine 5 editor, which mxpkgs installs from an Epic archive
+    /// into a Distrobox container of its own — see mxpkgs'
+    /// `programs.dev.ue5`. Nothing is downloaded during the install: the
+    /// container is created, and the archive asked for, on the launcher's
+    /// first run on the installed system.
+    GameDevelopment,
     /// Visual Studio Code, Git with the GitHub/GitLab tools, and Distrobox on
     /// a rootless Podman. The Ubuntu container is created by the launcher's
     /// first run on the installed system, never by the install itself — see
@@ -302,7 +307,7 @@ impl AppCard {
         AppCard::Graphics,
         AppCard::Streaming,
         AppCard::Gaming,
-        AppCard::VirtualReality,
+        AppCard::GameDevelopment,
         AppCard::Development,
     ];
 
@@ -358,7 +363,7 @@ impl AppCard {
                 "programs.games.heroic",
                 "programs.games.umu",
             ],
-            AppCard::VirtualReality => &["programs.games.vr"],
+            AppCard::GameDevelopment => &["programs.dev.ue5"],
             AppCard::Development => &[
                 "programs.dev.vscode",
                 "programs.dev.git",

@@ -64,6 +64,9 @@ msgstr ""
 msgid "Boot (/boot, EFI)"
 msgstr ""
 
+msgid "Build games with the Unreal Engine 5 editor"
+msgstr ""
+
 msgid "Calculator"
 msgstr ""
 
@@ -283,6 +286,9 @@ msgid "Full name"
 msgstr ""
 
 msgid "GIMP, Krita and Inkscape"
+msgstr ""
+
+msgid "Game development"
 msgstr ""
 
 msgid "Gaming"
@@ -619,9 +625,6 @@ msgstr ""
 msgid "Sticky keys"
 msgstr ""
 
-msgid "Stream VR games to a standalone headset with ALVR"
-msgstr ""
-
 msgid "Studio"
 msgstr ""
 
@@ -786,9 +789,6 @@ msgid "Variant"
 msgstr ""
 
 msgid "Video editing"
-msgstr ""
-
-msgid "Virtual reality"
 msgstr ""
 
 msgid "WPA/WPA2 Personal"

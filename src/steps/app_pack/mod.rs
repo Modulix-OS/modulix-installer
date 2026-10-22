@@ -43,7 +43,7 @@ pub(crate) fn card_title(card: AppCard) -> String {
         AppCard::Graphics => tr("Drawing and image editing"),
         AppCard::Streaming => tr("Recording and streaming"),
         AppCard::Gaming => tr("Gaming"),
-        AppCard::VirtualReality => tr("Virtual reality"),
+        AppCard::GameDevelopment => tr("Game development"),
         AppCard::Development => tr("Development"),
     }
 }
@@ -58,7 +58,7 @@ fn card_description(card: AppCard) -> String {
         AppCard::Graphics => tr("GIMP, Krita and Inkscape"),
         AppCard::Streaming => tr("Record your screen and stream live with OBS Studio"),
         AppCard::Gaming => tr("Steam, Lutris, Heroic and UMU, with controller support"),
-        AppCard::VirtualReality => tr("Stream VR games to a standalone headset with ALVR"),
+        AppCard::GameDevelopment => tr("Build games with the Unreal Engine 5 editor"),
         AppCard::Development => tr("VS Code, Git and an Ubuntu container"),
     }
 }
@@ -192,7 +192,7 @@ fn icon_names_for(card: AppCard) -> &'static [&'static str] {
             "modulix-app-pack-heroic",
             "modulix-app-pack-gamepad",
         ],
-        AppCard::VirtualReality => &["modulix-app-pack-vr"],
+        AppCard::GameDevelopment => &["modulix-app-pack-ue5"],
         AppCard::Development => &[
             "modulix-app-pack-vscode",
             "modulix-app-pack-git",
