@@ -895,9 +895,6 @@ msgstr "Escribe documentos y crea hojas de cálculo y presentaciones"
 msgid "Writing NixOS configuration"
 msgstr "Escribiendo la configuración de NixOS"
 
-msgid "You can install or remove any of this afterwards"
-msgstr "Podrás instalar o quitar cualquiera de estas después"
-
 msgid "Your choices, applied"
 msgstr "Sus elecciones, aplicadas"
 

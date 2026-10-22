@@ -832,9 +832,6 @@ msgstr ""
 msgid "Writing NixOS configuration"
 msgstr ""
 
-msgid "You can install or remove any of this afterwards"
-msgstr ""
-
 msgid "Your choices, applied"
 msgstr ""
 

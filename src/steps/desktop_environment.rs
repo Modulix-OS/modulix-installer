@@ -213,7 +213,7 @@ impl DesktopEnvironmentStep {
 
         let title_label = gtk::Label::builder()
             .label(tr("Desktop environment"))
-            .xalign(0.0)
+            .xalign(0.5)
             .css_classes(["title-2"])
             .build();
 

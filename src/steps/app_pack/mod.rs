@@ -263,7 +263,6 @@ pub struct AppPackStep {
     widget: gtk::Widget,
     title_label: gtk::Label,
     subtitle_label: gtk::Label,
-    footnote_label: gtk::Label,
     hint_label: gtk::Label,
     cards: Vec<CardWidgets>,
     validity: ValidityTracker,
@@ -292,14 +291,6 @@ impl AppPackStep {
             .label(tr(
                 "The essential applications will be installed for each activity",
             ))
-            .xalign(0.0)
-            .wrap(true)
-            .wrap_mode(gtk::pango::WrapMode::WordChar)
-            .css_classes(["body"])
-            .build();
-
-        let footnote_label = gtk::Label::builder()
-            .label(tr("You can install or remove any of this afterwards"))
             .xalign(0.0)
             .wrap(true)
             .wrap_mode(gtk::pango::WrapMode::WordChar)
@@ -540,7 +531,6 @@ impl AppPackStep {
         content.set_margin_end(PAGE_MARGIN);
         content.append(&title_label);
         content.append(&subtitle_label);
-        content.append(&footnote_label);
         content.append(&grid);
         content.append(&hint_label);
 
@@ -569,7 +559,6 @@ impl AppPackStep {
             widget: scrolled.upcast(),
             title_label,
             subtitle_label,
-            footnote_label,
             hint_label,
             cards,
             validity: ValidityTracker::ready(),
@@ -613,8 +602,6 @@ impl Step for AppPackStep {
         self.subtitle_label.set_label(&tr(
             "The essential applications will be installed for each activity",
         ));
-        self.footnote_label
-            .set_label(&tr("You can install or remove any of this afterwards"));
         self.hint_label.set_label(&tr(
             "Nothing selected — Modulix OS will install a bare system",
         ));
