@@ -2,6 +2,7 @@ pub mod validity;
 
 pub mod accessibility;
 pub mod app_pack;
+pub(crate) mod card_layout;
 pub mod desktop_environment;
 pub mod keyboard;
 pub mod language;

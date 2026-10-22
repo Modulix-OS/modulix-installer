@@ -1,21 +1,14 @@
 use crate::config::{DesktopEnvironment, InstallConfig};
 use crate::i18n::tr;
 use crate::mx;
+use crate::steps::card_layout::{CARD_SPACING, PAGE_MARGIN, add_column_breakpoint, grid_width};
 use crate::steps::{AdvanceHook, Step, StepId, ValidityTracker};
 use adw::prelude::*;
 use std::cell::Cell;
 use std::rc::Rc;
 
-pub(crate) const CARD_MIN_WIDTH: i32 = 300;
-pub(crate) const CARD_MAX_WIDTH: i32 = 560;
-pub(crate) const CARD_SPACING: i32 = 12;
-pub(crate) const PAGE_MARGIN: i32 = 24;
-
-/// Width of an N-card row at the card's max width (N cards + (N-1) gaps) —
-/// the `adw::Clamp` ceiling for that column count.
-pub(crate) const fn grid_width(columns: i32) -> i32 {
-    columns * CARD_MAX_WIDTH + (columns - 1) * CARD_SPACING
-}
+const CARD_MIN_WIDTH: i32 = 300;
+const CARD_MAX_WIDTH: i32 = 560;
 
 const TWO_COL_MIN: i32 = 800;
 const FOUR_COL_MIN: i32 = 2360;
@@ -316,7 +309,7 @@ impl DesktopEnvironmentStep {
         content.append(&grid);
 
         let clamp = adw::Clamp::builder()
-            .maximum_size(grid_width(1))
+            .maximum_size(grid_width(1, CARD_MAX_WIDTH))
             .tightening_threshold(CARD_MIN_WIDTH)
             .child(&content)
             .build();
@@ -327,34 +320,18 @@ impl DesktopEnvironmentStep {
             .child(&clamp)
             .build();
 
-        let add_bp = |min_width: i32, columns: i32| {
-            let bp = adw::Breakpoint::new(adw::BreakpointCondition::new_length(
-                adw::BreakpointConditionLengthType::MinWidth,
-                min_width as f64,
-                adw::LengthUnit::Px,
-            ));
-            bp.add_setter(
-                &grid,
-                "min-children-per-line",
-                Some(&(columns as u32).to_value()),
-            );
-            bp.add_setter(
-                &grid,
-                "max-children-per-line",
-                Some(&(columns as u32).to_value()),
-            );
-            bp.add_setter(
-                &clamp,
-                "maximum-size",
-                Some(&grid_width(columns).to_value()),
-            );
-            bin.add_breakpoint(bp);
-        };
         if de_count >= 2 {
-            add_bp(TWO_COL_MIN, 2);
+            add_column_breakpoint(&bin, &grid, &clamp, TWO_COL_MIN, 2, CARD_MAX_WIDTH);
         }
         if de_count >= 3 {
-            add_bp(FOUR_COL_MIN, de_count.min(4));
+            add_column_breakpoint(
+                &bin,
+                &grid,
+                &clamp,
+                FOUR_COL_MIN,
+                de_count.min(4),
+                CARD_MAX_WIDTH,
+            );
         }
 
         let scrolled = gtk::ScrolledWindow::builder()
