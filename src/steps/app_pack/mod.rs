@@ -252,7 +252,7 @@ struct CardWidgets {
     variant_buttons: Vec<(gtk::CheckButton, &'static str)>,
 }
 
-/// Applications step: a multi-select grid, three columns wide at any usable
+/// Activities step: a multi-select grid, three columns wide at any usable
 /// window size, with the base pack ticked and everything else off.
 ///
 /// Selection state lives in the toggle buttons themselves rather than in a
@@ -262,6 +262,7 @@ struct CardWidgets {
 pub struct AppPackStep {
     widget: gtk::Widget,
     title_label: gtk::Label,
+    subtitle_label: gtk::Label,
     footnote_label: gtk::Label,
     hint_label: gtk::Label,
     cards: Vec<CardWidgets>,
@@ -280,13 +281,21 @@ impl AppPackStep {
             gtk::gdk::Display::default().expect("a display must exist by the time steps are built");
 
         let title_label = gtk::Label::builder()
+            .label(tr("Select your activities"))
+            .xalign(0.0)
+            .wrap(true)
+            .wrap_mode(gtk::pango::WrapMode::WordChar)
+            .css_classes(["title-2"])
+            .build();
+
+        let subtitle_label = gtk::Label::builder()
             .label(tr(
                 "The essential applications will be installed for each activity",
             ))
             .xalign(0.0)
             .wrap(true)
             .wrap_mode(gtk::pango::WrapMode::WordChar)
-            .css_classes(["title-2"])
+            .css_classes(["body"])
             .build();
 
         let footnote_label = gtk::Label::builder()
@@ -530,6 +539,7 @@ impl AppPackStep {
         content.set_margin_start(PAGE_MARGIN);
         content.set_margin_end(PAGE_MARGIN);
         content.append(&title_label);
+        content.append(&subtitle_label);
         content.append(&footnote_label);
         content.append(&grid);
         content.append(&hint_label);
@@ -558,6 +568,7 @@ impl AppPackStep {
         Self {
             widget: scrolled.upcast(),
             title_label,
+            subtitle_label,
             footnote_label,
             hint_label,
             cards,
@@ -572,7 +583,7 @@ impl Step for AppPackStep {
     }
 
     fn title(&self) -> String {
-        tr("Applications")
+        tr("Activities")
     }
 
     fn icon_name(&self) -> &'static str {
@@ -598,7 +609,8 @@ impl Step for AppPackStep {
     }
 
     fn retranslate(&self) {
-        self.title_label.set_label(&tr(
+        self.title_label.set_label(&tr("Select your activities"));
+        self.subtitle_label.set_label(&tr(
             "The essential applications will be installed for each activity",
         ));
         self.footnote_label

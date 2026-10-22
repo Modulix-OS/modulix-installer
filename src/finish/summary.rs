@@ -139,7 +139,7 @@ impl SummaryPage {
             .title(tr("Desktop environment"))
             .build();
         let apps_row = adw::ActionRow::builder()
-            .title(tr("Applications"))
+            .title(tr("Activities"))
             .subtitle_lines(0)
             .build();
         for row in [
@@ -263,7 +263,7 @@ impl SummaryPage {
         self.network_row.set_title(&tr("Network"));
         self.user_row.set_title(&tr("User account"));
         self.desktop_row.set_title(&tr("Desktop environment"));
-        self.apps_row.set_title(&tr("Applications"));
+        self.apps_row.set_title(&tr("Activities"));
         self.disk_row.set_title(&tr("Target disk"));
         self.mode_row.set_title(&tr("Mode"));
         self.swap_row.set_title(&tr("Swap"));

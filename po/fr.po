@@ -30,6 +30,9 @@ msgstr "Un service système requis est injoignable."
 msgid "Accessibility"
 msgstr "Accessibilité"
 
+msgid "Activities"
+msgstr "Activités"
+
 msgid "Add"
 msgstr "Ajouter"
 
@@ -41,9 +44,6 @@ msgstr "Presque terminé"
 
 msgid "An EFI System Partition of at least 100 MiB is required"
 msgstr "Une partition système EFI d'au moins 100 Mio est requise"
-
-msgid "Applications"
-msgstr "Applications"
 
 msgid "Applied now"
 msgstr "Appliqué maintenant"
@@ -629,6 +629,9 @@ msgstr "Sélectionnez une zone d'espace libre où installer"
 
 msgid "Select a target disk"
 msgstr "Sélectionnez un disque cible"
+
+msgid "Select your activities"
+msgstr "Sélectionner vos activités"
 
 msgid "Setting passwords"
 msgstr "Définition des mots de passe"

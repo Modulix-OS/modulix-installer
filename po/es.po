@@ -30,6 +30,9 @@ msgstr "No se ha podido contactar con un servicio del sistema necesario."
 msgid "Accessibility"
 msgstr "Accesibilidad"
 
+msgid "Activities"
+msgstr "Actividades"
+
 msgid "Add"
 msgstr "Añadir"
 
@@ -41,9 +44,6 @@ msgstr "Casi listo"
 
 msgid "An EFI System Partition of at least 100 MiB is required"
 msgstr "Se requiere una partición de sistema EFI de al menos 100 MiB"
-
-msgid "Applications"
-msgstr "Aplicaciones"
 
 msgid "Applied now"
 msgstr "Se aplica ahora"
@@ -627,6 +627,9 @@ msgstr "Seleccione una región de espacio libre donde instalar"
 
 msgid "Select a target disk"
 msgstr "Seleccione un disco de destino"
+
+msgid "Select your activities"
+msgstr "Seleccione sus actividades"
 
 msgid "Setting passwords"
 msgstr "Estableciendo las contraseñas"

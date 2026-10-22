@@ -31,6 +31,9 @@ msgstr "Ein erforderlicher Systemdienst konnte nicht erreicht werden."
 msgid "Accessibility"
 msgstr "Barrierefreiheit"
 
+msgid "Activities"
+msgstr "Aktivitäten"
+
 msgid "Add"
 msgstr "Hinzufügen"
 
@@ -42,9 +45,6 @@ msgstr "Fast geschafft"
 
 msgid "An EFI System Partition of at least 100 MiB is required"
 msgstr "Eine EFI-Systempartition von mindestens 100 MiB ist erforderlich"
-
-msgid "Applications"
-msgstr "Anwendungen"
 
 msgid "Applied now"
 msgstr "Sofort angewendet"
@@ -636,6 +636,9 @@ msgstr "Einen Bereich mit freiem Speicherplatz für die Installation auswählen"
 
 msgid "Select a target disk"
 msgstr "Eine Zielfestplatte auswählen"
+
+msgid "Select your activities"
+msgstr "Wählen Sie Ihre Aktivitäten"
 
 msgid "Setting passwords"
 msgstr "Passwörter werden gesetzt"

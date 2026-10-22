@@ -358,7 +358,7 @@ collation). Two consequences to keep in mind when touching this code:
    opens a zoom dialog whose own "Choose this desktop environment" button both commits the
    selection and advances straight to the **applications** step, via the `AdvanceHook`
    the app wires up (`steps::new_advance_hook`) — see `src/app.rs`.
-9. **Applications** — a **multi-select grid**, three columns wide at any usable window size
+9. **Activities** — a **multi-select grid**, three columns wide at any usable window size
    (`src/steps/app_pack/mod.rs`): nine tick boxes — a 3x3 grid — only "Base pack" ticked by
    default.
    Unticking everything is legal and means a bare system — that is what replaced the old

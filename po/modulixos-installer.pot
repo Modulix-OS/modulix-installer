@@ -26,6 +26,9 @@ msgstr ""
 msgid "Accessibility"
 msgstr ""
 
+msgid "Activities"
+msgstr ""
+
 msgid "Add"
 msgstr ""
 
@@ -36,9 +39,6 @@ msgid "Almost there"
 msgstr ""
 
 msgid "An EFI System Partition of at least 100 MiB is required"
-msgstr ""
-
-msgid "Applications"
 msgstr ""
 
 msgid "Applied now"
@@ -593,6 +593,9 @@ msgid "Select a free space region to install into"
 msgstr ""
 
 msgid "Select a target disk"
+msgstr ""
+
+msgid "Select your activities"
 msgstr ""
 
 msgid "Setting passwords"
