@@ -9,7 +9,7 @@ written in English**, regardless of the language a conversation about the codeba
 
 `modulixos-installer` is the installer for Modulix OS (NixOS-based distro): a single **fullscreen Rust + GTK4/libadwaita app** running as root inside a minimal `sway` kiosk session (Windows-installer style), replacing the older Calamares-based flow.
 
-**Current state: the whole wizard plus a real, destructive install run end to end** — partition → encrypt → format → mount → TPM2 enroll → write the NixOS configuration → `nixos-install` → set passwords → release the target. Steps 7-9 (user, desktop environment, application pack) still have a minimal UI, but their answers now really reach the installed system. Caveat on "end to end": that was only ever true of an _unencrypted_ install, and for two reasons. The removed `luks.nix` defined `boot.initrd.luks.devices."modulixroot".device` a second time and made the encrypted path fail at evaluation; and `EncryptTask`/`EnrollTpmTask` handed `cryptsetup` the udisks2 **object path** out of `PipelineState` instead of a `/dev` node, so `luksFormat` died with exit status 4 long before evaluation was reached. Both are fixed, and `CryptsetupBackend::require_device_node` now refuses an object path with an error naming it. Nobody has booted an encrypted install yet.
+**Current state: the whole wizard plus a real, destructive install run end to end** — partition → encrypt → format → mount → TPM2 enroll → write the NixOS configuration → `nixos-install` → set passwords → release the target. Steps 7-8 (user, desktop environment) still have a minimal UI; step 9 is a full multi-select application grid. All their answers really reach the installed system. Caveat on "end to end": that was only ever true of an _unencrypted_ install, and for two reasons. The removed `luks.nix` defined `boot.initrd.luks.devices."modulixroot".device` a second time and made the encrypted path fail at evaluation; and `EncryptTask`/`EnrollTpmTask` handed `cryptsetup` the udisks2 **object path** out of `PipelineState` instead of a `/dev` node, so `luksFormat` died with exit status 4 long before evaluation was reached. Both are fixed, and `CryptsetupBackend::require_device_node` now refuses an object path with an error naming it. Nobody has booted an encrypted install yet.
 
 **The installed system's configuration belongs to mxpkgs, not to this repo.** Anything that
 describes how Modulix OS behaves once installed — bootloader, limine, kernel, desktop,
@@ -20,6 +20,23 @@ crate's own files (`fstab.nix`, `package.nix`, `module.nix`), never into files o
 invention. So a limine or `boot.loader` change is an mxpkgs change, even when the reason for it lives here.
 Caveat: the generated `flake.nix` resolves `github:Modulix-OS/mxpkgs` with no rev, so such a
 change reaches installs only once pushed.
+
+Two concrete consequences of that rule, both added for the step-9 application grid: the
+`programs.studio.kdenlive`, `programs.creativity.{krita,gimp,inkscape}`,
+`programs.games.vr` (ALVR) and `services.sim-hardware` (racing-wheel drivers) modules the
+grid enables live in **mxpkgs** (`modules/programs/…`, `modules/services/…`, registered in
+`modules/index.json` and `index.fr.json`), as does the controller support the
+`programs.games` group now applies to every launcher, and the GNOME app-grid arrangement — the
+`org/gnome/desktop/app-folders` folders and `org/gnome/shell` `favorite-apps` a fresh
+install opens with — is declarative dconf in `mxpkgs/modulixos/desktop/gnome/custom.nix`,
+not a post-install task here. The folders match on XDG **categories**, not `.desktop` id
+lists, so one static declaration covers every combination of ticked cards and also catches
+apps installed later through the store; GNOME Shell hides a folder no installed app matches.
+Names come from gnome-menus' `.directory` files (`translate = true`), which is why the
+folder keyed `System` is named `System-Tools.directory` — there is no `System.directory`.
+Because the installer writes `mx.<module>.enable` without validating it against the index,
+an mxpkgs module that is missing or unpushed fails `nixos-install` _after_ the disk has been
+partitioned and formatted. New cards therefore need their mxpkgs half pushed first.
 
 **mxpkgs has no ISO/installer module** — `mxpkgs/installer/default.nix` does not exist and never did. The live ISO is defined here, in `nix/iso.nix`, on top of nixpkgs' `installation-cd-minimal.nix`, and imports `modulixos/branding.nix`, `modulixos/boot.nix` and `modulixos/options` from mxpkgs (a flake input) for the Modulix identity and boot configuration. Moving the ISO into mxpkgs is a later step, not a prerequisite.
 
@@ -160,7 +177,8 @@ src/
   config.rs             InstallConfig — all answers, Rc<RefCell<_>>
   i18n.rs               gettext + hot reload — see "i18n" below for the LANGUAGE/setlocale split
   steps/                mod.rs (trait + registry) + one file per step;
-                        user/ (mod.rs, username.rs, hostname.rs)
+                        user/ (mod.rs, username.rs, hostname.rs), app_pack/ (mod.rs),
+                        card_layout.rs (card-grid geometry shared by steps 8 and 9)
   finish/               summary.rs, progress.rs, qr_report.rs (error-report payload for
                         the failure page's QR code) — post-step-9 review (recomputes
                         `plan::plan` against live disk state, destructive-confirmation
@@ -338,24 +356,74 @@ collation). Two consequences to keep in mind when touching this code:
 8. **Desktop environment** — gnome / plasma / lxqt, with description and screenshot. No
    outer "Next" button on this page (`Step::shows_next` returns `false`): picking a card
    opens a zoom dialog whose own "Choose this desktop environment" button both commits the
-   selection and advances straight to the **application pack** step, via the `AdvanceHook`
+   selection and advances straight to the **applications** step, via the `AdvanceHook`
    the app wires up (`steps::new_advance_hook`) — see `src/app.rs`.
-9. **Application pack** — two big cards: "No applications" (bare system) vs "Base pack"
-   (browser, file manager, PDF reader, image viewer, archive manager, text editor, media
-   player, printing, Flathub — no office suite). The pack has **two halves**, and they land
-   in two different files: `AppPack::packages(de)` is a per-DE nixpkgs list hardcoded in
-   `config.rs` and goes to `package.nix`, while `AppPack::modules()` returns mxpkgs module
-   names (`services.flatpak`, `services.printer`, dotted as in
-   `mxpkgs/modules/index.json`) and goes to `module.nix`. Printing in particular _has_ to be
-   the module: `services.printing.enable` plus a driver set is not something
-   `environment.systemPackages` can express, which is why `cups`/`gutenprint`/
-   `system-config-printer` are no longer in `COMMON_BASE_PACKAGES` — they were installed but
-   the service was never switched on. The Flathub remote itself is registered twice over:
-   by mxpkgs' `flatpak-repo` unit on every boot, and once at install time by
+9. **Applications** — a **multi-select grid**, three columns wide at any usable window size
+   (`src/steps/app_pack/mod.rs`): nine tick boxes — a 3x3 grid — only "Base pack" ticked by
+   default.
+   Unticking everything is legal and means a bare system — that is what replaced the old
+   "No applications" card, and the page says so in a hint line that only shows while nothing
+   is ticked. Each card is a `gtk::ToggleButton` (so GTK publishes
+   `AccessibleRole::ToggleButton` + `State::Pressed` for Orca by itself) with a
+   `can_target(false)`/`focusable(false)` `gtk::CheckButton` overlaid as the corner tick;
+   selection state lives in the toggles only, and `commit` reads it back into
+   `config::AppSelection`. Unlike step 8, this page **does** use the outer "Next" button
+   (`Step::shows_next` keeps its `true` default) — a card click no longer means "done", so
+   `AppPackStep::new()` takes no `AdvanceHook`.
+   The nine cards, in grid order (left to right, top to bottom — `AppCard`'s derived `Ord`
+   **is** that order), and what each one writes:
+   `Base` → `package.nix` (`AppCard::packages(de)`: `thunderbird` plus the per-DE list in
+   `config.rs`, GNOME's including `gnome-disk-utility` and `gnome-tour`) **and** `module.nix`
+   (`programs.utilities.web-browser.firefox`, `services.flatpak`, `services.printer`);
+   `OfficeSuite` → `programs.desktop.onlyoffice` (the child the `programs.desktop` group
+   declares in the index; the group's own `enable` auto-derives from it, so it is not
+   enabled separately). The card deliberately names no suite in the UI — its subtitle is
+   "Write documents, build spreadsheets and presentations" and its icon is Papers;
+   `Modeling3D` → `programs.creativity.blender`.
+   Second row: `VideoEditing` → `programs.studio.{kdenlive,davinci-resolve}`;
+   `Graphics` → `programs.creativity.{gimp,krita,inkscape}` under one "Drawing and image
+   editing" card; `Streaming` → `programs.studio.obs-studio`, titled "Recording and
+   streaming" because OBS is as much a screen recorder as a streaming tool.
+   Third row: `Gaming` → `programs.games.{steam,lutris,heroic,umu}` in one card — the
+   launchers are not worth splitting, and mxpkgs' `programs.games` group (whose `enable`
+   auto-derives from any child) is where the controller support common to all of them now
+   lives: `hardware.xone`, `hardware.steam-hardware`, the `xpadneo` out-of-tree module, the
+   DualSense touchpad `LIBINPUT_IGNORE_DEVICE` rules and `joystickwake`, ported from glf-os'
+   gaming socle;
+   `VirtualReality` → `programs.games.vr` (ALVR with its firewall ports, OpenComposite, the
+   SteamVR udev rules, and `mx.programs.games.steam` on by `mkMxDefault` since the games run
+   through SteamVR);
+   `SimHardware` → `services.sim-hardware` (Oversteer plus the out-of-tree
+   `new-lg4ff`/`hid-fanatecff`/`hid-tmff2` wheel drivers and the G923 `usb_modeswitch` rule,
+   also from glf-os, each vendor behind a sub-option defaulting to `true`).
+   There is **no group module** for the multi-module cards: the
+   card enables each child module directly. `AppSelection` is a `BTreeSet<AppCard>` whose
+   derived `Ord` is the grid order, so the union handed to `InitParams` is deduplicated and
+   byte-stable — it is committed into a git repo on the target.
+   Two of the base pack's staples are module-provided rather than package-provided, because
+   `environment.systemPackages` cannot express them: printing needs
+   `services.printing.enable` plus a driver set (which is why `cups`/`gutenprint`/
+   `system-config-printer` are not in `COMMON_BASE_PACKAGES` — they were installed but the
+   service was never switched on), and Firefox needs its language packs, hunspell
+   dictionaries, VAAPI preferences and GNOME search provider (which is why `firefox` left
+   `COMMON_BASE_PACKAGES` too). The Flathub remote is registered twice over: by mxpkgs'
+   `flatpak-repo` unit on every boot, and once at install time by
    `engine::tasks::FlatpakRemoteTask`, so the store is usable on the first session.
-   Same pattern as step 8: no outer "Next" button
-   (`Step::shows_next` returns `false`), a card click commits `InstallConfig::app_pack` and
-   advances straight to the summary via the same `AdvanceHook`.
+   Geometry is shared with step 8 through `steps::card_layout` (`CARD_SPACING`,
+   `PAGE_MARGIN`, `grid_width`, `column_min_width`, `add_column_breakpoint`) but the card
+   sizes are not: step 9 uses 220/420 px because nine cards go three rows deep and three
+   step-8-sized cards never fit the kiosk's guaranteed logical width. Step 9's cards carry
+   **no aspect ratio** either — their height is content-driven (a fixed `ICON_BOX_PX` icon
+   block for a lone icon, `ICON_TILE_PX` tiles for a collage — bigger than half an icon on
+   purpose, since halved icons read as clutter — built from `gtk::Image`s whose `pixel-size`
+   is the same in both orientations, plus the labels). A collage of three tiles puts the odd
+   one across both columns so it stays centred. A `gtk::AspectFrame` around the card letterboxes it inside a line sized by
+   the tallest card, which reads as a vertical gap wider than the horizontal one; with the
+   card filling its cell both gaps are exactly `CARD_SPACING`. Inside a card the text block
+   is pinned to the bottom (`valign(End)` on a non-expanding box) and the icon takes every
+   remaining pixel with `valign(Center)`, so it sits halfway between the top of the card and
+   the top of the text — the base pack's card has one text line more than the others and
+   `homogeneous` makes every card as tall as that one.
 
 Then a summary (its "Install" button uses `suggested-action`, not `destructive-action` — the
 confirmation dialog it opens stays destructive) → install-progress screen (an auto-advancing
@@ -388,9 +456,12 @@ the outer header's title has to be re-set from the visible page (`content_page.s
 "Previous" button, shown on non-step pages only when `visible.can_pop()` — which is why the
 progress page never clears its `can_pop(false)`.
 
-**Scope**: the install is real end to end. Steps 7-9 still have a minimal UI, but their
-answers reach the installed system. Known gap: `limine`'s `extraEntries` for a Windows
-dual boot is still unimplemented (a `modulix-core-utils` config option).
+**Scope**: the install is real end to end. Steps 7-8 still have a minimal UI, but their
+answers reach the installed system. Known gaps: `limine`'s `extraEntries` for a Windows
+dual boot is still unimplemented (a `modulix-core-utils` config option), and `mx.languages`
+is never written from the chosen locale, so the Firefox module's language packs, hunspell
+dictionaries and search-provider language stay on its `[ "fr" ]` default whatever language
+the wizard ran in (that needs a new `InitParams` field in core-utils).
 
 ## Contract with `modulix-core-utils`
 
