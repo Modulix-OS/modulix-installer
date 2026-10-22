@@ -46,9 +46,6 @@ msgstr "Eine EFI-Systempartition von mindestens 100 MiB ist erforderlich"
 msgid "Applications"
 msgstr "Anwendungen"
 
-msgid "Applications to install"
-msgstr "Zu installierende Anwendungen"
-
 msgid "Applied now"
 msgstr "Sofort angewendet"
 
@@ -693,6 +690,9 @@ msgid "The disk layout changed — refresh the disk and try again"
 msgstr ""
 "Die Partitionierung hat sich geändert — Festplatte aktualisieren und erneut "
 "versuchen"
+
+msgid "The essential applications will be installed for each activity"
+msgstr "Für jede Aktivität werden die wesentlichen Anwendungen installiert"
 
 msgid "The essentials, ready to use"
 msgstr "Das Wichtigste, sofort einsatzbereit"

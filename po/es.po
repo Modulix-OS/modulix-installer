@@ -45,9 +45,6 @@ msgstr "Se requiere una partición de sistema EFI de al menos 100 MiB"
 msgid "Applications"
 msgstr "Aplicaciones"
 
-msgid "Applications to install"
-msgstr "Aplicaciones a instalar"
-
 msgid "Applied now"
 msgstr "Se aplica ahora"
 
@@ -683,6 +680,9 @@ msgstr "El nombre del equipo no puede empezar ni terminar con un guion"
 msgid "The disk layout changed — refresh the disk and try again"
 msgstr ""
 "La disposición del disco ha cambiado: actualice el disco e inténtelo de nuevo"
+
+msgid "The essential applications will be installed for each activity"
+msgstr "Se instalarán las aplicaciones esenciales para cada actividad"
 
 msgid "The essentials, ready to use"
 msgstr "Lo esencial, listo para usar"

@@ -41,9 +41,6 @@ msgstr ""
 msgid "Applications"
 msgstr ""
 
-msgid "Applications to install"
-msgstr ""
-
 msgid "Applied now"
 msgstr ""
 
@@ -646,6 +643,9 @@ msgid "The computer name cannot start or end with a hyphen"
 msgstr ""
 
 msgid "The disk layout changed — refresh the disk and try again"
+msgstr ""
+
+msgid "The essential applications will be installed for each activity"
 msgstr ""
 
 msgid "The essentials, ready to use"

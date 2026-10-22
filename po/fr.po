@@ -45,9 +45,6 @@ msgstr "Une partition système EFI d'au moins 100 Mio est requise"
 msgid "Applications"
 msgstr "Applications"
 
-msgid "Applications to install"
-msgstr "Applications à installer"
-
 msgid "Applied now"
 msgstr "Appliqué maintenant"
 
@@ -684,6 +681,9 @@ msgstr "Le nom de l'ordinateur ne peut pas commencer ni finir par un tiret"
 
 msgid "The disk layout changed — refresh the disk and try again"
 msgstr "La disposition du disque a changé — actualisez le disque et réessayez"
+
+msgid "The essential applications will be installed for each activity"
+msgstr "Les applications essentielles seront installées pour chaque activité"
 
 msgid "The essentials, ready to use"
 msgstr "L'essentiel, prêt à l'emploi"

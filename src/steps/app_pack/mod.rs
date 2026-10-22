@@ -236,7 +236,9 @@ impl AppPackStep {
             gtk::gdk::Display::default().expect("a display must exist by the time steps are built");
 
         let title_label = gtk::Label::builder()
-            .label(tr("Applications to install"))
+            .label(tr(
+                "The essential applications will be installed for each activity",
+            ))
             .xalign(0.0)
             .css_classes(["title-2"])
             .build();
@@ -282,6 +284,8 @@ impl AppPackStep {
 
             let title = card_title(card);
             let description = card_description(card);
+            .wrap(true)
+            .wrap_mode(gtk::pango::WrapMode::WordChar)
 
             let name_label = gtk::Label::builder()
                 .label(&title)
@@ -476,7 +480,9 @@ impl Step for AppPackStep {
     }
 
     fn retranslate(&self) {
-        self.title_label.set_label(&tr("Applications to install"));
+        self.title_label.set_label(&tr(
+            "The essential applications will be installed for each activity",
+        ));
         self.footnote_label
             .set_label(&tr("You can install or remove any of this afterwards"));
         self.hint_label.set_label(&tr(
