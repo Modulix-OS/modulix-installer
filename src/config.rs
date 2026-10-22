@@ -3,7 +3,7 @@
 //! rather than `Arc<Mutex<_>>` (that's reserved for the concurrent backend side).
 
 use std::cell::RefCell;
-use std::collections::BTreeSet;
+use std::collections::BTreeMap;
 use std::rc::Rc;
 
 pub type SharedConfig = Rc<RefCell<InstallConfig>>;
@@ -257,7 +257,7 @@ const COMMON_BASE_PACKAGES: &[&str] = &["thunderbird"];
 /// One tick box of the application step, in the order the cards are laid out.
 ///
 /// The derived `Ord` **is** that layout order, which is what makes
-/// [`AppSelection`]'s `BTreeSet` iterate in card order rather than
+/// [`AppSelection`]'s `BTreeMap` iterate in card order rather than
 /// alphabetically — pinned by `card_ord_matches_all`.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub enum AppCard {
@@ -269,6 +269,8 @@ pub enum AppCard {
     /// `modules/index.json`, whichever that is.
     OfficeSuite,
     Modeling3D,
+    /// Kdenlive plus DaVinci Resolve, whose edition the card's own radio row
+    /// picks — see [`AppCard::variants`].
     VideoEditing,
     /// GIMP, Krita and Inkscape — raster retouching, painting and vector
     /// drawing in one card.
@@ -328,7 +330,9 @@ impl AppCard {
     /// written by `modulix_core_utils::init`.
     ///
     /// # Returns
-    /// The module names; never empty, every card carries at least one.
+    /// The module names; never empty, every card carries at least one. These
+    /// are the **edition-independent** ones: a card offering several editions
+    /// adds the picked one's modules on top, see [`AppCard::variants`].
     pub fn modules(self) -> &'static [&'static str] {
         match self {
             AppCard::Base => &[
@@ -338,10 +342,7 @@ impl AppCard {
             ],
             AppCard::OfficeSuite => &["programs.desktop.onlyoffice"],
             AppCard::Modeling3D => &["programs.creativity.blender"],
-            AppCard::VideoEditing => &[
-                "programs.studio.kdenlive",
-                "programs.studio.davinci-resolve",
-            ],
+            AppCard::VideoEditing => &["programs.studio.kdenlive"],
             AppCard::Graphics => &[
                 "programs.creativity.gimp",
                 "programs.creativity.krita",
@@ -358,34 +359,124 @@ impl AppCard {
             AppCard::SimHardware => &["services.sim-hardware"],
         }
     }
+
+    /// Mutually exclusive editions of the card's software, offered as a radio
+    /// row inside the card itself (`steps::app_pack`).
+    ///
+    /// # Returns
+    /// An empty slice for a card with a single edition — the common case — or
+    /// at least two entries, index [`AppCard::DEFAULT_VARIANT`] being the one
+    /// ticked when the page opens. Pinned by
+    /// `variants_are_either_absent_or_a_real_choice`.
+    pub fn variants(self) -> &'static [CardVariant] {
+        match self {
+            AppCard::VideoEditing => &[
+                CardVariant {
+                    key: "free",
+                    modules: &["programs.studio.davinci-resolve"],
+                },
+                CardVariant {
+                    key: "studio",
+                    modules: &["programs.studio.davinci-resolve-studio"],
+                },
+            ],
+            _ => &[],
+        }
+    }
+
+    /// Index of the edition a card starts on: the first one declared.
+    pub const DEFAULT_VARIANT: usize = 0;
+
+    /// The edition `index` names, or `None` for a card that offers no choice.
+    ///
+    /// # Parameters
+    /// * `index` - index into [`AppCard::variants`]; out of range falls back
+    ///   to [`AppCard::DEFAULT_VARIANT`], so no caller can name an edition
+    ///   that does not exist.
+    pub fn variant_at(self, index: usize) -> Option<&'static CardVariant> {
+        let variants = self.variants();
+        variants
+            .get(index)
+            .or_else(|| variants.get(Self::DEFAULT_VARIANT))
+    }
 }
 
-/// The application step's whole answer: which cards are ticked.
+/// One mutually exclusive edition of an [`AppCard`] — a free versus a paid
+/// build, a stable versus a bleeding-edge one.
 ///
-/// A `BTreeSet` so the selection is deduplicated and iterated in [`AppCard`]
-/// declaration order by construction, which makes the package and module
-/// lists handed to `modulix_core_utils::init` byte-stable across runs — they
-/// are committed into a git repository on the target.
+/// Editions differ by **module**, never by package: the installer writes
+/// `mx.<name>.enable = true` through `InitParams::modules` and has no way to
+/// set an option's value, so a second edition is necessarily a second mxpkgs
+/// module. That is also how mxpkgs models the two DaVinci Resolve builds —
+/// the free module disables itself when the Studio one is enabled — so only
+/// the picked one is ever written.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct CardVariant {
+    /// Stable identifier, independent of the display language: the UI's label
+    /// table and the tests key on it rather than on the position.
+    pub key: &'static str,
+    /// Modules this edition enables **on top of** [`AppCard::modules`]; never
+    /// empty.
+    pub modules: &'static [&'static str],
+}
+
+/// The application step's whole answer: which cards are ticked, and which
+/// edition each of them is set to.
+///
+/// A `BTreeMap` keyed by [`AppCard`] so the selection is deduplicated and
+/// iterated in card declaration order by construction, which makes the
+/// package and module lists handed to `modulix_core_utils::init` byte-stable
+/// across runs — they are committed into a git repository on the target. The
+/// value is an index into [`AppCard::variants`], always
+/// [`AppCard::DEFAULT_VARIANT`] for a card that offers no choice.
 ///
 /// The empty selection is legal and means a bare system: no `package.nix`, no
 /// `module.nix`, nothing beyond the desktop environment itself.
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct AppSelection(BTreeSet<AppCard>);
+pub struct AppSelection(BTreeMap<AppCard, usize>);
 
 impl Default for AppSelection {
     /// Base pack only — every optional card starts unticked. This is what
     /// makes the base pack the answer even for an `InstallConfig` that never
     /// reached the application step.
     fn default() -> Self {
-        Self(BTreeSet::from([AppCard::Base]))
+        Self::from_cards([AppCard::Base])
     }
 }
 
 impl AppSelection {
     /// Builds a selection out of the ticked cards, in any order and with
-    /// duplicates allowed.
+    /// duplicates allowed, each on its default edition.
     pub fn from_cards(cards: impl IntoIterator<Item = AppCard>) -> Self {
-        Self(cards.into_iter().collect())
+        Self::from_choices(
+            cards
+                .into_iter()
+                .map(|card| (card, AppCard::DEFAULT_VARIANT)),
+        )
+    }
+
+    /// Builds a selection out of the ticked cards and the edition picked for
+    /// each.
+    ///
+    /// # Parameters
+    /// * `choices` - `(card, index into card.variants())` pairs, in any order
+    ///   and with duplicates allowed (the last one wins). An index out of
+    ///   range is normalized to [`AppCard::DEFAULT_VARIANT`], so a stored
+    ///   selection can never name an edition that does not exist.
+    pub fn from_choices(choices: impl IntoIterator<Item = (AppCard, usize)>) -> Self {
+        Self(
+            choices
+                .into_iter()
+                .map(|(card, index)| {
+                    let index = if index < card.variants().len() {
+                        index
+                    } else {
+                        AppCard::DEFAULT_VARIANT
+                    };
+                    (card, index)
+                })
+                .collect(),
+        )
     }
 
     /// Whether nothing is ticked, i.e. a bare system was asked for.
@@ -395,7 +486,21 @@ impl AppSelection {
 
     /// The ticked cards, in [`AppCard::ALL`] order.
     pub fn cards(&self) -> impl Iterator<Item = AppCard> + '_ {
-        self.0.iter().copied()
+        self.0.keys().copied()
+    }
+
+    /// Index of the edition `card` is set to, [`AppCard::DEFAULT_VARIANT`]
+    /// when it is unticked or offers no choice.
+    pub fn variant(&self, card: AppCard) -> usize {
+        self.0
+            .get(&card)
+            .copied()
+            .unwrap_or(AppCard::DEFAULT_VARIANT)
+    }
+
+    /// The edition `card` is set to, or `None` when it offers no choice.
+    pub fn variant_of(&self, card: AppCard) -> Option<&'static CardVariant> {
+        card.variant_at(self.variant(card))
     }
 
     /// Union of every ticked card's packages.
@@ -425,7 +530,8 @@ impl AppSelection {
     pub fn modules(&self) -> Vec<&'static str> {
         let mut out: Vec<&'static str> = Vec::new();
         for card in self.cards() {
-            for module in card.modules() {
+            let edition = self.variant_of(card).map_or(&[][..], |v| v.modules);
+            for module in card.modules().iter().chain(edition) {
                 if !out.contains(module) {
                     out.push(module);
                 }
@@ -507,6 +613,61 @@ mod tests {
             }
         }
         assert_eq!(InstallConfig::default().apps, selection);
+    }
+
+    /// A radio row with a single entry is a UI dead end, and two editions
+    /// sharing a key would make the label table and the tests ambiguous.
+    #[test]
+    fn variants_are_either_absent_or_a_real_choice() {
+        for card in AppCard::ALL {
+            let variants = card.variants();
+            if variants.is_empty() {
+                assert!(card.variant_at(0).is_none(), "{card:?} has no edition");
+                continue;
+            }
+            assert!(variants.len() >= 2, "{card:?} offers a single edition");
+            let mut keys: Vec<&str> = variants.iter().map(|v| v.key).collect();
+            keys.sort_unstable();
+            let count = keys.len();
+            keys.dedup();
+            assert_eq!(keys.len(), count, "{card:?} repeats an edition key");
+            for variant in variants {
+                assert!(
+                    !variant.modules.is_empty(),
+                    "{card:?}/{} enables no module",
+                    variant.key
+                );
+            }
+        }
+    }
+
+    /// The two DaVinci Resolve modules are mutually exclusive in mxpkgs, so
+    /// exactly one of them may ever reach `module.nix`.
+    #[test]
+    fn the_video_editing_card_writes_one_resolve_edition() {
+        let free = AppSelection::from_choices([(AppCard::VideoEditing, 0)]).modules();
+        assert!(free.contains(&"programs.studio.kdenlive"));
+        assert!(free.contains(&"programs.studio.davinci-resolve"));
+        assert!(!free.contains(&"programs.studio.davinci-resolve-studio"));
+
+        let studio = AppSelection::from_choices([(AppCard::VideoEditing, 1)]).modules();
+        assert!(studio.contains(&"programs.studio.kdenlive"));
+        assert!(studio.contains(&"programs.studio.davinci-resolve-studio"));
+        assert!(!studio.contains(&"programs.studio.davinci-resolve"));
+    }
+
+    #[test]
+    fn an_out_of_range_edition_falls_back_to_the_default() {
+        let selection = AppSelection::from_choices([(AppCard::VideoEditing, 7)]);
+        assert_eq!(selection.variant(AppCard::VideoEditing), 0);
+        assert_eq!(
+            selection.variant_of(AppCard::VideoEditing).map(|v| v.key),
+            Some("free")
+        );
+        // A card with no edition of its own is normalized the same way.
+        let base = AppSelection::from_choices([(AppCard::Base, 3)]);
+        assert_eq!(base.variant(AppCard::Base), AppCard::DEFAULT_VARIANT);
+        assert!(base.variant_of(AppCard::Base).is_none());
     }
 
     /// `AppSelection` leans on the derived `Ord` to iterate in layout order.

@@ -284,6 +284,9 @@ msgstr "Formater"
 msgid "Formatting partitions"
 msgstr "Formatage des partitions"
 
+msgid "Free"
+msgstr "Gratuit"
+
 msgid "Free space"
 msgstr "Espace libre"
 
@@ -656,6 +659,9 @@ msgstr "Touches rémanentes"
 
 msgid "Stream VR games to a standalone headset with ALVR"
 msgstr "Diffuser les jeux VR vers un casque autonome avec ALVR"
+
+msgid "Studio"
+msgstr "Studio"
 
 msgid "Swap"
 msgstr "Espace d'échange"

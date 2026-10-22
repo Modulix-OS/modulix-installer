@@ -10,7 +10,7 @@ use crate::engine::live_input::{detect_uefi, gather_plan_input};
 use crate::engine::plan::{self, PlanError};
 use crate::finish::progress::ProgressPage;
 use crate::i18n::tr;
-use crate::steps::app_pack::card_title;
+use crate::steps::app_pack::{card_title, variant_label};
 use crate::widgets::disk_bar::human_bytes;
 use crate::{bridge, mx};
 use adw::prelude::*;
@@ -34,12 +34,22 @@ fn mode_label(mode: PartitionMode) -> String {
 /// # Returns
 /// The ticked cards' names in card order, comma-joined, or `No applications`
 /// when nothing is ticked — a bare system is a legitimate choice, not a
-/// missing answer.
+/// missing answer. A card offering several editions carries the picked one in
+/// parentheses, since that is what decides which module gets enabled.
 fn apps_label(selection: &AppSelection) -> String {
     if selection.is_empty() {
         return tr("No applications");
     }
-    let names: Vec<String> = selection.cards().map(card_title).collect();
+    let names: Vec<String> = selection
+        .cards()
+        .map(|card| {
+            let title = card_title(card);
+            match selection.variant_of(card) {
+                Some(edition) => format!("{title} ({})", variant_label(card, edition.key)),
+                None => title,
+            }
+        })
+        .collect();
     names.join(", ")
 }
 fn swap_label(mode: SwapMode) -> String {

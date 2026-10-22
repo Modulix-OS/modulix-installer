@@ -380,7 +380,14 @@ collation). Two consequences to keep in mind when touching this code:
    enabled separately). The card deliberately names no suite in the UI — its subtitle is
    "Write documents, build spreadsheets and presentations" and its icon is Papers;
    `Modeling3D` → `programs.creativity.blender`.
-   Second row: `VideoEditing` → `programs.studio.{kdenlive,davinci-resolve}`;
+   Second row: `VideoEditing` → `programs.studio.kdenlive` plus **one of two DaVinci Resolve
+   editions**, picked by a radio row inside the card itself ("Free" / "Studio"):
+   `programs.studio.davinci-resolve` or `programs.studio.davinci-resolve-studio`, never both.
+   The two mxpkgs modules are mutually exclusive by construction — the free one's `config` is
+   `mkIf (cfg.enable && !studioEnabled)` — and the Studio one additionally carries the
+   Blackmagic licence-dongle udev rule, so writing only the picked one is both correct and the
+   only thing `InitParams::modules` can express (it writes `mx.<name>.enable = true` and no
+   option values, which is why an edition is a second module rather than a flag);
    `Graphics` → `programs.creativity.{gimp,krita,inkscape}` under one "Drawing and image
    editing" card; `Streaming` → `programs.studio.obs-studio`, titled "Recording and
    streaming" because OBS is as much a screen recorder as a streaming tool.
@@ -397,9 +404,25 @@ collation). Two consequences to keep in mind when touching this code:
    `new-lg4ff`/`hid-fanatecff`/`hid-tmff2` wheel drivers and the G923 `usb_modeswitch` rule,
    also from glf-os, each vendor behind a sub-option defaulting to `true`).
    There is **no group module** for the multi-module cards: the
-   card enables each child module directly. `AppSelection` is a `BTreeSet<AppCard>` whose
-   derived `Ord` is the grid order, so the union handed to `InitParams` is deduplicated and
-   byte-stable — it is committed into a git repo on the target.
+   card enables each child module directly. `AppSelection` is a `BTreeMap<AppCard, usize>`
+   whose derived key `Ord` is the grid order, so the union handed to `InitParams` is
+   deduplicated and byte-stable — it is committed into a git repo on the target. The value is
+   the **edition** the card is set to, and the mechanism is generic rather than
+   Resolve-specific: `AppCard::variants()` returns a `&'static [CardVariant]` (`key` +
+   the modules that edition adds on top of `AppCard::modules()`), empty for a card with no
+   choice; any card that declares two or more gets the radio row, the summary suffix
+   (`Video editing (Studio)`) and the module mapping for free, with
+   `steps::app_pack::variant_label` holding the `tr` literals. The radios sit inside the
+   card's `gtk::ToggleButton`, and nesting alone does **not** give them the click: the
+   ToggleButton's gesture wins the sequence, so a click on a radio only flipped the card's
+   tick. Each radio therefore carries a `gtk::GestureClick` in the **capture** phase that
+   claims the sequence (cancelling the card's gesture) and calls `set_active` itself, since
+   claiming also denies the radio's own internal gesture; keyboard activation never goes
+   through a click gesture and is unaffected. The reverse direction is deliberate (a radio
+   ticks its card, so picking an edition is one click), and that is why the default radio is made
+   active _before_ its handler is connected — the opposite order to the card toggles, whose
+   defaults are applied after, so that the indicator and the hint line settle through the
+   same path a click takes.
    Two of the base pack's staples are module-provided rather than package-provided, because
    `environment.systemPackages` cannot express them: printing needs
    `services.printing.enable` plus a driver set (which is why `cups`/`gutenprint`/

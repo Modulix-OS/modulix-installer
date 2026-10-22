@@ -6,6 +6,7 @@ use crate::steps::card_layout::{
 };
 use crate::steps::{Step, StepId, ValidityTracker};
 use adw::prelude::*;
+use std::cell::Cell;
 use std::rc::Rc;
 
 /// Step 9's cards are smaller than step 8's: there are nine of them, laid out
@@ -61,6 +62,42 @@ fn card_description(card: AppCard) -> String {
         AppCard::SimHardware => {
             tr("Racing wheels and pedals from Logitech, Fanatec and Thrustmaster")
         }
+    }
+}
+
+/// Label of one of a card's mutually exclusive editions, as shown on the radio
+/// button inside the card.
+///
+/// `pub(crate)` because `finish::summary` names the picked edition too.
+///
+/// # Parameters
+/// * `card` - the card the edition belongs to.
+/// * `key` - the edition's `config::CardVariant::key`.
+///
+/// # Returns
+/// The translated label. An unknown `(card, key)` pair falls back to the key
+/// itself rather than panicking: a missing label is a cosmetic bug, and the
+/// keys are developer-facing ASCII anyway.
+pub(crate) fn variant_label(card: AppCard, key: &str) -> String {
+    match (card, key) {
+        (AppCard::VideoEditing, "free") => tr("Free"),
+        (AppCard::VideoEditing, "studio") => tr("Studio"),
+        _ => key.to_string(),
+    }
+}
+
+/// What a screen reader reads as the card's description: its subtitle, plus
+/// the picked edition for a card that offers several — the radio row is inside
+/// the toggle button, so the toggle's own announcement has to carry it.
+///
+/// # Parameters
+/// * `card` - the card.
+/// * `variant` - index into `card.variants()`.
+fn accessible_description(card: AppCard, variant: usize) -> String {
+    let description = card_description(card);
+    match card.variant_at(variant) {
+        Some(edition) => format!("{description} — {}", variant_label(card, edition.key)),
+        None => description,
     }
 }
 
@@ -206,6 +243,13 @@ struct CardWidgets {
     name: gtk::Label,
     description: gtk::Label,
     details: Option<gtk::Label>,
+    /// Index into `card.variants()`, written by the radio handlers and read
+    /// back by `commit`. Shared with those handlers, hence the `Rc`; always
+    /// `AppCard::DEFAULT_VARIANT` for a card with no edition radios.
+    variant: Rc<Cell<usize>>,
+    /// The edition radios with their `config::CardVariant::key`, kept for
+    /// `retranslate()`. Empty for a card with no edition choice.
+    variant_buttons: Vec<(gtk::CheckButton, &'static str)>,
 }
 
 /// Applications step: a multi-select grid, three columns wide at any usable
@@ -240,6 +284,8 @@ impl AppPackStep {
                 "The essential applications will be installed for each activity",
             ))
             .xalign(0.0)
+            .wrap(true)
+            .wrap_mode(gtk::pango::WrapMode::WordChar)
             .css_classes(["title-2"])
             .build();
 
@@ -284,8 +330,6 @@ impl AppPackStep {
 
             let title = card_title(card);
             let description = card_description(card);
-            .wrap(true)
-            .wrap_mode(gtk::pango::WrapMode::WordChar)
 
             let name_label = gtk::Label::builder()
                 .label(&title)
@@ -328,6 +372,57 @@ impl AppPackStep {
                 label
             });
 
+            // Edition radios, last line of the text block: mutually
+            // exclusive, so a `gtk::CheckButton` group rather than a second
+            // set of toggles.
+            //
+            // They live *inside* the card's `gtk::ToggleButton`, and nesting
+            // alone is not enough: the ToggleButton's own click gesture wins
+            // the sequence, so a click meant for a radio only flipped the
+            // card's tick and never reached the radio. Each radio therefore
+            // carries a `gtk::GestureClick` in the **capture** phase — which
+            // runs before any bubble-phase gesture on the way back up —
+            // claiming the sequence to cancel the card's gesture, and driving
+            // `set_active` itself since claiming also denies the radio's own
+            // internal gesture. Keyboard activation is untouched: it never
+            // goes through a click gesture.
+            let variant = Rc::new(Cell::new(AppCard::DEFAULT_VARIANT));
+            let mut variant_buttons: Vec<(gtk::CheckButton, &'static str)> = Vec::new();
+            let editions = card.variants();
+            if !editions.is_empty() {
+                let row = gtk::Box::builder()
+                    .orientation(gtk::Orientation::Horizontal)
+                    .spacing(12)
+                    .halign(gtk::Align::Center)
+                    .margin_top(4)
+                    .build();
+                for (index, edition) in editions.iter().enumerate() {
+                    let radio = gtk::CheckButton::builder()
+                        .label(variant_label(card, edition.key))
+                        .build();
+                    if let Some((first, _)) = variant_buttons.first() {
+                        radio.set_group(Some(first));
+                    }
+                    // The default edition is settled here, before any handler
+                    // exists — the handlers below tick the card, which must
+                    // not happen on the page's first frame.
+                    radio.set_active(index == AppCard::DEFAULT_VARIANT);
+
+                    let click = gtk::GestureClick::new();
+                    click.set_propagation_phase(gtk::PropagationPhase::Capture);
+                    let target = radio.clone();
+                    click.connect_pressed(move |gesture, _, _, _| {
+                        gesture.set_state(gtk::EventSequenceState::Claimed);
+                        target.set_active(true);
+                    });
+                    radio.add_controller(click);
+
+                    row.append(&radio);
+                    variant_buttons.push((radio, edition.key));
+                }
+                text_box.append(&row);
+            }
+
             let inner = gtk::Box::new(gtk::Orientation::Vertical, 0);
             inner.append(&icon);
             inner.append(&text_box);
@@ -341,8 +436,29 @@ impl AppPackStep {
             // rather than derived from the content.
             card_button.update_property(&[
                 gtk::accessible::Property::Label(&title),
-                gtk::accessible::Property::Description(&description),
+                gtk::accessible::Property::Description(&accessible_description(
+                    card,
+                    AppCard::DEFAULT_VARIANT,
+                )),
             ]);
+
+            // Picking an edition means wanting the card, so a radio ticks it —
+            // one click instead of two, and a card left unticked with an
+            // edition chosen would read as a selection that is not one.
+            for (index, (radio, _)) in variant_buttons.iter().enumerate() {
+                let variant = variant.clone();
+                let button = card_button.clone();
+                radio.connect_toggled(move |radio| {
+                    if !radio.is_active() {
+                        return;
+                    }
+                    variant.set(index);
+                    button.set_active(true);
+                    button.update_property(&[gtk::accessible::Property::Description(
+                        &accessible_description(card, index),
+                    )]);
+                });
+            }
 
             // Indicator only: `can_target(false)` lets the click through to the
             // toggle underneath, `focusable(false)` keeps it out of the Tab
@@ -378,6 +494,8 @@ impl AppPackStep {
                 name: name_label,
                 description: desc_label,
                 details: details_label,
+                variant,
+                variant_buttons,
             });
         }
 
@@ -470,11 +588,11 @@ impl Step for AppPackStep {
     }
 
     fn commit(&self, cfg: &mut InstallConfig) -> mx::Result<()> {
-        cfg.apps = AppSelection::from_cards(
+        cfg.apps = AppSelection::from_choices(
             self.cards
                 .iter()
                 .filter(|c| c.button.is_active())
-                .map(|c| c.card),
+                .map(|c| (c.card, c.variant.get())),
         );
         Ok(())
     }
@@ -496,9 +614,15 @@ impl Step for AppPackStep {
             if let (Some(label), Some(details)) = (&card.details, card_details(card.card)) {
                 label.set_label(&details);
             }
+            for (radio, key) in &card.variant_buttons {
+                radio.set_label(Some(&variant_label(card.card, key)));
+            }
             card.button.update_property(&[
                 gtk::accessible::Property::Label(&title),
-                gtk::accessible::Property::Description(&description),
+                gtk::accessible::Property::Description(&accessible_description(
+                    card.card,
+                    card.variant.get(),
+                )),
             ]);
         }
     }

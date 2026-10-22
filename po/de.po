@@ -287,6 +287,9 @@ msgstr "Formatieren"
 msgid "Formatting partitions"
 msgstr "Partitionen werden formatiert"
 
+msgid "Free"
+msgstr "Kostenlos"
+
 msgid "Free space"
 msgstr "Freier Speicherplatz"
 
@@ -663,6 +666,9 @@ msgstr "Klebrige Tasten"
 
 msgid "Stream VR games to a standalone headset with ALVR"
 msgstr "Mit ALVR VR-Spiele auf eine autonome Brille streamen"
+
+msgid "Studio"
+msgstr "Studio"
 
 msgid "Swap"
 msgstr "Swap"

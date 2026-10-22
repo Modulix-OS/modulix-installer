@@ -261,6 +261,9 @@ msgstr ""
 msgid "Formatting partitions"
 msgstr ""
 
+msgid "Free"
+msgstr ""
+
 msgid "Free space"
 msgstr ""
 
@@ -620,6 +623,9 @@ msgid "Sticky keys"
 msgstr ""
 
 msgid "Stream VR games to a standalone headset with ALVR"
+msgstr ""
+
+msgid "Studio"
 msgstr ""
 
 msgid "Swap"

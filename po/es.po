@@ -284,6 +284,9 @@ msgstr "Formatear"
 msgid "Formatting partitions"
 msgstr "Formateando las particiones"
 
+msgid "Free"
+msgstr "Gratuita"
+
 msgid "Free space"
 msgstr "Espacio libre"
 
@@ -654,6 +657,9 @@ msgstr "Teclas persistentes"
 
 msgid "Stream VR games to a standalone headset with ALVR"
 msgstr "Transmite juegos de RV a unas gafas autónomas con ALVR"
+
+msgid "Studio"
+msgstr "Studio"
 
 msgid "Swap"
 msgstr "Swap"
