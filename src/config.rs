@@ -210,6 +210,7 @@ impl DesktopEnvironment {
                 "baobab",
                 "gnome-disk-utility",
                 "gnome-tour",
+                "resources",
             ],
             DesktopEnvironment::Plasma => &[
                 "kdePackages.dolphin",
@@ -219,6 +220,7 @@ impl DesktopEnvironment {
                 "kdePackages.ark",
                 "kdePackages.kate",
                 "kdePackages.haruna",
+                "kdePackages.plasma-systemmonitor",
             ],
             DesktopEnvironment::Xfce => &[
                 "xfce.thunar",
@@ -228,6 +230,7 @@ impl DesktopEnvironment {
                 "xarchiver",
                 "xfce.mousepad",
                 "xfce.parole",
+                "htop",
             ],
             DesktopEnvironment::Lxqt => &[
                 "lxqt.pcmanfm-qt",
@@ -237,6 +240,7 @@ impl DesktopEnvironment {
                 "lxqt.lxqt-archiver",
                 "featherpad",
                 "vlc",
+                "htop",
             ],
         }
     }
