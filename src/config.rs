@@ -283,14 +283,17 @@ pub enum AppCard {
     /// from any of them.
     Gaming,
     VirtualReality,
-    /// Racing wheels, pedals and their force feedback.
-    SimHardware,
+    /// Visual Studio Code, Git with the GitHub/GitLab tools, and Distrobox on
+    /// a rootless Podman. The Ubuntu container is created by the launcher's
+    /// first run on the installed system, never by the install itself — see
+    /// mxpkgs' `programs.dev.distrobox`.
+    Development,
 }
 
 impl AppCard {
     /// Grid order, read left to right then top to bottom: the essentials and
     /// the two "serious" cards first, then the creative row, then the gaming
-    /// row.
+    /// row, which the development card shares.
     pub const ALL: [AppCard; 9] = [
         AppCard::Base,
         AppCard::OfficeSuite,
@@ -300,7 +303,7 @@ impl AppCard {
         AppCard::Streaming,
         AppCard::Gaming,
         AppCard::VirtualReality,
-        AppCard::SimHardware,
+        AppCard::Development,
     ];
 
     /// nixpkgs packages this card adds to `package.nix`.
@@ -356,7 +359,11 @@ impl AppCard {
                 "programs.games.umu",
             ],
             AppCard::VirtualReality => &["programs.games.vr"],
-            AppCard::SimHardware => &["services.sim-hardware"],
+            AppCard::Development => &[
+                "programs.dev.vscode",
+                "programs.dev.git",
+                "programs.dev.distrobox",
+            ],
         }
     }
 

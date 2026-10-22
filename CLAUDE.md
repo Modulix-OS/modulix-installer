@@ -23,7 +23,7 @@ change reaches installs only once pushed.
 
 Two concrete consequences of that rule, both added for the step-9 application grid: the
 `programs.studio.kdenlive`, `programs.creativity.{krita,gimp,inkscape}`,
-`programs.games.vr` (ALVR) and `services.sim-hardware` (racing-wheel drivers) modules the
+`programs.games.vr` (ALVR) and `programs.dev.{vscode,git,distrobox}` modules the
 grid enables live in **mxpkgs** (`modules/programs/…`, `modules/services/…`, registered in
 `modules/index.json` and `index.fr.json`), as does the controller support the
 `programs.games` group now applies to every launcher, and the GNOME app-grid arrangement — the
@@ -400,11 +400,43 @@ collation). Two consequences to keep in mind when touching this code:
    `VirtualReality` → `programs.games.vr` (ALVR with its firewall ports, OpenComposite, the
    SteamVR udev rules, and `mx.programs.games.steam` on by `mkMxDefault` since the games run
    through SteamVR);
-   `SimHardware` → `services.sim-hardware` (Oversteer plus the out-of-tree
-   `new-lg4ff`/`hid-fanatecff`/`hid-tmff2` wheel drivers and the G923 `usb_modeswitch` rule,
-   also from glf-os, each vendor behind a sub-option defaulting to `true`).
-   There is **no group module** for the multi-module cards: the
-   card enables each child module directly. `AppSelection` is a `BTreeMap<AppCard, usize>`
+   `Development` → `programs.dev.{vscode,git,distrobox}`, which replaced the racing-wheel
+   card (`services.sim-hardware` still exists in mxpkgs and is still in `modules/index.json`
+   — it is simply no longer reachable from the installer, only from the post-install store
+   and the `mx` CLI). `programs.dev.vscode` installs **`pkgs.vscode-fhs`**, not `pkgs.vscode`:
+   most marketplace extensions ship prebuilt native binaries (clangd, debug adapters,
+   language servers) that cannot run against the store layout. It is unfree, which costs
+   nothing here — mxpkgs' `modulixos/default.nix` already sets
+   `nixpkgs.config.allowUnfree = lib.mkMxDefault true` — and it turns `programs.dev.git` on
+   by `mkMxDefault`, since VS Code's SCM pane is dead without git. `programs.dev.git` goes
+   through the NixOS `programs.git` module rather than the bare package, because
+   `lfs.enable` is what writes the `filter.lfs` stanza into `/etc/gitconfig` — installing
+   `git-lfs` alone leaves an LFS clone checked out as pointer files, which reads as a
+   corrupt working tree. `programs.dev.distrobox`
+   is the one card half that is **not** fully declarative: it enables rootless
+   `virtualisation.podman` (which pulls `virtualisation.containers` in by itself, and needs
+   no `/etc/subuid` work — `nixos/modules/config/users-groups.nix` already gives every
+   `isNormalUser` an automatic 65536-id range) and ships `pkgs/mx-ubuntu-box.nix`, a
+   launcher plus its `Categories=Development;` desktop entry, which creates the Ubuntu
+   container on its **first run on the installed system**, guarded by
+   `podman container exists`. The image is
+   never pulled during `nixos-install`: the install must not depend on the network, and the
+   user's rootless container store does not exist yet at that point. Three details of that
+   script are load-bearing: `DBX_CONTAINER_MANAGER=podman`, so a machine that also enabled
+   `mx.services.docker` cannot end up with a Docker container; `distrobox create --no-entry`,
+   because distrobox generates a desktop entry of its own and the app grid would show two;
+   and a `read -r` pause on every failure path, since a `Terminal=true` window closes the
+   instant the script exits and an error message would only flash past. The image is fully
+   qualified (`docker.io/library/ubuntu:latest`) because NixOS writes two unqualified search
+   registries and podman stops on an interactive menu for an ambiguous short name. Podman
+   next to `mx.services.docker` is fine — the only assertions in nixpkgs' podman module are
+   on `dockerCompat`/`dockerSocket`, neither of which this module sets. The group's terminal
+   default follows `config.mx.desktop` (`gnome-console`/`konsole`/`qterminal`, `null` on
+   `cli`), which is also what guarantees the `Terminal=true` launcher has something to open
+   in; reading `mx.desktop` from `modules/` follows `programs.games` and the Firefox module.
+   The multi-module cards write **no group module**: the card enables each child module
+   directly, and a group whose `enable` auto-derives (`programs.desktop`, `programs.games`,
+   and now `programs.dev`, which carries the shared terminal and `htop`) switches itself on. `AppSelection` is a `BTreeMap<AppCard, usize>`
    whose derived key `Ord` is the grid order, so the union handed to `InitParams` is
    deduplicated and byte-stable — it is committed into a git repo on the target. The value is
    the **edition** the card is set to, and the mechanism is generic rather than

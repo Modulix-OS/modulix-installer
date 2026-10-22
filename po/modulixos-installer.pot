@@ -166,6 +166,9 @@ msgstr ""
 msgid "Details"
 msgstr ""
 
+msgid "Development"
+msgstr ""
+
 msgid "Disabled"
 msgstr ""
 
@@ -512,9 +515,6 @@ msgstr ""
 msgid "Quit the installer"
 msgstr ""
 
-msgid "Racing wheels and pedals from Logitech, Fanatec and Thrustmaster"
-msgstr ""
-
 msgid "Reads each page aloud as you move through the installer"
 msgstr ""
 
@@ -599,9 +599,6 @@ msgid "Select your activities"
 msgstr ""
 
 msgid "Setting passwords"
-msgstr ""
-
-msgid "Simulation hardware"
 msgstr ""
 
 msgid "Size (MiB)"
@@ -783,6 +780,9 @@ msgid "User account"
 msgstr ""
 
 msgid "Username"
+msgstr ""
+
+msgid "VS Code, Git and an Ubuntu container"
 msgstr ""
 
 msgid "Variant"

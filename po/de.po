@@ -177,6 +177,9 @@ msgstr "Arbeitsumgebung"
 msgid "Details"
 msgstr "Details"
 
+msgid "Development"
+msgstr "Entwicklung"
+
 msgid "Disabled"
 msgstr "Deaktiviert"
 
@@ -546,9 +549,6 @@ msgstr "Beenden"
 msgid "Quit the installer"
 msgstr "Installationsprogramm beenden"
 
-msgid "Racing wheels and pedals from Logitech, Fanatec and Thrustmaster"
-msgstr "Lenkräder und Pedale von Logitech, Fanatec und Thrustmaster"
-
 msgid "Reads each page aloud as you move through the installer"
 msgstr ""
 "Liest jede Seite vor, während das Installationsprogramm durchlaufen wird"
@@ -642,9 +642,6 @@ msgstr "Wählen Sie Ihre Aktivitäten"
 
 msgid "Setting passwords"
 msgstr "Passwörter werden gesetzt"
-
-msgid "Simulation hardware"
-msgstr "Simulations-Hardware"
 
 msgid "Size (MiB)"
 msgstr "Größe (MiB)"
@@ -862,6 +859,9 @@ msgstr "Benutzerkonto"
 
 msgid "Username"
 msgstr "Benutzername"
+
+msgid "VS Code, Git and an Ubuntu container"
+msgstr "VS Code, Git und ein Ubuntu-Container"
 
 msgid "Variant"
 msgstr "Variante"
