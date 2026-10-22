@@ -472,9 +472,6 @@ msgstr ""
 "Es würde nicht genug Speicherplatz für die Installation von Modulix OS frei "
 "werden"
 
-msgid "Nothing selected — Modulix OS will install a bare system"
-msgstr "Nichts ausgewählt – Modulix OS installiert ein nacktes System"
-
 msgid "Office suite"
 msgstr "Office-Paket"
 

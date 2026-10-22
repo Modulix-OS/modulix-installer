@@ -265,7 +265,6 @@ pub struct AppPackStep {
     widget: gtk::Widget,
     title_label: gtk::Label,
     subtitle_label: gtk::Label,
-    hint_label: gtk::Label,
     cards: Vec<CardWidgets>,
     validity: ValidityTracker,
 }
@@ -297,16 +296,6 @@ impl AppPackStep {
             .wrap(true)
             .wrap_mode(gtk::pango::WrapMode::WordChar)
             .css_classes(["dim-label"])
-            .build();
-
-        let hint_label = gtk::Label::builder()
-            .label(tr(
-                "Nothing selected — Modulix OS will install a bare system",
-            ))
-            .xalign(0.0)
-            .wrap(true)
-            .wrap_mode(gtk::pango::WrapMode::WordChar)
-            .css_classes(["dim-label", "caption"])
             .build();
 
         let grid = gtk::FlowBox::builder()
@@ -501,11 +490,7 @@ impl AppPackStep {
             });
         }
 
-        let buttons: Rc<Vec<gtk::ToggleButton>> =
-            Rc::new(cards.iter().map(|c| c.button.clone()).collect());
         for (card, indicator) in cards.iter().zip(indicators) {
-            let buttons = buttons.clone();
-            let hint = hint_label.clone();
             card.button.connect_toggled(move |button| {
                 let selected = button.is_active();
                 indicator.set_active(selected);
@@ -514,17 +499,15 @@ impl AppPackStep {
                 } else {
                     button.remove_css_class("de-card-selected");
                 }
-                hint.set_visible(!buttons.iter().any(gtk::prelude::ToggleButtonExt::is_active));
             });
         }
 
         // Applied after the handlers are connected so the default selection
-        // settles the indicator, the outline and the hint through the same path
-        // a click takes.
+        // settles the indicator and the outline through the same path a click
+        // takes.
         for card in &cards {
             card.button.set_active(card.card == AppCard::Base);
         }
-        hint_label.set_visible(!buttons.iter().any(gtk::prelude::ToggleButtonExt::is_active));
 
         let content = gtk::Box::new(gtk::Orientation::Vertical, 12);
         content.set_margin_top(PAGE_MARGIN);
@@ -534,7 +517,6 @@ impl AppPackStep {
         content.append(&title_label);
         content.append(&subtitle_label);
         content.append(&grid);
-        content.append(&hint_label);
 
         let clamp = adw::Clamp::builder()
             .maximum_size(grid_width(1, CARD_MAX_WIDTH))
@@ -561,7 +543,6 @@ impl AppPackStep {
             widget: scrolled.upcast(),
             title_label,
             subtitle_label,
-            hint_label,
             cards,
             validity: ValidityTracker::ready(),
         }
@@ -603,9 +584,6 @@ impl Step for AppPackStep {
         self.title_label.set_label(&tr("Select your activities"));
         self.subtitle_label.set_label(&tr(
             "The essential applications will be installed for each activity",
-        ));
-        self.hint_label.set_label(&tr(
-            "Nothing selected — Modulix OS will install a bare system",
         ));
         for card in &self.cards {
             let title = card_title(card.card);

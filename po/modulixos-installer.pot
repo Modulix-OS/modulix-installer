@@ -441,9 +441,6 @@ msgstr ""
 msgid "Not enough space would be freed up to install Modulix OS"
 msgstr ""
 
-msgid "Nothing selected — Modulix OS will install a bare system"
-msgstr ""
-
 msgid "Office suite"
 msgstr ""
 

@@ -466,9 +466,6 @@ msgstr "Sin conexión"
 msgid "Not enough space would be freed up to install Modulix OS"
 msgstr "No se liberaría espacio suficiente para instalar Modulix OS"
 
-msgid "Nothing selected — Modulix OS will install a bare system"
-msgstr "Nada seleccionado: Modulix OS instalará un sistema básico"
-
 msgid "Office suite"
 msgstr "Suite de oficina"
 
