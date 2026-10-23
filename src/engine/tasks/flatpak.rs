@@ -1,3 +1,4 @@
+use crate::config::AppCard;
 use crate::engine::tasks::{best_effort, report};
 use crate::engine::{INSTALL_ROOT, ProgressSink, Task, TaskCtx};
 use crate::mx;
@@ -19,6 +20,15 @@ const FLATPAK_BIN: &str = "/nix/var/nix/profiles/system/sw/bin/flatpak";
 /// means the app store already has its remote on the first session, even if
 /// that first boot has no network — and `--if-not-exists` makes the overlap a
 /// no-op.
+///
+/// Guarded on the base-pack card, which is the only one enabling
+/// `mx.services.flatpak` and therefore the only reason `flatpak` is in the
+/// installed system at all. The guard deliberately does *not* look for the
+/// binary under `/mnt`: `nixos-install` builds into the target's own store,
+/// so `/mnt/nix/var/nix/profiles/system` is an absolute symlink into a
+/// `/nix/store` path the live ISO does not have, and every host-side
+/// existence test on it reads as "not installed" (which is exactly the bug
+/// this replaced).
 ///
 /// Best-effort from end to end: the system is already on disk by the time
 /// this runs, and the mxpkgs unit is the fallback, so neither a missing
@@ -45,18 +55,12 @@ impl Task for FlatpakRemoteTask {
     ///
     /// # Returns
     /// Always `Ok(())` — see the type-level doc.
-    async fn run(&self, _ctx: &TaskCtx, tx: &ProgressSink) -> mx::Result<()> {
-        // The presence of the binary, not the chosen application pack: this
-        // also covers a flatpak that came in as a hand-picked package or
-        // through a module enabled elsewhere.
-        if tokio::fs::metadata(format!("{INSTALL_ROOT}{FLATPAK_BIN}"))
-            .await
-            .is_err()
-        {
+    async fn run(&self, ctx: &TaskCtx, tx: &ProgressSink) -> mx::Result<()> {
+        if !ctx.config.apps.has(AppCard::Base) {
             report(
                 tx,
                 "flatpak remote-add",
-                Err("flatpak is not installed".to_string()),
+                Err("the base pack was not selected".to_string()),
             )
             .await;
             return Ok(());

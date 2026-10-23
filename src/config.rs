@@ -496,6 +496,17 @@ impl AppSelection {
         self.0.is_empty()
     }
 
+    /// Whether one card is ticked.
+    ///
+    /// # Parameters
+    /// * `card` - the card to look for.
+    ///
+    /// # Returns
+    /// `true` when the user ticked it, whatever edition it is set to.
+    pub fn has(&self, card: AppCard) -> bool {
+        self.0.contains_key(&card)
+    }
+
     /// The ticked cards, in [`AppCard::ALL`] order.
     pub fn cards(&self) -> impl Iterator<Item = AppCard> + '_ {
         self.0.keys().copied()
