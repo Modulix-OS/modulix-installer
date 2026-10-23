@@ -51,6 +51,9 @@ msgstr "Appliqué maintenant"
 msgid "Applied to the installed system"
 msgstr "Appliqué au système installé"
 
+msgid "Arranging the application grid"
+msgstr "Rangement de la grille d'applications"
+
 msgid "Assign exactly one partition as the root (/) filesystem"
 msgstr "Attribuez exactement une partition au système de fichiers racine (/)"
 

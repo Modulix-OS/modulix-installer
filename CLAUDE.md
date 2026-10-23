@@ -26,14 +26,15 @@ Two concrete consequences of that rule, both added for the step-9 application gr
 `programs.dev.{vscode,git,distrobox}` and `programs.dev.ue5` (Unreal Engine 5)
 modules the grid enables live in **mxpkgs** (`modules/programs/…`, `modules/services/…`, registered
 in `modules/index.json` and `index.fr.json`), as does the controller support the
-`programs.games` group now applies to every launcher. Nothing arranges the GNOME app grid:
-`mxpkgs/modulixos/desktop/gnome/custom.nix` used to declare `org/gnome/desktop/app-folders`
-folders and an `org/gnome/shell` `favorite-apps` list in
+`programs.games` group now applies to every launcher. The GNOME app grid is arranged by the
+**installer**, not by mxpkgs: `mxpkgs/modulixos/desktop/gnome/custom.nix` used to declare
+`org/gnome/desktop/app-folders` folders and an `org/gnome/shell` `favorite-apps` list in
 `programs.dconf.profiles.user.databases`, and that is exactly the wrong layer for them —
 those are system *defaults*, and GNOME Shell deletes a folder or a pinned app by **resetting**
 the user-db key, which then falls straight back through to the default and the folder
-reappears. A fresh install therefore opens on GNOME's own grid, which the user can rearrange
-for good.
+reappears. `engine::tasks::GnomeGridTask` writes the same folders and favourites into the
+created user's **own** database instead (`~/.config/dconf/user`, once, at install time), so
+every one of those values is the user's from the first login and deleting one sticks.
 Because the installer writes `mx.<module>.enable` without validating it against the index,
 an mxpkgs module that is missing or unpushed fails `nixos-install` _after_ the disk has been
 partitioned and formatted. New cards therefore need their mxpkgs half pushed first.
@@ -151,7 +152,7 @@ pub trait Task {
 }
 ```
 
-Pipeline: `PartitionTask` → `EncryptTask` → `FormatTask` → `MountTask` → `EnrollTpmTask` → `InitConfigTask` → `NixosInstallTask` → `SetPasswordsTask` → `FlatpakRemoteTask` → `PostInstallTask`.
+Pipeline: `PartitionTask` → `EncryptTask` → `FormatTask` → `MountTask` → `EnrollTpmTask` → `InitConfigTask` → `NixosInstallTask` → `SetPasswordsTask` → `FlatpakRemoteTask` → `GnomeGridTask` → `PostInstallTask`.
 
 - `EncryptTask` must run right after `PartitionTask` and before `FormatTask`/`MountTask` — `luksFormat`/`luksOpen` need the bare partition, not one already `mkfs`'d and mounted on `/mnt`. It encrypts **two** containers when the install has swap: root as `modulixroot` and swap as `modulixswap` (`engine::LUKS_MAPPER_NAME`, `::LUKS_SWAP_MAPPER_NAME`), both with the same passphrase, then rewrites `root_partition`/`swap_partition` to the mappers so the later stages mkfs and mount the decrypted devices. A plaintext swap beside an encrypted root would hold the root key in a page-out; a second container rather than LVM-inside-one keeps the partition layout, the preview and `engine::plan` untouched. `EnrollTpmTask` enrols both — enrolling root alone would unlock it silently through the TPM and then prompt for the swap, nothing having put a passphrase in the kernel keyring. `PostInstallTask` closes both.
 - `InitConfigTask` calls `modulix_core_utils::init::init` (synchronous, so `spawn_blocking`) with `config_dir = /mnt/etc/modulix-os`, which writes and commits the config repo but **deliberately skips the rebuild** — it holds core-utils' skip-rebuild lock precisely so the installer drives the build itself. **It is the only writer of that repo**: `InitParams` carries `packages` → `package.nix`, `modules` → `module.nix` (one `mx.<name>.enable = true` per dotted name from mxpkgs' `modules/index.json`) `luks` → one `boot.initrd.luks.devices` entry per container in `fstab.nix` and `resume_device` → `boot.resumeDevice`, so everything lands inside core-utils' single seed transaction, written by core-utils' own `install_package`/`install_module`/`filesystem` writers and committed once. Nothing after it touches the configuration, which is why the installer no longer unseals `configuration.nix` with `chattr`, splices `imports` by hand, or runs `git commit` itself.
@@ -159,6 +160,7 @@ Pipeline: `PartitionTask` → `EncryptTask` → `FormatTask` → `MountTask` →
 - `NixosInstallTask` runs `nixos-install --root /mnt --flake /mnt/etc/modulix-os#default --no-root-password` with both streams piped, forwarding each line as `ProgressEvent::Log`. This is why the pipeline does not go through core-utils' `rebuild_config`, which inherits stdout and could never feed the log view.
 - `SetPasswordsTask` pipes `root:…`/`user:…` into `chpasswd` under `nixos-enter`, so no password — hashed or not — ever reaches the Nix store.
 - `FlatpakRemoteTask` runs `flatpak remote-add --if-not-exists flathub …` under `nixos-enter`, so the app store already has its remote on the first session even if that first boot has no network. It duplicates mxpkgs' `mx.services.flatpak` `flatpak-repo` unit on purpose — `--if-not-exists` makes the overlap a no-op. Guarded on the `flatpak` binary existing in the target (`/mnt/nix/var/nix/profiles/system/sw/bin/flatpak`), not on the chosen application pack, so it also covers a flatpak that arrived another way; best-effort from end to end (the mxpkgs unit is the fallback), so it never fails an install already on disk.
+- `GnomeGridTask` seeds the primary user's dconf database with the app-grid folders and the dash favourites mxpkgs used to declare as system defaults — see the app-grid paragraph above for why that layer was wrong. It generates a dconf **keyfile** into `/mnt/tmp/modulix-dconf-seed/` and turns it into `/home/<user>/.config/dconf/user` with `dconf compile` under `nixos-enter`, then `chown -R <user>:users` that `.config`: `dconf compile` is a pure keyfile → gvdb file operation, where `dconf load` would need the session bus the chroot has not got, and a root-owned `.config` would break every app on the first login. Folders are **category-driven** (`categories=` plus `translate=true` on gnome-menus' `.directory` names, so GNOME localizes them itself and an app installed months later is filed by itself), only those at least one ticked card justifies are written, and the favourites list is filtered by the `.desktop` really being in the target's system profile — nothing in `src/` maps a package attribute or a module name to a `.desktop` id. Three guards, each logged and each returning `Ok(())`: not GNOME, no `dconf` in the target, or the user already having a dconf database (a kept `/home` partition — never rewrite tuned settings). Best-effort end to end: an unarranged grid is cosmetic, never a reason to fail an install already on disk.
 - Every stage always runs for real; `Pipeline::run` aborts on the first error and that error is what the progress page renders.
 - Every `ProgressEvent` is teed to `engine::install_log` (file + stderr → journald) by a tokio task before reaching the GTK loop, so a failed install is still diagnosable after the app dies.
 
@@ -191,7 +193,7 @@ src/
                         live-disk-state → `plan::PlanInput` fetch), plan.rs (pure
                         partitioning planner), tasks/ (partition.rs, encrypt.rs, format.rs,
                         mount.rs, enroll_tpm.rs, init_config.rs, nixos_install.rs,
-                        set_passwords.rs, flatpak.rs, post_install.rs)
+                        set_passwords.rs, flatpak.rs, gnome_grid.rs, post_install.rs)
   widgets/              timezone_map.rs, disk_bar.rs, partition_editor.rs, password_entry.rs,
                         ap_row.rs, wifi_dialog.rs, portal_window.rs, slideshow.rs,
                         qr_code.rs (QR matrix + its `DrawingArea` and dialog),

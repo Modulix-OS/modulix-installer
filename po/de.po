@@ -52,6 +52,9 @@ msgstr "Sofort angewendet"
 msgid "Applied to the installed system"
 msgstr "Auf das installierte System angewendet"
 
+msgid "Arranging the application grid"
+msgstr "Anwendungsraster wird angeordnet"
+
 msgid "Assign exactly one partition as the root (/) filesystem"
 msgstr "Genau eine Partition als Wurzeldateisystem (/) zuweisen"
 

@@ -30,11 +30,12 @@ pub enum Fault {
     InstallDiskFull,
     PasswdChpasswd,
     FlatpakRemoteAdd,
+    GnomeGridCompile,
     PostUmountBusy,
 }
 
 impl Fault {
-    pub const ALL: [Fault; 22] = [
+    pub const ALL: [Fault; 23] = [
         Fault::PartitionUnmountBusy,
         Fault::PartitionCreateTable,
         Fault::PartitionCreate,
@@ -56,6 +57,7 @@ impl Fault {
         Fault::InstallDiskFull,
         Fault::PasswdChpasswd,
         Fault::FlatpakRemoteAdd,
+        Fault::GnomeGridCompile,
         Fault::PostUmountBusy,
     ];
 
@@ -82,11 +84,12 @@ impl Fault {
             Fault::InstallDiskFull => "install:disk-full",
             Fault::PasswdChpasswd => "passwd:chpasswd",
             Fault::FlatpakRemoteAdd => "flatpak:remote-add",
+            Fault::GnomeGridCompile => "gnome-grid:compile",
             Fault::PostUmountBusy => "post:umount-busy",
         }
     }
 
-    /// One-line description for `--fake-error=list`. Notes the two faults
+    /// One-line description for `--fake-error=list`. Notes the three faults
     /// that must **not** fail the install, since they trip best-effort steps.
     pub fn description(self) -> &'static str {
         match self {
@@ -122,6 +125,9 @@ impl Fault {
             Fault::PasswdChpasswd => "chpasswd fails to set the account passwords",
             Fault::FlatpakRemoteAdd => {
                 "flatpak remote-add cannot reach dl.flathub.org (NON-BLOCKING: the install still succeeds)"
+            }
+            Fault::GnomeGridCompile => {
+                "dconf compile fails to seed the GNOME app grid (NON-BLOCKING: the install still succeeds)"
             }
             Fault::PostUmountBusy => {
                 "the final umount fails (NON-BLOCKING: the install still succeeds)"

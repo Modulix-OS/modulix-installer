@@ -1,7 +1,7 @@
 //! Fake doubles for the pipeline stages that have no `DiskBackend`/
 //! `CryptBackend` of their own (`MountTask`'s `swapon(8)` call,
 //! `InitConfigTask`, `NixosInstallTask`, `SetPasswordsTask`,
-//! `FlatpakRemoteTask`, `PostInstallTask`).
+//! `FlatpakRemoteTask`, `GnomeGridTask`, `PostInstallTask`).
 //! `PartitionTask`/`EncryptTask`/`FormatTask`/`EnrollTpmTask` need no double
 //! at all: they only ever call through `ctx.backends.disk`/`.crypt`, which
 //! `fake_pipeline` already points at `debugsim::disks`/`debugsim::crypt`.
@@ -212,6 +212,52 @@ impl Task for FakeFlatpakRemoteTask {
     }
 }
 
+pub struct FakeGnomeGridTask {
+    faults: Arc<FaultPlan>,
+}
+
+#[async_trait]
+impl Task for FakeGnomeGridTask {
+    fn label(&self) -> String {
+        "Arranging the application grid".to_string()
+    }
+
+    fn weight(&self) -> u32 {
+        1
+    }
+
+    /// Best-effort like the real task, and gated on the same answer: a fake
+    /// run that picked anything but GNOME logs the very skip line the real
+    /// task would.
+    async fn run(&self, ctx: &TaskCtx, tx: &ProgressSink) -> mx::Result<()> {
+        if ctx.config.desktop_environment != crate::config::DesktopEnvironment::Gnome {
+            let _ = tx
+                .send(ProgressEvent::Log(
+                    "GNOME app grid: skipped (the desktop environment is not GNOME)".to_string(),
+                ))
+                .await;
+            return Ok(());
+        }
+        if self.faults.is(Fault::GnomeGridCompile) {
+            let _ = tx
+                .send(ProgressEvent::Log(
+                    "GNOME app grid: skipped (dconf compile exited with status 1)".to_string(),
+                ))
+                .await;
+            return Ok(());
+        }
+        let _ = tx
+            .send(ProgressEvent::Log("GNOME app grid: done".to_string()))
+            .await;
+        let _ = tx
+            .send(ProgressEvent::Log(
+                "GNOME app grid ownership: done".to_string(),
+            ))
+            .await;
+        Ok(())
+    }
+}
+
 pub struct FakePostInstallTask {
     faults: Arc<FaultPlan>,
 }
@@ -250,7 +296,7 @@ impl Task for FakePostInstallTask {
     }
 }
 
-/// Same ten-stage shape as `engine::full_pipeline`, with the four stages
+/// Same eleven-stage shape as `engine::full_pipeline`, with the four stages
 /// that only ever go through `ctx.backends.disk`/`.crypt` left real — run
 /// against `debugsim::disks`/`debugsim::crypt`, they exercise the real
 /// `PartitionTask`/`EncryptTask`/`FormatTask`/`EnrollTpmTask` logic, not a
@@ -278,6 +324,9 @@ pub fn fake_pipeline(faults: Arc<FaultPlan>) -> Pipeline {
             faults: faults.clone(),
         }),
         Box::new(FakeFlatpakRemoteTask {
+            faults: faults.clone(),
+        }),
+        Box::new(FakeGnomeGridTask {
             faults: faults.clone(),
         }),
         Box::new(FakePostInstallTask { faults }),
@@ -443,6 +492,16 @@ mod tests {
     #[tokio::test]
     async fn flatpak_remote_fault_does_not_fail_the_install() {
         let (backends, faults) = backends(&[DiskScenario::Linux], Some(Fault::FlatpakRemoteAdd));
+        let config = config_for("/dev/fake0", PartitionMode::EntireDisk);
+        let ctx = TaskCtx::with_uefi(backends, config, true);
+        let (tx, _rx) = async_channel::unbounded();
+
+        fake_pipeline(faults).run(&ctx, &tx).await.unwrap();
+    }
+
+    #[tokio::test]
+    async fn gnome_grid_fault_does_not_fail_the_install() {
+        let (backends, faults) = backends(&[DiskScenario::Linux], Some(Fault::GnomeGridCompile));
         let config = config_for("/dev/fake0", PartitionMode::EntireDisk);
         let ctx = TaskCtx::with_uefi(backends, config, true);
         let (tx, _rx) = async_channel::unbounded();

@@ -47,6 +47,9 @@ msgstr ""
 msgid "Applied to the installed system"
 msgstr ""
 
+msgid "Arranging the application grid"
+msgstr ""
+
 msgid "Assign exactly one partition as the root (/) filesystem"
 msgstr ""
 

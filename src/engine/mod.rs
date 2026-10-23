@@ -201,6 +201,10 @@ impl Pipeline {
 ///   it cannot move earlier.
 /// * `FlatpakRemoteTask` `nixos-enter`s into the installed system as well,
 ///   so it needs `/mnt` mounted and therefore precedes `PostInstallTask`.
+/// * `GnomeGridTask` writes into `/mnt/home/<user>`, so it needs both the
+///   target mounted — `/mnt/home` included, when `/home` is a partition of
+///   its own — and the home directory the install's own activation created.
+///   Same window as the two stages above, i.e. before `PostInstallTask`.
 pub fn full_pipeline() -> Pipeline {
     Pipeline::new(vec![
         Box::new(tasks::PartitionTask),
@@ -212,6 +216,7 @@ pub fn full_pipeline() -> Pipeline {
         Box::new(tasks::NixosInstallTask),
         Box::new(tasks::SetPasswordsTask),
         Box::new(tasks::FlatpakRemoteTask),
+        Box::new(tasks::GnomeGridTask),
         Box::new(tasks::PostInstallTask),
     ])
 }

@@ -2,6 +2,7 @@ mod encrypt;
 mod enroll_tpm;
 mod flatpak;
 mod format;
+mod gnome_grid;
 mod init_config;
 /// `pub(crate)`, not private: `debugsim::tasks::FakeMountTask` reuses
 /// `mount::mount_filesystems` (the backend-only half) and fakes only
@@ -16,6 +17,7 @@ pub use encrypt::EncryptTask;
 pub use enroll_tpm::EnrollTpmTask;
 pub use flatpak::FlatpakRemoteTask;
 pub use format::FormatTask;
+pub use gnome_grid::GnomeGridTask;
 pub use init_config::InitConfigTask;
 pub use mount::MountTask;
 pub use nixos_install::NixosInstallTask;
