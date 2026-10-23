@@ -298,11 +298,11 @@
         "nixpkgs-unstable": "nixpkgs-unstable"
       },
       "locked": {
-        "lastModified": 1792768892,
-        "narHash": "sha256-9FJwbIV9HPqGbejsuXoIUobOvMsQfbcLdCSLsCgBhFU=",
+        "lastModified": 1792784657,
+        "narHash": "sha256-K0C+MCsELKvcRqRUyADgcQKorTqlrQh0t3E1nSfYoFw=",
         "owner": "Modulix-OS",
         "repo": "mxpkgs",
-        "rev": "e1033cbd6d20e46e8b76190fb7d2209bca3aad78",
+        "rev": "8376b04393e6852f479b2f2cfa5879eb470d26ef",
         "type": "github"
       },
       "original": {
