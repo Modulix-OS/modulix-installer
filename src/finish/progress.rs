@@ -360,9 +360,7 @@ impl ProgressPage {
     /// Connects a button that reboots the machine behind the
     /// remove-the-medium confirmation. The dialog is not a formality: the
     /// firmware would boot the live ISO again and the user would believe the
-    /// install failed, so the medium has to be unplugged *before* the reboot,
-    /// while the running system still lives in the RAM overlay and no longer
-    /// needs the USB drive.
+    /// install failed, so the medium has to be unplugged *before* the reboot.
     ///
     /// Shared by the success path's "Restart now" and the failure path's
     /// "Quit the installer": leaving a failed install means rebooting too, and
@@ -371,9 +369,9 @@ impl ProgressPage {
     /// * `button` - button to connect.
     ///
     /// # Post-conditions
-    /// Nothing runs unless the user confirms. On confirmation `systemctl
-    /// reboot` is spawned once (the button goes insensitive so a double click
-    /// cannot stack two reboots); a failed spawn re-enables the button and is
+    /// Nothing runs unless the user confirms. On confirmation [`reboot_now`]
+    /// is called once (the button goes insensitive so a double click cannot
+    /// stack two reboots); a refused reboot re-enables the button and is
     /// reported in the result label instead of leaving a dead button.
     fn wire_reboot_button(&self, button: &gtk::Button) {
         let result_label = self.result_label.clone();
@@ -397,7 +395,7 @@ impl ProgressPage {
                     return;
                 }
                 button.set_sensitive(false);
-                if let Err(e) = std::process::Command::new("systemctl").arg("reboot").spawn() {
+                if let Err(e) = reboot_now() {
                     button.set_sensitive(true);
                     result_label.set_label(&format!("{} {e}", tr("Could not restart:")));
                 }
@@ -540,4 +538,45 @@ impl Default for ProgressPage {
     fn default() -> Self {
         Self::new()
     }
+}
+
+/// Restarts the machine without reading anything off the Nix store.
+///
+/// The live ISO keeps its store on the USB drive — the RAM overlay is only
+/// the write layer — and [`ProgressPage::wire_reboot_button`]'s dialog asks
+/// for that drive to be unplugged *before* the user confirms. By then no
+/// binary can be executed any more, so the `systemctl reboot` this used to
+/// spawn died with `EIO` ("Input/output error (os error 5)") and left the
+/// user on a finished installer. `sync(2)` followed by `reboot(2)` needs
+/// nothing but the running kernel.
+///
+/// # Pre-conditions
+/// The caller holds `CAP_SYS_BOOT` — true of the kiosk session, which runs
+/// as root. A debug build never reboots: it would take a developer's machine
+/// down in the middle of a `--fake-disks=` run.
+///
+/// # Post-conditions
+/// On success the call does not return, the kernel restarts. Dirty pages are
+/// flushed first; `/mnt` is already unmounted by `PostInstallTask` on the
+/// success path, and on the failure path a journal replay at the next boot
+/// is harmless.
+///
+/// # Returns
+/// The `errno` of a refused `reboot(2)` (`EPERM` when not root), or in a
+/// debug build an error saying the reboot was skipped.
+fn reboot_now() -> std::io::Result<()> {
+    if cfg!(debug_assertions) {
+        return Err(std::io::Error::other("debug build: reboot(2) skipped"));
+    }
+    // SAFETY: neither call takes a pointer or touches memory we own;
+    // `RB_AUTOBOOT` is `reboot(2)`'s documented restart command, and the
+    // process is root in the kiosk session, so the only possible failure is
+    // the `EPERM` returned below.
+    unsafe {
+        libc::sync();
+        if libc::reboot(libc::RB_AUTOBOOT) == -1 {
+            return Err(std::io::Error::last_os_error());
+        }
+    }
+    Ok(())
 }

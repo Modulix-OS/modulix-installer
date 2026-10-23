@@ -536,9 +536,6 @@ msgstr ""
 msgid "Registering the Flathub remote"
 msgstr ""
 
-msgid "Registering the boot entry"
-msgstr ""
-
 msgid "Reload"
 msgstr ""
 

@@ -1,4 +1,3 @@
-mod efi_entry;
 mod encrypt;
 mod enroll_tpm;
 mod flatpak;
@@ -13,7 +12,6 @@ mod partition;
 mod post_install;
 mod set_passwords;
 
-pub use efi_entry::EfiEntryTask;
 pub use encrypt::EncryptTask;
 pub use enroll_tpm::EnrollTpmTask;
 pub use flatpak::FlatpakRemoteTask;

@@ -1002,6 +1002,7 @@ dependencies = [
  "glib-build-tools",
  "gtk4",
  "libadwaita",
+ "libc",
  "modulix-core-utils",
  "qrcode",
  "quick-xml",

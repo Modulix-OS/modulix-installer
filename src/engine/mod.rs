@@ -68,9 +68,9 @@ pub const CONFIG_FLAKE_ATTR: &str = "default";
 /// **Every path here is a udisks2 object path**, never a `/dev/...` node —
 /// including the mapper ones, which `DiskBackend::resolve_device` converts
 /// back. A stage shelling out to a tool that does not speak D-Bus converts at
-/// that point with `DiskBackend::device_node` (as `MountTask`,
-/// `EfiEntryTask` and `PostInstallTask` do); none of them may pass a path
-/// from here straight to a command line.
+/// that point with `DiskBackend::device_node` (as `MountTask` and
+/// `PostInstallTask` do); none of them may pass a path from here straight to
+/// a command line.
 ///
 /// `{role}_format` is `None` for a partition `plan::plan` reused as-is
 /// (`PlanOp::UseExisting { format: None, .. }`, e.g. an existing Windows ESP
@@ -199,12 +199,8 @@ impl Pipeline {
 ///   it creates, already committed.
 /// * `SetPasswordsTask` needs an installed system to `nixos-enter` into, so
 ///   it cannot move earlier.
-/// * `EfiEntryTask` needs limine's loader already on the ESP, so it follows
-///   `NixosInstallTask`, and it needs `/mnt` still mounted, so it precedes
-///   `PostInstallTask`.
 /// * `FlatpakRemoteTask` `nixos-enter`s into the installed system as well,
-///   and also needs `/mnt` mounted, so it sits between those two for both
-///   reasons at once.
+///   so it needs `/mnt` mounted and therefore precedes `PostInstallTask`.
 pub fn full_pipeline() -> Pipeline {
     Pipeline::new(vec![
         Box::new(tasks::PartitionTask),
@@ -214,7 +210,6 @@ pub fn full_pipeline() -> Pipeline {
         Box::new(tasks::EnrollTpmTask),
         Box::new(tasks::InitConfigTask),
         Box::new(tasks::NixosInstallTask),
-        Box::new(tasks::EfiEntryTask),
         Box::new(tasks::SetPasswordsTask),
         Box::new(tasks::FlatpakRemoteTask),
         Box::new(tasks::PostInstallTask),

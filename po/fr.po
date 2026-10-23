@@ -565,9 +565,6 @@ msgstr "Actualiser"
 msgid "Registering the Flathub remote"
 msgstr "Enregistrement du dépôt Flathub"
 
-msgid "Registering the boot entry"
-msgstr "Enregistrement de l'entrée de démarrage"
-
 msgid "Reload"
 msgstr "Recharger"
 

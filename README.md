@@ -72,7 +72,6 @@ contributes all 4 of its disks), renumbered `/dev/fake0`, `/dev/fake1`, …
 | `install:build` | `nixos-install` fails to build a derivation. |
 | `install:download` | `nixos-install` fails to fetch a flake input (no network). |
 | `install:disk-full` | `nixos-install` fails with "No space left on device". |
-| `efi:efibootmgr` | `efibootmgr` fails — **non-blocking**, the install still succeeds. |
 | `passwd:chpasswd` | `chpasswd` fails to set the account passwords. |
 | `post:umount-busy` | The final umount fails — **non-blocking**, the install still succeeds. |
 
@@ -85,7 +84,7 @@ cargo run -- --fake-disks=empty,fragmented,bitlocker
 cargo run -- --fake-disks=bitlocker                        # "alongside Windows" mode must be blocked
 cargo run -- --fake-disks=windows --fake-error=encrypt:luks-format
 cargo run -- --fake-disks=linux --fake-error=install:eval --fake-instant
-cargo run -- --fake-disks=empty --fake-error=efi:efibootmgr   # must SUCCEED despite the fault
+cargo run -- --fake-disks=empty --fake-error=post:umount-busy  # must SUCCEED despite the fault
 ```
 
 Release guard — must refuse to start:

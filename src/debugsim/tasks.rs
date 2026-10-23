@@ -1,14 +1,14 @@
-//! Fake doubles for the four pipeline stages that have no `DiskBackend`/
+//! Fake doubles for the pipeline stages that have no `DiskBackend`/
 //! `CryptBackend` of their own (`MountTask`'s `swapon(8)` call,
-//! `InitConfigTask`, `NixosInstallTask`, `EfiEntryTask`, `SetPasswordsTask`,
-//! `PostInstallTask`). `PartitionTask`/`EncryptTask`/`FormatTask`/
-//! `EnrollTpmTask` need no double at all: they only ever call through
-//! `ctx.backends.disk`/`.crypt`, which `fake_pipeline` already points at
-//! `debugsim::disks`/`debugsim::crypt`.
+//! `InitConfigTask`, `NixosInstallTask`, `SetPasswordsTask`,
+//! `FlatpakRemoteTask`, `PostInstallTask`).
+//! `PartitionTask`/`EncryptTask`/`FormatTask`/`EnrollTpmTask` need no double
+//! at all: they only ever call through `ctx.backends.disk`/`.crypt`, which
+//! `fake_pipeline` already points at `debugsim::disks`/`debugsim::crypt`.
 //!
 //! Every label/weight below matches its real counterpart exactly, so the
 //! progress bar's dynamics (dominated by `NixosInstallTask`'s weight of 200
-//! out of 248) are unchanged in a fake run.
+//! out of 247) are unchanged in a fake run.
 
 use super::fault::Fault;
 use super::{FaultPlan, sim_sleep};
@@ -150,33 +150,6 @@ impl Task for FakeNixosInstallTask {
     }
 }
 
-pub struct FakeEfiEntryTask {
-    faults: Arc<FaultPlan>,
-}
-
-#[async_trait]
-impl Task for FakeEfiEntryTask {
-    fn label(&self) -> String {
-        "Registering the boot entry".to_string()
-    }
-
-    fn weight(&self) -> u32 {
-        1
-    }
-
-    /// Always best-effort, like the real task: an `efibootmgr` fault is
-    /// logged and swallowed, never returned.
-    async fn run(&self, _ctx: &TaskCtx, tx: &ProgressSink) -> mx::Result<()> {
-        let line = if self.faults.is(Fault::EfiEfibootmgr) {
-            "efibootmgr --create ModulixOS: skipped (efibootmgr: command not found)".to_string()
-        } else {
-            "efibootmgr --create ModulixOS (fake0 part 1): done".to_string()
-        };
-        let _ = tx.send(ProgressEvent::Log(line)).await;
-        Ok(())
-    }
-}
-
 pub struct FakeSetPasswordsTask {
     faults: Arc<FaultPlan>,
 }
@@ -299,9 +272,6 @@ pub fn fake_pipeline(faults: Arc<FaultPlan>) -> Pipeline {
             faults: faults.clone(),
         }),
         Box::new(FakeNixosInstallTask {
-            faults: faults.clone(),
-        }),
-        Box::new(FakeEfiEntryTask {
             faults: faults.clone(),
         }),
         Box::new(FakeSetPasswordsTask {
@@ -468,16 +438,6 @@ mod tests {
         let (tx, _rx) = async_channel::unbounded();
 
         fake_pipeline(faults).run(&ctx, &tx).await.unwrap_err();
-    }
-
-    #[tokio::test]
-    async fn efi_fault_does_not_fail_the_install() {
-        let (backends, faults) = backends(&[DiskScenario::Linux], Some(Fault::EfiEfibootmgr));
-        let config = config_for("/dev/fake0", PartitionMode::EntireDisk);
-        let ctx = TaskCtx::with_uefi(backends, config, true);
-        let (tx, _rx) = async_channel::unbounded();
-
-        fake_pipeline(faults).run(&ctx, &tx).await.unwrap();
     }
 
     #[tokio::test]

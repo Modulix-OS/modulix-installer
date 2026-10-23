@@ -571,9 +571,6 @@ msgstr "Aktualisieren"
 msgid "Registering the Flathub remote"
 msgstr "Flathub-Remote wird registriert"
 
-msgid "Registering the boot entry"
-msgstr "Boot-Eintrag wird registriert"
-
 msgid "Reload"
 msgstr "Neu laden"
 

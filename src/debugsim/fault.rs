@@ -28,14 +28,13 @@ pub enum Fault {
     InstallBuild,
     InstallDownload,
     InstallDiskFull,
-    EfiEfibootmgr,
     PasswdChpasswd,
     FlatpakRemoteAdd,
     PostUmountBusy,
 }
 
 impl Fault {
-    pub const ALL: [Fault; 23] = [
+    pub const ALL: [Fault; 22] = [
         Fault::PartitionUnmountBusy,
         Fault::PartitionCreateTable,
         Fault::PartitionCreate,
@@ -55,7 +54,6 @@ impl Fault {
         Fault::InstallBuild,
         Fault::InstallDownload,
         Fault::InstallDiskFull,
-        Fault::EfiEfibootmgr,
         Fault::PasswdChpasswd,
         Fault::FlatpakRemoteAdd,
         Fault::PostUmountBusy,
@@ -82,7 +80,6 @@ impl Fault {
             Fault::InstallBuild => "install:build",
             Fault::InstallDownload => "install:download",
             Fault::InstallDiskFull => "install:disk-full",
-            Fault::EfiEfibootmgr => "efi:efibootmgr",
             Fault::PasswdChpasswd => "passwd:chpasswd",
             Fault::FlatpakRemoteAdd => "flatpak:remote-add",
             Fault::PostUmountBusy => "post:umount-busy",
@@ -122,7 +119,6 @@ impl Fault {
             Fault::InstallBuild => "nixos-install fails to build a derivation",
             Fault::InstallDownload => "nixos-install fails to fetch a flake input (no network)",
             Fault::InstallDiskFull => "nixos-install fails with \"No space left on device\"",
-            Fault::EfiEfibootmgr => "efibootmgr fails (NON-BLOCKING: the install still succeeds)",
             Fault::PasswdChpasswd => "chpasswd fails to set the account passwords",
             Fault::FlatpakRemoteAdd => {
                 "flatpak remote-add cannot reach dl.flathub.org (NON-BLOCKING: the install still succeeds)"

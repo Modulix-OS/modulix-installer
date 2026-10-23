@@ -69,7 +69,6 @@ naerskLib.buildPackage {
             cryptsetup
             tpm2-tools
             systemd
-            efibootmgr
             ntfs3g
             e2fsprogs
             gptfdisk

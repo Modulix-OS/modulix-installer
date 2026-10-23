@@ -26,14 +26,14 @@ Two concrete consequences of that rule, both added for the step-9 application gr
 `programs.dev.{vscode,git,distrobox}` and `programs.dev.ue5` (Unreal Engine 5)
 modules the grid enables live in **mxpkgs** (`modules/programs/…`, `modules/services/…`, registered
 in `modules/index.json` and `index.fr.json`), as does the controller support the
-`programs.games` group now applies to every launcher, and the GNOME app-grid arrangement — the
-`org/gnome/desktop/app-folders` folders and `org/gnome/shell` `favorite-apps` a fresh
-install opens with — is declarative dconf in `mxpkgs/modulixos/desktop/gnome/custom.nix`,
-not a post-install task here. The folders match on XDG **categories**, not `.desktop` id
-lists, so one static declaration covers every combination of ticked cards and also catches
-apps installed later through the store; GNOME Shell hides a folder no installed app matches.
-Names come from gnome-menus' `.directory` files (`translate = true`), which is why the
-folder keyed `System` is named `System-Tools.directory` — there is no `System.directory`.
+`programs.games` group now applies to every launcher. Nothing arranges the GNOME app grid:
+`mxpkgs/modulixos/desktop/gnome/custom.nix` used to declare `org/gnome/desktop/app-folders`
+folders and an `org/gnome/shell` `favorite-apps` list in
+`programs.dconf.profiles.user.databases`, and that is exactly the wrong layer for them —
+those are system *defaults*, and GNOME Shell deletes a folder or a pinned app by **resetting**
+the user-db key, which then falls straight back through to the default and the folder
+reappears. A fresh install therefore opens on GNOME's own grid, which the user can rearrange
+for good.
 Because the installer writes `mx.<module>.enable` without validating it against the index,
 an mxpkgs module that is missing or unpushed fails `nixos-install` _after_ the disk has been
 partitioned and formatted. New cards therefore need their mxpkgs half pushed first.
@@ -151,13 +151,12 @@ pub trait Task {
 }
 ```
 
-Pipeline: `PartitionTask` → `EncryptTask` → `FormatTask` → `MountTask` → `EnrollTpmTask` → `InitConfigTask` → `NixosInstallTask` → `EfiEntryTask` → `SetPasswordsTask` → `FlatpakRemoteTask` → `PostInstallTask`.
+Pipeline: `PartitionTask` → `EncryptTask` → `FormatTask` → `MountTask` → `EnrollTpmTask` → `InitConfigTask` → `NixosInstallTask` → `SetPasswordsTask` → `FlatpakRemoteTask` → `PostInstallTask`.
 
 - `EncryptTask` must run right after `PartitionTask` and before `FormatTask`/`MountTask` — `luksFormat`/`luksOpen` need the bare partition, not one already `mkfs`'d and mounted on `/mnt`. It encrypts **two** containers when the install has swap: root as `modulixroot` and swap as `modulixswap` (`engine::LUKS_MAPPER_NAME`, `::LUKS_SWAP_MAPPER_NAME`), both with the same passphrase, then rewrites `root_partition`/`swap_partition` to the mappers so the later stages mkfs and mount the decrypted devices. A plaintext swap beside an encrypted root would hold the root key in a page-out; a second container rather than LVM-inside-one keeps the partition layout, the preview and `engine::plan` untouched. `EnrollTpmTask` enrols both — enrolling root alone would unlock it silently through the TPM and then prompt for the swap, nothing having put a passphrase in the kernel keyring. `PostInstallTask` closes both.
 - `InitConfigTask` calls `modulix_core_utils::init::init` (synchronous, so `spawn_blocking`) with `config_dir = /mnt/etc/modulix-os`, which writes and commits the config repo but **deliberately skips the rebuild** — it holds core-utils' skip-rebuild lock precisely so the installer drives the build itself. **It is the only writer of that repo**: `InitParams` carries `packages` → `package.nix`, `modules` → `module.nix` (one `mx.<name>.enable = true` per dotted name from mxpkgs' `modules/index.json`) `luks` → one `boot.initrd.luks.devices` entry per container in `fstab.nix` and `resume_device` → `boot.resumeDevice`, so everything lands inside core-utils' single seed transaction, written by core-utils' own `install_package`/`install_module`/`filesystem` writers and committed once. Nothing after it touches the configuration, which is why the installer no longer unseals `configuration.nix` with `chattr`, splices `imports` by hand, or runs `git commit` itself.
   There used to be an `ExtraConfigTask` doing exactly that, with a `luks.nix` and an `apps.nix` of its own invention. Both were wrong: `apps.nix` spelled packages `with pkgs; [ firefox ]` where `install_package` reads and writes `pkgs.firefox`, so a post-install `mx` would not have found them; and `luks.nix` re-declared `boot.initrd.luks.devices."modulixroot".device`, which **`nixos-generate-config` already emits** (it reads `/sys/class/block/<dm>/dm/name`, and `filesystem::fstab_module` copies that block into `fstab.nix` verbatim) — two definitions of one `types.str` option make the NixOS module system fail even at equal values, so an encrypted install could never evaluate.
 - `NixosInstallTask` runs `nixos-install --root /mnt --flake /mnt/etc/modulix-os#default --no-root-password` with both streams piped, forwarding each line as `ProgressEvent::Log`. This is why the pipeline does not go through core-utils' `rebuild_config`, which inherits stdout and could never feed the log view.
-- `EfiEntryTask` is the only writer of EFI boot variables in the whole chain, and it writes them **once**: it deletes any stale `ModulixOS` entry, runs `efibootmgr --create … --loader \EFI\BOOT\BOOTX64.EFI --label ModulixOS`, then sets `BootOrder` explicitly to its own boot number followed by the previous order verbatim — Windows Boot Manager and friends keep their entry, one position down. Nothing is ever re-imposed afterwards, so a user who puts Windows back in front in their firmware is not contradicted on the next boot. Everything is best-effort: a BIOS boot, a missing ESP or an `efibootmgr` failure lands in the install log and the install still succeeds.
 - `SetPasswordsTask` pipes `root:…`/`user:…` into `chpasswd` under `nixos-enter`, so no password — hashed or not — ever reaches the Nix store.
 - `FlatpakRemoteTask` runs `flatpak remote-add --if-not-exists flathub …` under `nixos-enter`, so the app store already has its remote on the first session even if that first boot has no network. It duplicates mxpkgs' `mx.services.flatpak` `flatpak-repo` unit on purpose — `--if-not-exists` makes the overlap a no-op. Guarded on the `flatpak` binary existing in the target (`/mnt/nix/var/nix/profiles/system/sw/bin/flatpak`), not on the chosen application pack, so it also covers a flatpak that arrived another way; best-effort from end to end (the mxpkgs unit is the fallback), so it never fails an install already on disk.
 - Every stage always runs for real; `Pipeline::run` aborts on the first error and that error is what the progress page renders.
@@ -192,7 +191,7 @@ src/
                         live-disk-state → `plan::PlanInput` fetch), plan.rs (pure
                         partitioning planner), tasks/ (partition.rs, encrypt.rs, format.rs,
                         mount.rs, enroll_tpm.rs, init_config.rs, nixos_install.rs,
-                        efi_entry.rs, set_passwords.rs, flatpak.rs, post_install.rs)
+                        set_passwords.rs, flatpak.rs, post_install.rs)
   widgets/              timezone_map.rs, disk_bar.rs, partition_editor.rs, password_entry.rs,
                         ap_row.rs, wifi_dialog.rs, portal_window.rs, slideshow.rs,
                         qr_code.rs (QR matrix + its `DrawingArea` and dialog),
@@ -495,9 +494,11 @@ an "Error report QR code" button and a `destructive-action` "Quit the installer"
 kiosk has no browser, no guaranteed network and no way to get text out, so the report
 leaves by phone camera, and leaving a failed install is the same reboot the success path
 offers (`wire_reboot_button` is shared, same remove-the-medium confirmation, same
-`systemctl reboot`). The payload
-(`finish::qr_report::build_report`, untranslated like the install log) is the error, the
-persisted log paths and the **tail** of `/var/log/modulixos-install.log` read back
+`sync(2)` + `reboot(2)` — not `systemctl reboot`, which the dialog's own instruction makes
+impossible: the live store lives on the USB drive, so once it is unplugged every `exec`
+dies with `EIO` and the button only ever printed `Could not restart: … (os error 5)`).
+The payload (`finish::qr_report::build_report`, untranslated like the install log) is the
+error, the persisted log paths and the **tail** of `/var/log/modulixos-install.log` read back
 asynchronously, cut to `widgets::qr_code::QR_MAX_BYTES` (2953 bytes = version 40 / EC level
 L, the hard ceiling of a single QR code) with an explicit `(truncated, N bytes omitted)`
 marker. `widgets::qr_code` draws the matrix itself on a `DrawingArea` — forced white
@@ -547,32 +548,32 @@ modulix-core-utils = { path = "../modulix-core-utils", features = ["init", "file
 
 - **Passwords must never land in the Nix store in plaintext.** `user::add_no_transaction` writes `initialPassword`, and `init()` passes an empty one. The installer therefore never puts a password in the configuration at all: `SetPasswordsTask` pipes `chpasswd` into `nixos-enter` after the install, writing `/etc/shadow` directly. This depends on `users.mutableUsers` staying `true`.
 - **NTFS resize ("alongside Windows" mode)**: refuse if BitLocker is detected (can't be shrunk from Linux), if Windows fast-startup/hibernation left the volume dirty (`hiberfil.sys`, dirty flag), or if `ntfsresize --no-action` fails. Mandatory preflight before any partition-table write.
-- **TPM2 + Limine**: Modulix uses `boot.loader.limine`. TPM2 unlock needs `boot.initrd.systemd.enable` plus `boot.initrd.systemd.tpm2.enable`, and both come from **mxpkgs** (`mxpkgs/modulixos/boot.nix:109` and `:117`) — the installer writes neither. What it does write is the `crypttabExtraOpts = [ "tpm2-device=auto" ]` half, through `InitParams::luks`, onto the `boot.initrd.luks.devices."modulixroot"` entry `nixos-generate-config` already put in `fstab.nix`. For that entry it must add _only_ that attribute: re-declaring `.device` is what the removed `luks.nix` did, and two definitions of one `types.str` option make the module system fail. The `modulixswap` entry is the exact opposite and the only place the installer does declare a `.device`, because the generator reports no LUKS entry for a swap-only container. `EnrollTpmTask` runs `systemd-cryptenroll --tpm2-device=auto` for real, and runs _before_ `InitConfigTask` so `tpm2_enabled` is settled by the time the configuration is written. **Still unverified**: treat TPM2 unlock as unconfirmed until an encrypted install has actually been booted on real hardware or a VM with Limine — the double definition above means no encrypted install can ever have got that far.
-- **The EFI boot entry is the installer's, not nixpkgs'** — and the half that belongs to the
-  installed system lives in **mxpkgs**, not here: `mxpkgs/modulixos/boot.nix` sets
-  `boot.loader.efi.canTouchEfiVariables = lib.mkMxDefault false` on purpose. nixpkgs'
-  `limine-install.py` hardcodes the label `Limine` (no option exists) and re-creates its
-  entry at the head of `BootOrder` on **every** `nixos-rebuild`, so a rename done once would
-  drift back or pile up duplicates. With the NVRAM write off, `EfiEntryTask` creates the
-  single `ModulixOS` entry at install time and nothing ever rewrites it — the label
-  persists, and the boot order is imposed once rather than re-asserted at each boot. Two
-  consequences to keep in mind: `boot.loader.limine.efiInstallAsRemovable` is a
-  `!canTouchEfiVariables` default, so limine now also installs the firmware-probed fallback
-  `ESP/efi/boot/BOOTX64.EFI` (which is what `EfiEntryTask` points the entry at, and a disk
-  that survives an NVRAM wipe); `limine.conf` is unaffected, it stays at
-  `ESP/limine/limine.conf` either way. The `canTouchEfiVariables is set to false …` warning
-  `limine-install.py` prints during the install is expected. **The installed system resolves
-  mxpkgs from `github:Modulix-OS/mxpkgs` with no rev** (`modulix-core-utils/src/init.rs`),
-  so this half only takes effect once the mxpkgs change is pushed — a local checkout does
-  nothing for an install.
+- **TPM2 + Limine**: Modulix uses `boot.loader.limine`. TPM2 unlock needs `boot.initrd.systemd.enable` plus `boot.initrd.systemd.tpm2.enable`, and both come from **mxpkgs** (`mxpkgs/modulixos/boot.nix:226` and `:234`) — the installer writes neither. What it does write is the `crypttabExtraOpts = [ "tpm2-device=auto" ]` half, through `InitParams::luks`, onto the `boot.initrd.luks.devices."modulixroot"` entry `nixos-generate-config` already put in `fstab.nix`. For that entry it must add _only_ that attribute: re-declaring `.device` is what the removed `luks.nix` did, and two definitions of one `types.str` option make the module system fail. The `modulixswap` entry is the exact opposite and the only place the installer does declare a `.device`, because the generator reports no LUKS entry for a swap-only container. `EnrollTpmTask` runs `systemd-cryptenroll --tpm2-device=auto` for real, and runs _before_ `InitConfigTask` so `tpm2_enabled` is settled by the time the configuration is written. **Still unverified**: treat TPM2 unlock as unconfirmed until an encrypted install has actually been booted on real hardware or a VM with Limine — the double definition above means no encrypted install can ever have got that far.
+- **Nobody writes EFI boot variables** — not the installer, not nixpkgs. `mxpkgs/modulixos/boot.nix`
+  keeps `boot.loader.efi.canTouchEfiVariables = lib.mkMxDefault false`, which makes
+  `boot.loader.limine.efiInstallAsRemovable` (a `!canTouchEfiVariables` default) true, so
+  limine installs the firmware-probed fallback `ESP/efi/boot/BOOTX64.EFI` and
+  `limine-install.py` skips its NVRAM block entirely. The install therefore boots through the
+  firmware's default path, and nothing can drift: the `canTouchEfiVariables is set to false …`
+  warning `limine-install.py` prints during the install is expected. There used to be two
+  mechanisms fighting over that entry and neither is left: an `EfiEntryTask` creating a
+  `ModulixOS` entry with `efibootmgr` and rewriting `BootOrder`, and — in mxpkgs — a
+  `replaceStrings` rewrite of nixpkgs' `limine-install.py` source relabelling `Limine` to
+  `ModulixOS`, which was dead code anyway (the whole block it patched is guarded by
+  `canTouchEfiVariables`) and broke on every upstream reformat. The trade-off is explicit: a
+  firmware that refuses to boot `EFI/BOOT/BOOTX64.EFI` off an internal disk has no NVRAM entry
+  to fall back on, which is why `efibootmgr` stays in the ISO's `systemPackages` — it is the
+  way to write one by hand from the tty1 recovery shell. `limine.conf` is unaffected either
+  way, it stays at `ESP/limine/limine.conf`.
 - **Hibernation**: swap size ≥ RAM, `boot.resumeDevice` set, and if encryption is enabled the swap must live inside a LUKS container. All three are implemented: `engine::sizing::compute_swap_bytes` oversizes the hibernation image, `plan::swap_bytes_for` adds `sizing::LUKS2_HEADER_BYTES` on top when the install is encrypted (the partition is 16 MiB larger than the swap it ends up offering, which is what the manual-mode `SwapTooSmallForHibernation` guards compare through `sizing::usable_swap_bytes`), `EncryptTask` puts the swap in `modulixswap`, and `InitParams::resume_device` writes `boot.resumeDevice` — `/dev/mapper/modulixswap` when encrypted, the swap's `by-uuid` path otherwise. It is **not** optional: with `boot.initrd.systemd.enable` (which mxpkgs sets) NixOS only passes `resume=` when that option is set, and the fallback over `swapDevices` exists in the script initrd only. Untested end to end — `systemctl hibernate` on an installed system is the only thing that proves it.
 - **Root-in-kiosk**: acceptable here (throwaway live ISO, single app), but every `Command::new` must pass arguments as an array — never a shell — and device paths must be validated against the udisks2 enumeration, never built by concatenating user input.
 - **WebKitGTK captive-portal window runs as root**: step 6's portal window (`widgets/portal_window.rs`) embeds a third-party-controlled web page (any café's captive portal) in a process running as root inside the kiosk. Mitigations in place: an ephemeral `webkit6::NetworkSession` (no persisted cookies/cache), `enable_developer_extras`/`javascript_can_open_windows_automatically` disabled, and WebKitGTK 6.0's own bubblewrap sandbox for the web process (`set_sandbox_enabled` no longer exists in the 6.0 API — the sandbox is always on). Not a regression versus the Calamares-based flow it replaces (the patched QML network page did the same), but verify on the real ISO that user namespaces are available, or WebKit's web process refuses to start. `webkitgtk_6_0` comes in as a `buildInput` of `nix/package.nix`, so the wrapper carries it.
 - **The partitioning step's shell-outs need runtime packages too** (all carried by `nix/kiosk-module.nix` and `nix/package.nix`'s `--prefix PATH`): `ntfs3g` (`ntfsresize`, NTFS shrink
   preflight), `gptfdisk` (udisks2's GPT backend), `util-linux` (`mkswap`/`swapon`, `mount`/
   `umount`), `cryptsetup` (LUKS2), `tpm2-tools` (`systemd-cryptenroll`), `efibootmgr`
-  (`EfiEntryTask`, and the only way to inspect or repair the boot record from the tty1
-  recovery shell), `udisks2` (the
+  (nothing calls it any more — it is the only way to inspect or repair the boot record from
+  the tty1 recovery shell, so the ISO carries it while the app wrapper no longer does),
+  `udisks2` (the
   `org.freedesktop.UDisks2` D-Bus service itself), `gparted` (manual mode's partition
   editor, needed only to resize or delete a partition the user already created — carving a
   new one out of free space happens in-app, see step 6 above), plus `git` (the config repo),
