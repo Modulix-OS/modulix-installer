@@ -3,6 +3,7 @@ use crate::mx;
 use async_trait::async_trait;
 use std::process::Stdio;
 use tokio::io::AsyncWriteExt;
+use zeroize::Zeroizing;
 
 /// Sets the primary user's and root's password on the freshly installed
 /// system.
@@ -51,7 +52,13 @@ impl Task for SetPasswordsTask {
             ));
         }
 
-        let batch = format!("root:{password}\n{username}:{password}\n");
+        // Zeroizing, not a plain `String`: this is the one place the
+        // password is re-serialized into a buffer of this installer's own,
+        // and `chpasswd` only ever sees a copy of it in a pipe.
+        let batch = Zeroizing::new(format!(
+            "root:{pw}\n{username}:{pw}\n",
+            pw = password.as_str()
+        ));
         chpasswd(&batch).await?;
 
         let _ = tx

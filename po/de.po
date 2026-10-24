@@ -150,6 +150,9 @@ msgstr "Kopie auf der Zielfestplatte:"
 msgid "Copy text"
 msgstr "Text kopieren"
 
+msgid "Copying the Wi-Fi configuration"
+msgstr "Wi-Fi-Konfiguration wird kopiert"
+
 msgid "Could not build the QR code"
 msgstr "QR-Code konnte nicht erstellt werden"
 

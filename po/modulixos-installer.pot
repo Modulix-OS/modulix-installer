@@ -139,6 +139,9 @@ msgstr ""
 msgid "Copy text"
 msgstr ""
 
+msgid "Copying the Wi-Fi configuration"
+msgstr ""
+
 msgid "Could not build the QR code"
 msgstr ""
 

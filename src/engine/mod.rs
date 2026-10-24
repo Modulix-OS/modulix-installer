@@ -205,6 +205,10 @@ impl Pipeline {
 ///   target mounted — `/mnt/home` included, when `/home` is a partition of
 ///   its own — and the home directory the install's own activation created.
 ///   Same window as the two stages above, i.e. before `PostInstallTask`.
+/// * `WifiProfileTask` writes into `/mnt/etc`, so it needs the target
+///   mounted; it is placed in the same window as the two stages around it
+///   rather than right after `MountTask` only so that the directory
+///   `nixos-install`'s own activation creates is already there.
 pub fn full_pipeline() -> Pipeline {
     Pipeline::new(vec![
         Box::new(tasks::PartitionTask),
@@ -216,6 +220,7 @@ pub fn full_pipeline() -> Pipeline {
         Box::new(tasks::NixosInstallTask),
         Box::new(tasks::SetPasswordsTask),
         Box::new(tasks::FlatpakRemoteTask),
+        Box::new(tasks::WifiProfileTask),
         Box::new(tasks::GnomeGridTask),
         Box::new(tasks::PostInstallTask),
     ])

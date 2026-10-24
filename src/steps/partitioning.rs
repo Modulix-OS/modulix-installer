@@ -17,6 +17,7 @@ use crate::engine::plan::{self, PlanError, PlanInput, PlanWarning, PreviewRole};
 use crate::engine::sizing::{compute_swap_bytes, detect_ram_bytes};
 use crate::i18n::tr;
 use crate::mx;
+use crate::secret::Secret;
 use crate::steps::{Step, StepId, ValidityTracker};
 use crate::widgets::disk_bar::{DiskBarSegment, SegmentRole, human_bytes};
 use crate::widgets::{
@@ -659,8 +660,8 @@ impl PartitioningStep {
             tpm2_pin: self
                 .tpm2_enabled
                 .get()
-                .then(|| self.tpm2_pin_row.text().to_string())
-                .filter(|s| !s.is_empty()),
+                .then(|| Secret::new(self.tpm2_pin_row.text().to_string()))
+                .filter(|pin| !pin.is_empty()),
             manual: self.manual_editor.entries(),
         }
     }
@@ -1587,8 +1588,8 @@ impl PartitioningStepCfgHandle {
             tpm2_pin: self
                 .tpm2_enabled
                 .get()
-                .then(|| self.tpm2_pin_row.text().to_string())
-                .filter(|s| !s.is_empty()),
+                .then(|| Secret::new(self.tpm2_pin_row.text().to_string()))
+                .filter(|pin| !pin.is_empty()),
             manual: self.manual_editor.entries(),
         }
     }

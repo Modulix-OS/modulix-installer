@@ -5,6 +5,7 @@ use crate::backend::net::{NetworkBackend, WifiConnectRequest, WifiSecurity};
 use crate::bridge;
 use crate::i18n::tr;
 use crate::mx;
+use crate::secret::Secret;
 use crate::widgets::ApRow;
 use adw::prelude::*;
 use std::cell::RefCell;
@@ -14,7 +15,7 @@ use std::sync::Arc;
 #[derive(Clone)]
 pub struct WifiCredentials {
     pub ssid: String,
-    pub password: String,
+    pub password: Secret,
     pub security: WifiSecurity,
 }
 
@@ -176,8 +177,8 @@ pub fn prompt_and_connect(
             .as_ref()
             .map(|r| security_from_combo(r.selected()))
             .unwrap_or(prefill.security);
-        let password_text = rows.password.text().to_string();
-        let password = (security != WifiSecurity::Open).then_some(password_text.clone());
+        let password_text = Secret::new(rows.password.text().to_string());
+        let password = (security != WifiSecurity::Open).then(|| password_text.clone());
 
         set_row_busy(&ctx, &ssid, true);
 

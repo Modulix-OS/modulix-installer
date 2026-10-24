@@ -3,6 +3,7 @@ mod network_manager;
 pub use network_manager::NetworkManagerBackend;
 
 use crate::mx;
+use crate::secret::Secret;
 use async_trait::async_trait;
 use std::fmt;
 
@@ -39,7 +40,9 @@ pub struct WifiAccessPoint {
 #[derive(Clone)]
 pub struct WifiConnectRequest {
     pub ssid: String,
-    pub password: Option<String>,
+    /// `Secret`, so a pre-shared key typed into the wizard is wiped
+    /// when the last copy of this request goes away.
+    pub password: Option<Secret>,
     pub security: WifiSecurity,
     pub hidden: bool,
 }
@@ -54,6 +57,19 @@ impl fmt::Debug for WifiConnectRequest {
             .field("hidden", &self.hidden)
             .finish()
     }
+}
+
+/// One Wi-Fi connection profile NetworkManager has persisted on the live
+/// system, as `WifiProfileTask` copies it onto the install target.
+///
+/// * `ssid` - network the profile connects to, for the install log only.
+/// * `keyfile` - absolute path of the keyfile NetworkManager wrote it to,
+///   read back from the profile's own `Filename` property rather than built
+///   from the SSID (which NetworkManager escapes when naming the file).
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct WifiProfile {
+    pub ssid: String,
+    pub keyfile: std::path::PathBuf,
 }
 
 pub enum PortalPage {
@@ -72,6 +88,22 @@ pub trait NetworkBackend: Send + Sync {
     async fn is_ethernet_connected(&self) -> mx::Result<bool>;
     async fn scan_wifi(&self) -> mx::Result<Vec<WifiAccessPoint>>;
     async fn connect_wifi(&self, request: WifiConnectRequest) -> mx::Result<()>;
+    /// Every Wi-Fi profile NetworkManager has written to disk on the live
+    /// system, so the install can carry the network the wizard ran over onto
+    /// the installed system. A live ISO starts with none, and a failed
+    /// association deletes the profile it created (see
+    /// `NetworkManagerBackend::discard_profile`), so what this returns is
+    /// exactly the networks that worked during the install.
+    ///
+    /// # Post-conditions
+    /// Every returned `keyfile` is an absolute path NetworkManager reported
+    /// itself; the file may still carry the pre-shared key, so a caller must
+    /// keep its `0600` mode.
+    ///
+    /// # Returns
+    /// One entry per saved Wi-Fi profile, empty when the install ran over
+    /// ethernet or offline.
+    async fn saved_wifi_profiles(&self) -> mx::Result<Vec<WifiProfile>>;
     async fn portal_page(&self) -> mx::Result<PortalPage>;
 }
 

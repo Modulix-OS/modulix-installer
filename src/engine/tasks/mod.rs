@@ -12,6 +12,7 @@ mod nixos_install;
 mod partition;
 mod post_install;
 mod set_passwords;
+mod wifi_profile;
 
 pub use encrypt::EncryptTask;
 pub use enroll_tpm::EnrollTpmTask;
@@ -24,6 +25,7 @@ pub use nixos_install::NixosInstallTask;
 pub use partition::PartitionTask;
 pub use post_install::PostInstallTask;
 pub use set_passwords::SetPasswordsTask;
+pub use wifi_profile::WifiProfileTask;
 
 use crate::engine::{ProgressEvent, ProgressSink};
 

@@ -9,6 +9,7 @@ mod engine;
 mod finish;
 mod i18n;
 mod mx;
+mod secret;
 mod steps;
 mod welcome;
 mod widgets;

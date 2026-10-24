@@ -23,6 +23,7 @@ unicode-normalization = "0.1"
 webkit6 = "0.6.1"
 zbus = "5"
 qrcode = { version = "0.14.1", default-features = false }
+zeroize = { version = "1.9.1", features = ["alloc"] }
 
 [build-dependencies]
 glib-build-tools = "0.22.8"

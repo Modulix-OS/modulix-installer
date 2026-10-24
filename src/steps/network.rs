@@ -4,6 +4,7 @@ use crate::bridge;
 use crate::config::InstallConfig;
 use crate::i18n::tr;
 use crate::mx;
+use crate::secret::Secret;
 use crate::steps::{Step, StepId, ValidityTracker};
 use crate::widgets::wifi_dialog::mark_connected_row;
 use crate::widgets::{ApRow, ConnectCtx, PortalWindow, WifiCredentials, prompt_and_connect};
@@ -145,7 +146,7 @@ fn wire_ap_row_click(ap_row: &ApRow, ssid: &str, security: WifiSecurity, ctx: &C
                     ctx.clone(),
                     WifiCredentials {
                         ssid: ssid.clone(),
-                        password: String::new(),
+                        password: Secret::default(),
                         security,
                     },
                     false,
@@ -216,7 +217,7 @@ impl NetworkStep {
                     ctx.clone(),
                     WifiCredentials {
                         ssid: String::new(),
-                        password: String::new(),
+                        password: Secret::default(),
                         security: WifiSecurity::Psk,
                     },
                     true,

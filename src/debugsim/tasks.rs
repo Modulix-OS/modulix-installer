@@ -258,6 +258,36 @@ impl Task for FakeGnomeGridTask {
     }
 }
 
+/// Stands in for `WifiProfileTask`. The real one copies the live system's
+/// NetworkManager keyfiles into `/mnt/etc/NetworkManager/system-connections`,
+/// which a `--fake-disks=` run must not do: `/mnt` is the developer's own
+/// machine there, and the keyfiles carry real pre-shared keys. It therefore
+/// neither reads NetworkManager nor writes anything, and logs the skip line
+/// instead.
+pub struct FakeWifiProfileTask;
+
+#[async_trait]
+impl Task for FakeWifiProfileTask {
+    fn label(&self) -> String {
+        "Copying the Wi-Fi configuration".to_string()
+    }
+
+    fn weight(&self) -> u32 {
+        1
+    }
+
+    /// Always `Ok(())`, like the real task — there is no `--fake-error=`
+    /// fault for a stage that cannot fail an install.
+    async fn run(&self, _ctx: &TaskCtx, tx: &ProgressSink) -> mx::Result<()> {
+        let _ = tx
+            .send(ProgressEvent::Log(
+                "Wi-Fi configuration: skipped (a debug build never copies profiles)".to_string(),
+            ))
+            .await;
+        Ok(())
+    }
+}
+
 pub struct FakePostInstallTask {
     faults: Arc<FaultPlan>,
 }
@@ -296,14 +326,15 @@ impl Task for FakePostInstallTask {
     }
 }
 
-/// Same eleven-stage shape as `engine::full_pipeline`, with the four stages
+/// Same twelve-stage shape as `engine::full_pipeline`, with the four stages
 /// that only ever go through `ctx.backends.disk`/`.crypt` left real — run
 /// against `debugsim::disks`/`debugsim::crypt`, they exercise the real
 /// `PartitionTask`/`EncryptTask`/`FormatTask`/`EnrollTpmTask` logic, not a
 /// simulation of it.
 ///
 /// * `faults` - the single `--fake-error=` fault to check inside the six
-///   fake task doubles above; `debugsim::disks`/`debugsim::crypt` hold their
+///   fake task doubles above (`FakeWifiProfileTask` takes none);
+///   `debugsim::disks`/`debugsim::crypt` hold their
 ///   own clone of the same `Arc`, set up alongside it in [`super::DebugSim::new`].
 pub fn fake_pipeline(faults: Arc<FaultPlan>) -> Pipeline {
     Pipeline::new(vec![
@@ -326,6 +357,7 @@ pub fn fake_pipeline(faults: Arc<FaultPlan>) -> Pipeline {
         Box::new(FakeFlatpakRemoteTask {
             faults: faults.clone(),
         }),
+        Box::new(FakeWifiProfileTask),
         Box::new(FakeGnomeGridTask {
             faults: faults.clone(),
         }),
@@ -341,7 +373,7 @@ mod tests {
     use crate::backend::disk::scenario::DiskScenario;
     use crate::backend::locale::{KeyboardLayout, LocaleBackend, LocaleEntry, TimezoneEntry};
     use crate::backend::net::{
-        Connectivity, NetworkBackend, PortalPage, WifiAccessPoint, WifiConnectRequest,
+        Connectivity, NetworkBackend, PortalPage, WifiAccessPoint, WifiConnectRequest, WifiProfile,
     };
     use crate::config::{InstallConfig, PartitionMode, SwapMode};
     use crate::debugsim::{FakeCryptBackend, FakeDiskBackend, FaultPlan};
@@ -366,6 +398,9 @@ mod tests {
             unimplemented!("not exercised by pipeline tests")
         }
         async fn connect_wifi(&self, _request: WifiConnectRequest) -> mx::Result<()> {
+            unimplemented!("not exercised by pipeline tests")
+        }
+        async fn saved_wifi_profiles(&self) -> mx::Result<Vec<WifiProfile>> {
             unimplemented!("not exercised by pipeline tests")
         }
         async fn portal_page(&self) -> mx::Result<PortalPage> {

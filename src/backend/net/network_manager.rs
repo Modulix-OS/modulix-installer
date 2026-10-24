@@ -1,13 +1,14 @@
 use super::{
-    Connectivity, NetworkBackend, PortalPage, WifiAccessPoint, WifiConnectRequest, WifiSecurity,
-    dedup_access_points,
+    Connectivity, NetworkBackend, PortalPage, WifiAccessPoint, WifiConnectRequest, WifiProfile,
+    WifiSecurity, dedup_access_points,
 };
 use crate::mx;
 use async_trait::async_trait;
 use futures_util::StreamExt;
 use std::collections::HashMap;
+use std::path::PathBuf;
 use std::time::Duration;
-use zbus::zvariant::{ObjectPath, OwnedObjectPath, Value};
+use zbus::zvariant::{ObjectPath, OwnedObjectPath, OwnedValue, Value};
 
 const DEVICE_TYPE_ETHERNET: u32 = 1;
 const DEVICE_TYPE_WIFI: u32 = 2;
@@ -16,6 +17,12 @@ const DEVICE_STATE_ACTIVATED: u32 = 100;
 const ACTIVATION_TIMEOUT: Duration = Duration::from_secs(45);
 const SCAN_POLL_INTERVAL: Duration = Duration::from_millis(500);
 const SCAN_TIMEOUT: Duration = Duration::from_secs(10);
+
+/// What `Settings.Connection.GetSettings` returns: one property map per
+/// settings section (`connection`, `802-11-wireless`, …). Secrets are not in
+/// there — they come back from `GetSecrets` only — which is fine here: the
+/// keyfile this backend points at still carries them.
+type ProfileSettings = HashMap<String, HashMap<String, OwnedValue>>;
 
 #[zbus::proxy(
     interface = "org.freedesktop.NetworkManager",
@@ -127,12 +134,31 @@ trait ActiveConnection {
 }
 
 #[zbus::proxy(
+    interface = "org.freedesktop.NetworkManager.Settings",
+    default_service = "org.freedesktop.NetworkManager",
+    default_path = "/org/freedesktop/NetworkManager/Settings"
+)]
+trait Settings {
+    #[zbus(name = "ListConnections")]
+    fn list_connections(&self) -> zbus::Result<Vec<OwnedObjectPath>>;
+}
+
+#[zbus::proxy(
     interface = "org.freedesktop.NetworkManager.Settings.Connection",
     default_service = "org.freedesktop.NetworkManager"
 )]
 trait SettingsConnection {
     #[zbus(name = "Delete")]
     fn delete(&self) -> zbus::Result<()>;
+
+    #[zbus(name = "GetSettings")]
+    fn get_settings(&self) -> zbus::Result<ProfileSettings>;
+
+    /// Absolute path of the keyfile this profile lives in. NetworkManager
+    /// escapes the SSID when naming that file, so it is read back here
+    /// rather than rebuilt.
+    #[zbus(property)]
+    fn filename(&self) -> zbus::Result<String>;
 }
 
 pub(crate) fn connectivity_from_nm(raw: u32) -> Connectivity {
@@ -196,6 +222,43 @@ pub(crate) fn activation_error_msgid(reason: u32) -> &'static str {
         3 => "The Wi-Fi device was disconnected",
         _ => "Couldn't connect to this Wi-Fi network",
     }
+}
+
+/// `connection.type` of a Wi-Fi profile, and the settings section carrying
+/// its SSID.
+const WIFI_CONNECTION_TYPE: &str = "802-11-wireless";
+
+/// One string property of a profile, `None` when the section, the key or the
+/// expected type is absent.
+///
+/// * `settings` - what `GetSettings` returned.
+/// * `section` - settings section to read (`connection`, …).
+/// * `key` - property name inside that section.
+fn profile_string(settings: &ProfileSettings, section: &str, key: &str) -> Option<String> {
+    let value = settings.get(section)?.get(key)?;
+    String::try_from(value.clone()).ok()
+}
+
+/// SSID of a Wi-Fi profile, for the install log only.
+///
+/// * `settings` - what `GetSettings` returned.
+///
+/// # Returns
+/// The decoded `802-11-wireless.ssid` byte array (`ay`, never
+/// NUL-terminated), falling back to `connection.id` — NetworkManager names a
+/// profile after its SSID, so that fallback is normally the same string —
+/// and `None` when neither is readable.
+fn profile_ssid(settings: &ProfileSettings) -> Option<String> {
+    let raw = settings
+        .get(WIFI_CONNECTION_TYPE)
+        .and_then(|section| section.get("ssid"))
+        .and_then(|value| Vec::<u8>::try_from(value.clone()).ok());
+    if let Some(bytes) = raw
+        && let Ok(ssid) = String::from_utf8(bytes)
+    {
+        return Some(ssid);
+    }
+    profile_string(settings, "connection", "id")
 }
 
 fn wireless_settings(request: &WifiConnectRequest) -> HashMap<&str, HashMap<&str, Value<'_>>> {
@@ -518,6 +581,45 @@ impl NetworkBackend for NetworkManagerBackend {
         }
     }
 
+    /// Walks `Settings.ListConnections` and keeps the `802-11-wireless` ones.
+    ///
+    /// A profile whose settings, type or `Filename` cannot be read is
+    /// skipped rather than failing the whole listing: one unreadable profile
+    /// (an in-memory one has an empty `Filename`, for instance) must not
+    /// cost the install the network it actually ran over.
+    async fn saved_wifi_profiles(&self) -> mx::Result<Vec<WifiProfile>> {
+        let settings = SettingsProxy::new(&self.connection).await?;
+        let mut profiles = Vec::new();
+        for path in settings.list_connections().await? {
+            let Ok(builder) = SettingsConnectionProxy::builder(&self.connection).path(&path) else {
+                continue;
+            };
+            let Ok(profile) = builder.build().await else {
+                continue;
+            };
+            let Ok(sections) = profile.get_settings().await else {
+                continue;
+            };
+            if profile_string(&sections, "connection", "type").as_deref()
+                != Some(WIFI_CONNECTION_TYPE)
+            {
+                continue;
+            }
+            let Ok(keyfile) = profile.filename().await else {
+                continue;
+            };
+            // An in-memory-only profile reports no file at all.
+            if keyfile.is_empty() {
+                continue;
+            }
+            profiles.push(WifiProfile {
+                ssid: profile_ssid(&sections).unwrap_or_default(),
+                keyfile: PathBuf::from(keyfile),
+            });
+        }
+        Ok(profiles)
+    }
+
     async fn portal_page(&self) -> mx::Result<PortalPage> {
         let manager = self.manager().await?;
         // There is no D-Bus call that returns the captive portal's actual
@@ -535,6 +637,50 @@ impl NetworkBackend for NetworkManagerBackend {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    fn settings(entries: &[(&str, &str, Value<'static>)]) -> ProfileSettings {
+        let mut sections: ProfileSettings = HashMap::new();
+        for (section, key, value) in entries {
+            sections.entry(section.to_string()).or_default().insert(
+                key.to_string(),
+                OwnedValue::try_from(value.clone()).expect("value is convertible"),
+            );
+        }
+        sections
+    }
+
+    #[test]
+    fn profile_string_reads_connection_type() {
+        let sections = settings(&[("connection", "type", Value::from("802-11-wireless"))]);
+        assert_eq!(
+            profile_string(&sections, "connection", "type").as_deref(),
+            Some("802-11-wireless")
+        );
+        assert_eq!(profile_string(&sections, "connection", "id"), None);
+        assert_eq!(profile_string(&sections, "802-3-ethernet", "type"), None);
+    }
+
+    #[test]
+    fn profile_ssid_decodes_the_byte_array() {
+        let sections = settings(&[(
+            "802-11-wireless",
+            "ssid",
+            Value::from(b"Caf\xc3\xa9".to_vec()),
+        )]);
+        assert_eq!(profile_ssid(&sections).as_deref(), Some("Café"));
+    }
+
+    #[test]
+    fn profile_ssid_falls_back_to_the_connection_id() {
+        let sections = settings(&[("connection", "id", Value::from("Home"))]);
+        assert_eq!(profile_ssid(&sections).as_deref(), Some("Home"));
+    }
+
+    #[test]
+    fn profile_ssid_is_none_without_either_key() {
+        let sections = settings(&[("connection", "type", Value::from("802-11-wireless"))]);
+        assert_eq!(profile_ssid(&sections), None);
+    }
 
     #[test]
     fn connectivity_from_nm_maps_known_values() {

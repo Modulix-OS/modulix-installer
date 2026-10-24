@@ -6,6 +6,7 @@
 
 use super::password_strength;
 use crate::i18n::tr;
+use crate::secret::Secret;
 use adw::prelude::*;
 use std::cell::Cell;
 use std::rc::Rc;
@@ -143,8 +144,11 @@ impl PasswordConfirmEntry {
         row.add_row(&self.error_label);
     }
 
-    pub fn password(&self) -> String {
-        self.password_row.text().to_string()
+    /// The typed password, as a [`Secret`] so the installer-side copy is
+    /// wiped on drop. GTK keeps its own in the entry buffer, which no API
+    /// lets this widget clear — see `crate::secret`.
+    pub fn password(&self) -> Secret {
+        Secret::new(self.password_row.text().to_string())
     }
 
     /// True only once both fields are non-empty and equal. Strength is

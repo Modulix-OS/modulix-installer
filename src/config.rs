@@ -2,6 +2,7 @@
 //! thread only (never crosses into the tokio runtime), hence plain `Rc<RefCell<_>>`
 //! rather than `Arc<Mutex<_>>` (that's reserved for the concurrent backend side).
 
+use crate::secret::Secret;
 use std::cell::RefCell;
 use std::collections::BTreeMap;
 use std::rc::Rc;
@@ -82,9 +83,13 @@ pub struct PartitioningConfig {
     pub encryption_enabled: bool,
     /// Deliberately separate from `UserConfig::password` — reusing the login
     /// password as the disk passphrase would mean one leak compromises both.
-    pub encryption_passphrase: String,
+    /// `Secret`, so every clone of this config wipes its own buffer on drop
+    /// and no `Debug` can print it (see `crate::secret`).
+    pub encryption_passphrase: Secret,
     pub tpm2_enabled: bool,
-    pub tpm2_pin: Option<String>,
+    /// TPM2 unlock PIN, `Secret` for the same reason as
+    /// `encryption_passphrase` above.
+    pub tpm2_pin: Option<Secret>,
     /// `Manual` mode only — one entry per existing partition the user
     /// touched, or new partition carved out of free space, in disk order.
     /// Validated entirely inside `engine::plan::plan`, see
@@ -101,8 +106,9 @@ pub struct UserConfig {
     pub hostname: String,
     /// Login password of both the primary user and root. Never written into
     /// the NixOS configuration — `engine::tasks::SetPasswordsTask` pipes it
-    /// to `chpasswd` after the install so it never reaches the Nix store.
-    pub password: String,
+    /// to `chpasswd` after the install so it never reaches the Nix store, and
+    /// `Secret` so the copies it does make are wiped (see `crate::secret`).
+    pub password: Secret,
 }
 
 impl Default for UserConfig {
@@ -111,7 +117,7 @@ impl Default for UserConfig {
             username: String::new(),
             full_name: String::new(),
             hostname: DEFAULT_HOSTNAME.to_string(),
-            password: String::new(),
+            password: Secret::default(),
         }
     }
 }
