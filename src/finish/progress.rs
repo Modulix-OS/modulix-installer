@@ -32,9 +32,6 @@ pub struct ProgressPage {
     log_expander: gtk::Expander,
     result_box: gtk::Box,
     result_label: gtk::Label,
-    /// Where the full log was persisted. Hidden until the install fails,
-    /// which is the only time the user needs to go read it.
-    log_path_label: gtk::Label,
     /// Offered once the install succeeded: the live session has no other
     /// way out, the installer is the only app in the kiosk.
     restart_button: gtk::Button,
@@ -47,6 +44,15 @@ pub struct ProgressPage {
     /// remove-the-medium warning. Destructive-looking on purpose — nothing was
     /// installed, so leaving costs the user their session.
     quit_button: gtk::Button,
+    /// Third failure-path action: go back to the wizard and change the answers
+    /// instead of rebooting. The page owns the button but not the navigation,
+    /// so what it does is whatever [`ProgressPage::set_reconfigure_hook`] was
+    /// handed — `app.rs` unlocks the step rail and rebuilds the stack there.
+    reconfigure_button: gtk::Button,
+    /// Filled in by [`ProgressPage::set_reconfigure_hook`]; a no-op until then,
+    /// which is what keeps `new()` argument-free (the page is built before the
+    /// navigation it would have to drive exists).
+    reconfigure_hook: std::rc::Rc<std::cell::RefCell<Box<dyn Fn()>>>,
     /// Error message and persisted-log paths of the last failure, as handed to
     /// [`ProgressPage::show_failure`]. Read by the QR button's handler.
     failure: std::rc::Rc<std::cell::RefCell<(String, Vec<String>)>>,
@@ -76,18 +82,8 @@ impl ProgressPage {
             .xalign(0.0)
             .hexpand(true)
             .build();
-        let log_path_label = gtk::Label::builder()
-            .wrap(true)
-            .wrap_mode(gtk::pango::WrapMode::WordChar)
-            .selectable(true)
-            .xalign(0.0)
-            .hexpand(true)
-            .visible(false)
-            .css_classes(["dim-label"])
-            .build();
         let result_text = gtk::Box::new(gtk::Orientation::Vertical, 6);
         result_text.append(&result_label);
-        result_text.append(&log_path_label);
         let result_scroller = gtk::ScrolledWindow::builder()
             .child(&result_text)
             .hexpand(true)
@@ -124,13 +120,23 @@ impl ProgressPage {
             .visible(false)
             .build();
 
+        let reconfigure_button = gtk::Button::builder()
+            .label(tr("Change the configuration"))
+            .css_classes(["suggested-action", "pill"])
+            .halign(gtk::Align::End)
+            .valign(gtk::Align::Center)
+            .visible(false)
+            .build();
+
         // The outcome row takes the progress bar's place once the pipeline is
         // done — outcome text on the left, the actions on the right — rather
         // than stacking a card on top of a bar that no longer moves. Success
-        // shows `restart_button`, failure `qr_button` + `quit_button`.
+        // shows `restart_button`, failure `qr_button` + `reconfigure_button` +
+        // `quit_button`, in that order: read the error, fix it, or give up.
         let result_box = gtk::Box::new(gtk::Orientation::Horizontal, 12);
         result_box.append(&result_scroller);
         result_box.append(&qr_button);
+        result_box.append(&reconfigure_button);
         result_box.append(&quit_button);
         result_box.append(&restart_button);
         result_box.set_visible(false);
@@ -172,7 +178,8 @@ impl ProgressPage {
         // No `HeaderBar` of its own: `app.rs` already wraps the whole
         // `NavigationView` in one, and a second bar only stacks a duplicate row
         // of window controls under the first.
-        let page = adw::NavigationPage::new(&content, &tr("Installing"));
+        let page =
+            adw::NavigationPage::with_tag(&content, &tr("Installing"), crate::finish::PROGRESS_TAG);
         page.set_can_pop(false);
 
         let this = Self {
@@ -185,10 +192,11 @@ impl ProgressPage {
             log_expander,
             result_box,
             result_label,
-            log_path_label,
             restart_button,
             qr_button,
             quit_button,
+            reconfigure_button,
+            reconfigure_hook: std::rc::Rc::new(std::cell::RefCell::new(Box::new(|| {}))),
             failure: std::rc::Rc::new(std::cell::RefCell::new((String::new(), Vec::new()))),
             log_scroller,
             slideshow,
@@ -196,7 +204,23 @@ impl ProgressPage {
         this.wire_reboot_button(&this.restart_button);
         this.wire_reboot_button(&this.quit_button);
         this.wire_qr_button();
+        this.reconfigure_button.connect_clicked({
+            let hook = this.reconfigure_hook.clone();
+            move |_| (hook.borrow())()
+        });
         this
+    }
+
+    /// Installs what the failure page's "Change the configuration" button does.
+    ///
+    /// * `hook` - called on each click, on the GTK main thread.
+    ///
+    /// # Post-conditions
+    /// Replaces any hook set before. The button itself only becomes visible
+    /// when an install fails (see `show_failure`), so a hook that navigates is
+    /// never reachable from a successful or running install.
+    pub fn set_reconfigure_hook(&self, hook: impl Fn() + 'static) {
+        *self.reconfigure_hook.borrow_mut() = Box::new(hook);
     }
 
     pub fn page(&self) -> adw::NavigationPage {
@@ -220,6 +244,8 @@ impl ProgressPage {
         self.log_expander.set_label(Some(&tr("Details")));
         self.restart_button.set_label(&tr("Restart now"));
         self.quit_button.set_label(&tr("Quit the installer"));
+        self.reconfigure_button
+            .set_label(&tr("Change the configuration"));
         if let Some(content) = self.qr_button.child().and_downcast::<adw::ButtonContent>() {
             content.set_label(&tr("Error report QR code"));
         }
@@ -245,8 +271,9 @@ impl ProgressPage {
         self.qr_button.set_visible(false);
         self.quit_button.set_visible(false);
         self.quit_button.set_sensitive(true);
+        self.reconfigure_button.set_visible(false);
+        self.reconfigure_button.set_sensitive(true);
         self.qr_button.set_sensitive(true);
-        self.log_path_label.set_visible(false);
         self.status_label.set_visible(true);
         self.progress_bar.set_visible(true);
         self.result_label.remove_css_class("title-4");
@@ -451,16 +478,16 @@ impl ProgressPage {
         *self.pulse_source.borrow_mut() = Some(source);
     }
 
-    /// Renders a failed install: the log is opened and grown, and every place
-    /// the full log was persisted is named — the on-screen buffer dies with
-    /// the session, the files do not.
+    /// Renders a failed install: the log is opened and grown.
     ///
     /// * `message` - user-facing reason.
     ///
     /// # Post-conditions
-    /// The message is visible in full (wrapped, scrollable, selectable), the
-    /// log expander is open and taller than during the install, and
-    /// `log_path_label` is visible iff at least one persisted copy exists.
+    /// The message is visible in full (wrapped, scrollable, selectable) and
+    /// the log expander is open and taller than during the install. The paths
+    /// of the persisted log copies are **not** shown on screen; they are kept
+    /// in `failure` for [`qr_report::build_report`] alone, hence untranslated
+    /// like the rest of that payload.
     fn show_failure(&self, message: &str) {
         self.status_label.set_label(&tr("Installation failed"));
         self.progress_bar.set_visible(false);
@@ -471,24 +498,18 @@ impl ProgressPage {
 
         let mut paths = Vec::new();
         if let Some(live) = install_log::path() {
-            paths.push(format!("{} {live}", tr("Full log:")));
+            paths.push(format!("Full log: {live}"));
         }
         if std::path::Path::new(install_log::TARGET_LOG).exists() {
             paths.push(format!(
-                "{} {}",
-                tr("Copy kept on the target disk:"),
+                "Copy kept on the target disk: {}",
                 install_log::TARGET_LOG
             ));
-        }
-        if paths.is_empty() {
-            self.log_path_label.set_visible(false);
-        } else {
-            self.log_path_label.set_label(&paths.join("\n"));
-            self.log_path_label.set_visible(true);
         }
 
         *self.failure.borrow_mut() = (message.to_string(), paths);
         self.qr_button.set_visible(true);
+        self.reconfigure_button.set_visible(true);
         self.quit_button.set_visible(true);
     }
 
@@ -523,9 +544,7 @@ impl ProgressPage {
                 qr_code::present_dialog(
                     &button,
                     &tr("Error report QR code"),
-                    &tr(
-                        "Scan this code with a phone to get the error report. The log is cut down to what a QR code can hold — the full log is in the files listed on screen.",
-                    ),
+                    &tr("Scan this code with a phone to get the error report."),
                     &payload,
                 );
                 button.set_sensitive(true);

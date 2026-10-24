@@ -89,6 +89,9 @@ msgstr "Cancelar"
 msgid "Captive portal address unknown"
 msgstr "Dirección del portal cautivo desconocida"
 
+msgid "Change the configuration"
+msgstr "Cambiar la configuración"
+
 msgid "Checking…"
 msgstr "Comprobando…"
 
@@ -125,6 +128,9 @@ msgstr "Confirmar la contraseña"
 msgid "Confirm the encryption passphrase"
 msgstr "Confirme la frase de contraseña de cifrado"
 
+msgid "Confirm the partitioning"
+msgstr "Confirmar el particionado"
+
 msgid "Connect"
 msgstr "Conectar"
 
@@ -142,12 +148,6 @@ msgstr "Continuar"
 
 msgid "Continue anyway"
 msgstr "Continuar de todos modos"
-
-msgid "Copy kept on the target disk:"
-msgstr "Copia conservada en el disco de destino:"
-
-msgid "Copy text"
-msgstr "Copiar el texto"
 
 msgid "Copying the Wi-Fi configuration"
 msgstr "Copiando la configuración Wi-Fi"
@@ -307,9 +307,6 @@ msgstr "Región de espacio libre"
 
 msgid "Free space:"
 msgstr "Espacio libre:"
-
-msgid "Full log:"
-msgstr "Registro completo:"
 
 msgid "Full name"
 msgstr "Nombre completo"
@@ -611,13 +608,8 @@ msgstr "Raíz (/)"
 msgid "Save"
 msgstr "Guardar"
 
-msgid ""
-"Scan this code with a phone to get the error report. The log is cut down to "
-"what a QR code can hold — the full log is in the files listed on screen."
-msgstr ""
-"Escanee este código con un teléfono para obtener el informe de error. El "
-"registro se ha recortado a lo que cabe en un código QR: el registro completo "
-"está en los archivos indicados en pantalla."
+msgid "Scan this code with a phone to get the error report."
+msgstr "Escanee este código con un teléfono para obtener el informe de error."
 
 msgid "Scanning…"
 msgstr "Buscando…"
@@ -699,6 +691,16 @@ msgstr "Se instalarán las aplicaciones esenciales para cada actividad"
 msgid "The essentials, ready to use"
 msgstr "Lo esencial, listo para usar"
 
+msgid ""
+"The failed install is not undone: partitions, filesystems and unlocked "
+"encrypted volumes stay as it left them, so starting again may fail on them. "
+"Restart the computer instead if you want a clean target."
+msgstr ""
+"La instalación fallida no se deshace: las particiones, los sistemas de "
+"archivos y los volúmenes cifrados desbloqueados se quedan tal como los dejó, "
+"así que un nuevo intento puede fallar por ello. Reinicia el ordenador si "
+"quieres un destino limpio."
+
 msgid "The following partitions will be permanently erased"
 msgstr "Las siguientes particiones se borrarán de forma permanente"
 
@@ -759,6 +761,15 @@ msgstr "Esta región de espacio libre es demasiado pequeña"
 
 msgid "This layout could not be applied to the running session."
 msgstr "No se ha podido aplicar esta distribución a la sesión actual."
+
+msgid ""
+"This layout is what the installation will write to disk. Nothing is erased "
+"before you confirm it on the summary page, and you can come back to this "
+"step until then."
+msgstr ""
+"Este esquema es lo que la instalación escribirá en el disco. No se borra "
+"nada antes de que lo confirmes en la página de resumen, y hasta entonces "
+"puedes volver a este paso."
 
 msgid ""
 "This network requires signing in through a captive portal, but "

@@ -82,6 +82,9 @@ msgstr ""
 msgid "Captive portal address unknown"
 msgstr ""
 
+msgid "Change the configuration"
+msgstr ""
+
 msgid "Checking…"
 msgstr ""
 
@@ -115,6 +118,9 @@ msgstr ""
 msgid "Confirm the encryption passphrase"
 msgstr ""
 
+msgid "Confirm the partitioning"
+msgstr ""
+
 msgid "Connect"
 msgstr ""
 
@@ -131,12 +137,6 @@ msgid "Continue"
 msgstr ""
 
 msgid "Continue anyway"
-msgstr ""
-
-msgid "Copy kept on the target disk:"
-msgstr ""
-
-msgid "Copy text"
 msgstr ""
 
 msgid "Copying the Wi-Fi configuration"
@@ -283,9 +283,6 @@ msgid "Free space region"
 msgstr ""
 
 msgid "Free space:"
-msgstr ""
-
-msgid "Full log:"
 msgstr ""
 
 msgid "Full name"
@@ -581,9 +578,7 @@ msgstr ""
 msgid "Save"
 msgstr ""
 
-msgid ""
-"Scan this code with a phone to get the error report. The log is cut down to "
-"what a QR code can hold — the full log is in the files listed on screen."
+msgid "Scan this code with a phone to get the error report."
 msgstr ""
 
 msgid "Scanning…"
@@ -663,6 +658,12 @@ msgstr ""
 msgid "The essentials, ready to use"
 msgstr ""
 
+msgid ""
+"The failed install is not undone: partitions, filesystems and unlocked "
+"encrypted volumes stay as it left them, so starting again may fail on them. "
+"Restart the computer instead if you want a clean target."
+msgstr ""
+
 msgid "The following partitions will be permanently erased"
 msgstr ""
 
@@ -715,6 +716,12 @@ msgid "This free space region is too small"
 msgstr ""
 
 msgid "This layout could not be applied to the running session."
+msgstr ""
+
+msgid ""
+"This layout is what the installation will write to disk. Nothing is erased "
+"before you confirm it on the summary page, and you can come back to this "
+"step until then."
 msgstr ""
 
 msgid ""

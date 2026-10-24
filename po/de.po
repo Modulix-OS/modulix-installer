@@ -90,6 +90,9 @@ msgstr "Abbrechen"
 msgid "Captive portal address unknown"
 msgstr "Adresse des Captive Portals unbekannt"
 
+msgid "Change the configuration"
+msgstr "Konfiguration ändern"
+
 msgid "Checking…"
 msgstr "Wird geprüft …"
 
@@ -126,6 +129,9 @@ msgstr "Passwort bestätigen"
 msgid "Confirm the encryption passphrase"
 msgstr "Passphrase für die Verschlüsselung bestätigen"
 
+msgid "Confirm the partitioning"
+msgstr "Partitionierung bestätigen"
+
 msgid "Connect"
 msgstr "Verbinden"
 
@@ -143,12 +149,6 @@ msgstr "Fortfahren"
 
 msgid "Continue anyway"
 msgstr "Trotzdem fortfahren"
-
-msgid "Copy kept on the target disk:"
-msgstr "Kopie auf der Zielfestplatte:"
-
-msgid "Copy text"
-msgstr "Text kopieren"
 
 msgid "Copying the Wi-Fi configuration"
 msgstr "Wi-Fi-Konfiguration wird kopiert"
@@ -310,9 +310,6 @@ msgstr "Bereich mit freiem Speicherplatz"
 
 msgid "Free space:"
 msgstr "Freier Speicherplatz:"
-
-msgid "Full log:"
-msgstr "Vollständiges Protokoll:"
 
 msgid "Full name"
 msgstr "Vollständiger Name"
@@ -620,13 +617,9 @@ msgstr "Wurzel (/)"
 msgid "Save"
 msgstr "Speichern"
 
-msgid ""
-"Scan this code with a phone to get the error report. The log is cut down to "
-"what a QR code can hold — the full log is in the files listed on screen."
+msgid "Scan this code with a phone to get the error report."
 msgstr ""
-"Diesen Code mit einem Telefon scannen, um den Fehlerbericht zu erhalten. Das "
-"Protokoll ist auf das gekürzt, was ein QR-Code fassen kann — das "
-"vollständige Protokoll liegt in den auf dem Bildschirm genannten Dateien."
+"Diesen Code mit einem Telefon scannen, um den Fehlerbericht zu erhalten."
 
 msgid "Scanning…"
 msgstr "Suche läuft …"
@@ -709,6 +702,16 @@ msgstr "Für jede Aktivität werden die wesentlichen Anwendungen installiert"
 msgid "The essentials, ready to use"
 msgstr "Das Wichtigste, sofort einsatzbereit"
 
+msgid ""
+"The failed install is not undone: partitions, filesystems and unlocked "
+"encrypted volumes stay as it left them, so starting again may fail on them. "
+"Restart the computer instead if you want a clean target."
+msgstr ""
+"Die fehlgeschlagene Installation wird nicht zurückgenommen: Partitionen, "
+"Dateisysteme und entsperrte verschlüsselte Datenträger bleiben so, wie sie "
+"sie hinterlassen hat, ein neuer Versuch kann daran scheitern. Starten Sie "
+"den Computer neu, wenn Sie ein saubereres Ziel wollen."
+
 msgid "The following partitions will be permanently erased"
 msgstr "Die folgenden Partitionen werden unwiderruflich gelöscht"
 
@@ -774,6 +777,15 @@ msgid "This layout could not be applied to the running session."
 msgstr ""
 "Diese Tastaturbelegung konnte nicht auf die laufende Sitzung angewendet "
 "werden."
+
+msgid ""
+"This layout is what the installation will write to disk. Nothing is erased "
+"before you confirm it on the summary page, and you can come back to this "
+"step until then."
+msgstr ""
+"Dieses Layout ist das, was die Installation auf die Festplatte schreibt. Vor "
+"Ihrer Bestätigung auf der Übersichtsseite wird nichts gelöscht, und bis "
+"dahin können Sie zu diesem Schritt zurückkehren."
 
 msgid ""
 "This network requires signing in through a captive portal, but "

@@ -111,8 +111,7 @@ fn drawing_area(matrix: QrMatrix) -> gtk::DrawingArea {
     area
 }
 
-/// Opens a dialog showing `payload` as a QR code, with a copy-to-clipboard
-/// fallback.
+/// Opens a dialog showing `payload` as a QR code.
 ///
 /// * `parent` - widget the dialog is presented on; any widget inside the
 ///   window works.
@@ -123,8 +122,7 @@ fn drawing_area(matrix: QrMatrix) -> gtk::DrawingArea {
 ///
 /// # Post-conditions
 /// The dialog is presented. When [`encode`] fails, the failure reason takes
-/// the code's place rather than leaving an empty square, and the copy button
-/// still works — the text is the point, the code is only the fast path.
+/// the code's place rather than leaving an empty square.
 pub fn present_dialog(parent: &impl IsA<gtk::Widget>, title: &str, caption: &str, payload: &str) {
     let content = gtk::Box::new(gtk::Orientation::Vertical, 18);
     content.set_margin_top(18);
@@ -154,19 +152,6 @@ pub fn present_dialog(parent: &impl IsA<gtk::Widget>, title: &str, caption: &str
         .css_classes(["dim-label"])
         .build();
     content.append(&caption_label);
-
-    let copy_button = gtk::Button::builder()
-        .label(tr("Copy text"))
-        .css_classes(["pill"])
-        .halign(gtk::Align::Center)
-        .build();
-    {
-        let payload = payload.to_string();
-        copy_button.connect_clicked(move |button| {
-            button.clipboard().set_text(&payload);
-        });
-    }
-    content.append(&copy_button);
 
     let scroller = gtk::ScrolledWindow::builder()
         .child(&content)

@@ -174,6 +174,8 @@ src/
   main.rs               bootstrap adw::Application, no CLI flags; a backend that cannot be
                         reached is fatal (fullscreen error page, non-zero exit)
   app.rs                AdwApplicationWindow fullscreen, NavigationView, step rail
+                        (`RailTarget`, `navigate_to`, `refresh_rail` — see "The step
+                        rail is the navigation control" below)
   a11y.rs                A11ySettings (GObject) — shared narrator/high-contrast/large-text/
                         magnifier/sticky-keys state, live effects on the installer itself
   config.rs             InstallConfig — all answers, Rc<RefCell<_>>
@@ -185,8 +187,9 @@ src/
   finish/               summary.rs, progress.rs, qr_report.rs (error-report payload for
                         the failure page's QR code) — post-step-9 review (recomputes
                         `plan::plan` against live disk state, destructive-confirmation
-                        dialog) + install-progress page; pushed outside the step rail,
-                        `StepId::ALL` stays at 9
+                        dialog) + install-progress page; outside `StepId::ALL`, which
+                        stays at 9, but each owns one of the step rail's two last rows,
+                        keyed on `finish::SUMMARY_TAG`/`PROGRESS_TAG`
   backend/              disk/ (mod.rs, layout.rs free-gap math, ntfs.rs shrink-preflight
                         parser, scenario.rs `#[cfg(test)]` fixtures, udisks2.rs)
                         net/ locale/ a11y/ crypt/  (trait + impl)
@@ -510,8 +513,21 @@ confirmation dialog it opens stays destructive) → install-progress screen (an 
 bottom, pulsing while `nixos-install` runs) → done. When the pipeline ends, the status line and
 progress bar are hidden and an outcome row takes their place in the same spot: outcome text on
 the left, "Restart now" on the right. Failure keeps the status line, puts the (selectable,
-scrollable) error and the log paths in that row, and replaces the restart button with two:
-an "Error report QR code" button and a `destructive-action` "Quit the installer" — the
+scrollable) error in that row — the log paths are not shown on screen, only carried in the
+QR payload — and replaces the restart button with three,
+in that order — read the error, fix it, or give up: an "Error report QR code" button, a
+`suggested-action` "Change the configuration" and a `destructive-action` "Quit the installer".
+The middle one is the **only** thing that ever clears `app.rs`'s `installing` flag: it runs
+`ProgressPage::set_reconfigure_hook`'s closure, which confirms through an `adw::AlertDialog`
+and then navigates back to the review page (`perform_navigation`, not `navigate_to` — a
+backwards move has nothing to commit), from where every rail row is already visited and
+therefore reachable. The dialog is not a formality and its wording is the point: a failed
+pipeline stopped wherever it stopped and `PostInstallTask` never ran, so the partitions, the
+filesystems, the open LUKS mappers, the `/mnt` mounts and the target's active swap are all
+still exactly as the failure left them. Going back undoes none of it, `SummaryPage::refresh`
+re-plans against that changed live disk (so the Install button may well come back blocked),
+and a reboot is what gets a clean target. The QR button and the quit button are the
+other two: the
 kiosk has no browser, no guaranteed network and no way to get text out, so the report
 leaves by phone camera, and leaving a failed install is the same reboot the success path
 offers (`wire_reboot_button` is shared, same remove-the-medium confirmation, same
@@ -525,6 +541,46 @@ L, the hard ceiling of a single QR code) with an explicit `(truncated, N bytes o
 marker. `widgets::qr_code` draws the matrix itself on a `DrawingArea` — forced white
 background whatever the theme, 4-module quiet zone, whole-pixel module size (a fractional
 module renders blurry and a blurry code does not scan).
+
+**The step rail is the navigation control, not a read-out.** Its 11 rows — the 9 steps, then
+`Ready to install` and `Installing` — are `gtk::Button`s (a `Box` with a `GestureClick` would
+have given neither keyboard activation, nor the button accessible role Orca reads, nor the
+insensitive dimming that *is* the "locked" look), each wired to `app.rs`'s `navigate_to(RailTarget)`.
+`RailTarget` is `Step(usize) | Review | Install`: the steps are positions in the registry, the
+two finish pages are keyed on `finish::SUMMARY_TAG`/`PROGRESS_TAG` instead, which is what keeps
+`StepId::ALL` at 9 while the rail grows past it — `slot_for_tag` is the single mapping and the one
+`visible-page` handler stays the only authority on where the wizard is. Backwards is always
+allowed; **forwards** needs two things at once: every relevant step before the target reports
+`is-ready` — the jump commits each step it walks over (same `commit`, same `Couldn't save this
+step` toast as "Next") — and the target sits at most **one row past `visited_max`**, the furthest
+row ever shown, so an unvisited step keeps the one after it locked and the rail can never run
+more than a single row ahead of what the user has actually seen. A row already visited stays
+reachable for good. An unreachable row is insensitive and faintly dimmed
+(`.step-rail-row:disabled`). `refresh_rail` recomputes that from each step's `ValidityTracker`
+and from `visited_max`, and is connected to every step's `is-ready` signal, so filling a field
+un-dims the row below it with no navigation.
+
+Leaving the **partitioning** step forward — by "Next" or by a rail jump — goes through one
+`adw::AlertDialog` first (`navigate_to` is the wrapper, `perform_navigation` the move itself):
+that step is the only one whose answers destroy data, and the summary's own destructive
+confirmation is 3 pages further on. It is asked **once per layout, not once per session**:
+`partitioning_fingerprint` hashes the layout-relevant fields of `PartitioningConfig` (not the
+passphrase or the PIN — they are not layout, and `Secret`'s `Debug` masks them anyway), the
+acknowledged fingerprint is kept, and editing the layout and leaving again asks again. The
+wrapper commits the step before building the dialog, so the text reports what is on the page;
+`perform_navigation` commits it a second time, which is a no-op in effect since `commit` only
+copies widget state into the config.
+`navigate_to` applies the result with a single `NavigationView::replace` rather than a
+push/pop sequence: one call serves both directions, it cannot raise "Page is already in
+navigation stack", and it notifies `visible-page` once. The "Next" button and the `AdvanceHook`
+both go through it too, so there is one forward path, not two. Reaching the progress page sets an
+`installing` flag, and every row — the review one included — stays locked for as long as it is
+set: through the whole run, through success, and through failure until the failure page's
+"Change the configuration" button clears it (the only thing that does, see the failure-page
+paragraph below), since nothing the pipeline has written to the disk is undone by walking back
+in the wizard. The install row is the one row
+that is never clickable at all: that page is entered by the summary's own "Install" button or not
+at all.
 
 **Exactly one `HeaderBar` exists in the wizard** — `app.rs`'s, wrapping the whole
 `NavigationView`, with both sets of title buttons off (nothing in a sway kiosk can act on
