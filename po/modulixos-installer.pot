@@ -441,6 +441,9 @@ msgstr ""
 msgid "No existing partitions will be deleted."
 msgstr ""
 
+msgid "No filesystem"
+msgstr ""
+
 msgid "No partitions"
 msgstr ""
 
@@ -663,6 +666,9 @@ msgstr ""
 msgid "The following partitions will be permanently erased"
 msgstr ""
 
+msgid "The following partitions will be resized"
+msgstr ""
+
 msgid "The installer cannot start"
 msgstr ""
 
@@ -722,6 +728,9 @@ msgid ""
 "This partition will be reformatted as FAT32. Modulix uses its own 1024 MiB "
 "EFI partition — if this is Windows' EFI partition, Windows will no longer "
 "boot. Create a separate partition instead."
+msgstr ""
+
+msgid "This will be resized"
 msgstr ""
 
 msgid "This will permanently erase"

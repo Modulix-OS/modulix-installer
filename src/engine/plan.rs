@@ -132,7 +132,9 @@ pub struct PartitionPlan {
     /// "after" `DiskBar`.
     pub preview: Vec<PreviewSegment>,
     /// Paths that get destroyed (deleted, or reformatted-in-place) — feeds
-    /// the destructive-confirmation dialog's explicit list.
+    /// the destructive-confirmation dialog's explicit list. Also what
+    /// `build_preview` leaves out of the "after" layout, so a partition the
+    /// plan destroys belongs here even when it carries no filesystem.
     pub erases: Vec<String>,
 }
 
@@ -997,6 +999,28 @@ mod tests {
         );
         let result = plan(&input).unwrap();
         assert_eq!(result.erases, vec!["/dev/fake0p1".to_string()]);
+    }
+
+    #[test]
+    fn entire_disk_erases_a_partition_with_no_filesystem() {
+        let input = base_input(
+            disk(250 * GIB, TableKind::Gpt, false, false),
+            vec![
+                part("/dev/fake0p1", MIB, 100 * MIB, Some(PK::Esp), Some("vfat")),
+                part("/dev/fake0p2", 101 * MIB, 16 * MIB, None, None),
+                part("/dev/fake0p3", 117 * MIB, 32 * GIB, None, Some("ntfs")),
+            ],
+            base_cfg(PartitionMode::EntireDisk),
+        );
+        let result = plan(&input).unwrap();
+        assert_eq!(
+            result.erases,
+            vec![
+                "/dev/fake0p1".to_string(),
+                "/dev/fake0p2".to_string(),
+                "/dev/fake0p3".to_string(),
+            ]
+        );
     }
 
     #[test]

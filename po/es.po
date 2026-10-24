@@ -466,6 +466,9 @@ msgstr "Ningún disco seleccionado"
 msgid "No existing partitions will be deleted."
 msgstr "No se eliminará ninguna partición existente."
 
+msgid "No filesystem"
+msgstr "Sin sistema de archivos"
+
 msgid "No partitions"
 msgstr "Sin particiones"
 
@@ -699,6 +702,9 @@ msgstr "Lo esencial, listo para usar"
 msgid "The following partitions will be permanently erased"
 msgstr "Las siguientes particiones se borrarán de forma permanente"
 
+msgid "The following partitions will be resized"
+msgstr "Las siguientes particiones se redimensionarán"
+
 msgid "The installer cannot start"
 msgstr "El instalador no puede iniciarse"
 
@@ -773,6 +779,9 @@ msgstr ""
 "Esta partición se formateará de nuevo como FAT32. Modulix usa su propia "
 "partición EFI de 1024 MiB: si esta es la partición EFI de Windows, Windows "
 "ya no arrancará. Cree en su lugar una partición aparte."
+
+msgid "This will be resized"
+msgstr "Esto se redimensionará"
 
 msgid "This will permanently erase"
 msgstr "Esto borrará de forma permanente"

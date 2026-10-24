@@ -470,6 +470,9 @@ msgstr "Keine Festplatte ausgewählt"
 msgid "No existing partitions will be deleted."
 msgstr "Es werden keine vorhandenen Partitionen gelöscht."
 
+msgid "No filesystem"
+msgstr "Kein Dateisystem"
+
 msgid "No partitions"
 msgstr "Keine Partitionen"
 
@@ -709,6 +712,9 @@ msgstr "Das Wichtigste, sofort einsatzbereit"
 msgid "The following partitions will be permanently erased"
 msgstr "Die folgenden Partitionen werden unwiderruflich gelöscht"
 
+msgid "The following partitions will be resized"
+msgstr "Die folgenden Partitionen werden in der Größe geändert"
+
 msgid "The installer cannot start"
 msgstr "Das Installationsprogramm kann nicht gestartet werden"
 
@@ -789,6 +795,9 @@ msgstr ""
 "EFI-Partition mit 1024 MiB — handelt es sich hier um die EFI-Partition von "
 "Windows, startet Windows nicht mehr. Stattdessen eine separate Partition "
 "anlegen."
+
+msgid "This will be resized"
+msgstr "Größe wird geändert"
 
 msgid "This will permanently erase"
 msgstr "Unwiderruflich gelöscht wird"
