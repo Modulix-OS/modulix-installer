@@ -252,7 +252,7 @@ impl Step for LanguageStep {
     }
 
     fn icon_name(&self) -> &'static str {
-        "language-symbolic"
+        "preferences-desktop-locale-symbolic"
     }
 
     fn widget(&self) -> gtk::Widget {

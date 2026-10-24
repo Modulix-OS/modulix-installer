@@ -127,7 +127,7 @@ impl Step for TimezoneStep {
     }
 
     fn icon_name(&self) -> &'static str {
-        "timezone-symbolic"
+        "preferences-system-time-symbolic"
     }
 
     fn widget(&self) -> gtk::Widget {

@@ -179,7 +179,7 @@ impl Step for UserStep {
     }
 
     fn icon_name(&self) -> &'static str {
-        "user-symbolic"
+        "avatar-default-symbolic"
     }
 
     fn widget(&self) -> gtk::Widget {

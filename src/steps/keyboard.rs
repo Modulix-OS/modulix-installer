@@ -379,7 +379,7 @@ impl Step for KeyboardStep {
     }
 
     fn icon_name(&self) -> &'static str {
-        "keyboard-symbolic"
+        "input-keyboard-symbolic"
     }
 
     fn widget(&self) -> gtk::Widget {

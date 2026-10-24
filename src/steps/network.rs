@@ -421,7 +421,7 @@ impl Step for NetworkStep {
     }
 
     fn icon_name(&self) -> &'static str {
-        "network-symbolic"
+        "network-transmit-receive-symbolic"
     }
 
     fn widget(&self) -> gtk::Widget {

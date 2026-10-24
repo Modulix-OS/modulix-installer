@@ -360,7 +360,7 @@ impl Step for DesktopEnvironmentStep {
     }
 
     fn icon_name(&self) -> &'static str {
-        "desktop-symbolic"
+        "video-display-symbolic"
     }
 
     fn widget(&self) -> gtk::Widget {

@@ -559,7 +559,7 @@ impl Step for AppPackStep {
     }
 
     fn icon_name(&self) -> &'static str {
-        "apps-symbolic"
+        "view-app-grid-symbolic"
     }
 
     fn widget(&self) -> gtk::Widget {

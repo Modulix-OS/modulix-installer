@@ -1605,7 +1605,7 @@ impl Step for PartitioningStep {
     }
 
     fn icon_name(&self) -> &'static str {
-        "partitioning-symbolic"
+        "drive-harddisk-symbolic"
     }
 
     fn widget(&self) -> gtk::Widget {

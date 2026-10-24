@@ -205,12 +205,26 @@ src/
                         stays an index into the unfiltered model, GTK resets the search
                         filter before reporting it)
 data/
-  icons/*.svg           one symbolic icon per step — GTK4 symbolic constraint: must be
-                        fill-only (no `stroke`, no `fill="none"`); GTK recolors `fill`
-                        attributes via the injected `<style>` but never `stroke`, so a
-                        stroked path stays the icon's original color instead of following
-                        the theme (rings/outlines are drawn as an evenodd fill between two
-                        concentric shapes instead)
+  icons/*.svg           two files only — `qr-code-symbolic.svg` and
+                        `accessibility-symbolic.svg`. Every other step and rail icon is
+                        an Adwaita symbolic name now (`adwaita-icon-theme` reaches a
+                        release build through `nix/package.nix`'s XDG_DATA_DIRS and a dev
+                        run through the devShell's inherited
+                        `/run/current-system/sw/share`); these two are what Adwaita 50
+                        has no equivalent for — no QR glyph at all, and only the older
+                        `preferences-desktop-accessibility` for the second, so that one
+                        is GNOME Settings' own `org.gnome.Settings-accessibility-symbolic`
+                        copied verbatim out of gnome-control-center (GPL-2.0-or-later).
+                        It is a *copy* and not an extra `--sourcedir` the way the Papirus
+                        app-pack icons are, because gnome-control-center is a 1.8 GiB
+                        closure and that would make it a build dependency of the ISO for
+                        one 1 KiB file. A vendored icon must be fill-only (no `stroke`,
+                        no `fill="none"`): GTK recolors `fill` attributes via the injected
+                        `<style>` but never `stroke`, so a stroked path stays the icon's
+                        original color instead of following the theme (rings/outlines are
+                        drawn as an evenodd fill between two concentric shapes instead) —
+                        a hardcoded `fill="#2e3436"`/`#222222` is fine, that is what the
+                        injected rule overrides
   screenshots/          gnome.webp, plasma.webp, lxqt.webp
   slides/*.svg          install-slideshow pictograms — square and **background-free**
                         (`slideshow.rs` draws them centred in a fixed `SLIDE_ICON_PX` box
