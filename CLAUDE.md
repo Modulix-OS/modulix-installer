@@ -221,8 +221,10 @@ nix/
   kiosk-module.nix      the sway kiosk session (systemd unit + PAM + tty1 recovery
                         shell), ISO runtime deps, and the session's input config —
                         `input type:touchpad { scroll_factor 0.4 }`, because libinput's
-                        default overshoots the long lists by screens per flick (compositor
-                        level, so it covers GParted too; no effect under `cargo run`)
+                        default overshoots the long lists by screens per flick, plus
+                        `xkb_numlock enabled`, so the keypad works in the password
+                        fields (both compositor level, so they cover GParted too; no
+                        effect under `cargo run`)
   package.nix           naersk derivation; wrapGAppsHook4 wiring
   vm.nix                `nix run .#vm` qemu runner (UEFI + swtpm + scratch disk)
 build.rs                glib_build_tools::compile_resources

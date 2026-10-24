@@ -207,9 +207,13 @@ let
     seat * hide_cursor 8000
 
     # Starting layout only: the keyboard step rewrites it live over the sway
-    # IPC socket (see src/backend/locale/system.rs).
+    # IPC socket (see src/backend/locale/system.rs). sway reapplies the whole
+    # input config on every keymap reload, so xkb_numlock survives those
+    # rewrites: the numeric keypad stays usable for the password fields, where
+    # a silently-off keypad is indistinguishable from a wrong password.
     input type:keyboard {
         xkb_layout us
+        xkb_numlock enabled
     }
 
     # The installer's lists (locales, timezones, keyboard layouts) are long and

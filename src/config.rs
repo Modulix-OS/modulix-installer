@@ -209,6 +209,7 @@ impl DesktopEnvironment {
                 "gnome-calculator",
                 "baobab",
                 "gnome-disk-utility",
+                "gnome-extension-manager",
                 "gnome-tour",
                 "resources",
             ],
