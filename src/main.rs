@@ -3,7 +3,7 @@ mod app;
 mod backend;
 mod bridge;
 mod config;
-#[cfg(debug_assertions)]
+#[cfg(any(debug_assertions, test))]
 mod debugsim;
 mod engine;
 mod finish;

@@ -1,7 +1,10 @@
 //! Debug-only disk/encryption simulation, enabled by `--fake-disks=`/
-//! `--fake-error=`/`--fake-instant` (see `cli`). `#[cfg(debug_assertions)]`
-//! at the module declaration in `main.rs` keeps every byte of it out of a
-//! release build — the live ISO links a release binary, so this never ships.
+//! `--fake-error=`/`--fake-instant` (see `cli`). The module declaration in
+//! `main.rs` is gated on `#[cfg(any(debug_assertions, test))]`: the `test`
+//! half exists only so the fake backends stay reachable from a test harness
+//! built in release (`nix/package.nix` runs `doCheck` on a release build),
+//! and the live ISO links a release binary compiled *without* `--test`, so
+//! not a byte of this ever ships.
 //!
 //! This is **not** a fallback: `main.rs` only ever builds a `DebugSim` when
 //! one of the three flags is given explicitly, and a failed
@@ -15,6 +18,10 @@
 //! (`backend::Backends::with_fake_disks`): they are static system data or a
 //! real D-Bus service already safe to exercise on a dev machine, not the
 //! destructive operations this module exists to avoid.
+
+// Reachable only from `debug_assertions`-gated call sites, so a release
+// test harness links the module with most of its entry points unused.
+#![cfg_attr(not(debug_assertions), allow(dead_code, unused_imports))]
 
 pub mod cli;
 mod crypt;

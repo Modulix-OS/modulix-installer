@@ -76,8 +76,12 @@ more of `backend::disk::scenario::DiskScenario`'s 11 fixtures (aliases `fragment
 `--fake-error=` injects exactly one failure from a fixed catalog (`cargo run --
 --fake-error=list` prints it) at a specific pipeline stage, so every failure path the progress
 page, the QR error report and the install-log copy exist to handle can be reproduced on demand;
-`--fake-instant` zeroes the fake install's sleeps. This is gated by `#[cfg(debug_assertions)]`
-end to end — none of it is compiled into a release binary (the live ISO's), and it is never a
+`--fake-instant` zeroes the fake install's sleeps. The module declaration is gated on
+`#[cfg(any(debug_assertions, test))]` and every call site on `debug_assertions` alone, so none
+of it is compiled into the release binary the live ISO ships — that one is built without
+`--test`; the `test` half exists only because `nix/package.nix` runs `doCheck` on a **release**
+build, where `cfg(test)` is on and `debug_assertions` off, and `finish::summary`'s test drives
+`FakeDiskBackend` through the real `gather_plan_input`. It is never a
 fallback: only `disk`/`crypt` are faked (`backend::Backends::with_fake_disks`), network/locale/
 accessibility stay real, and a release binary refuses to start at all if handed any `--fake*` or
 otherwise-unrecognized flag (routed through the same fatal-error window a real backend
@@ -694,8 +698,10 @@ modulix-core-utils = { path = "../modulix-core-utils", features = ["init", "file
   fullscreen error page with the full, selectable reason and a single Quit button, and a
   non-zero exit — still true today, fallback or not.
   `src/debugsim/` (see "Commands" above) reintroduces a fake `DiskBackend`/`CryptBackend` pair
-  without reopening that hole, on three separate guarantees: it is `#[cfg(debug_assertions)]`
-  end to end, so a release binary (the only thing the live ISO ships) never links a line of it;
+  without reopening that hole, on three separate guarantees: the release binary the live ISO
+  ships links none of it (module gated on `#[cfg(any(debug_assertions, test))]`, call sites on
+  `debug_assertions` alone, and that binary is a release build without `--test` — see
+  "Commands" for why the `test` half is there);
   it only ever activates on an explicit `--fake-disks=`/`--fake-error=`/`--fake-instant` flag,
   never as a fallback from a connection failure; and `Backends::new()`/`Backends::with_fake_disks()`
   failing is fatal either way — faking the disks is not a reason to also fake away a genuinely
