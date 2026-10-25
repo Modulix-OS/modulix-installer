@@ -383,8 +383,9 @@ const DASH_ORDER: &[&str] = &[
     "org.gnome.Software.desktop",
 ];
 
-/// A folder is only worth creating from two applications up: a folder holding
-/// a single icon hides it behind one more click for nothing.
+/// A folder is only worth *showing* from two applications up: a folder holding
+/// a single icon hides it behind one more click for nothing. Below the
+/// threshold the folder is still written, empty — see [`FolderPlan::shown`].
 const MIN_FOLDER_APPS: usize = 2;
 
 /// One app-grid folder.
@@ -407,7 +408,7 @@ struct GridFolder {
 }
 
 /// The folders, in `folder-children` order — which is also the order
-/// [`wanted_folders`] returns, so the written key is byte-stable.
+/// [`folder_plans`] returns, so the written key is byte-stable.
 const FOLDERS: &[GridFolder] = &[
     GridFolder {
         id: "Office",
@@ -447,8 +448,35 @@ const FOLDERS: &[GridFolder] = &[
 ];
 
 /// One folder to write, with the members the selection really installs — what
-/// [`wanted_folders`] returns and [`keyfile`] renders.
-type FolderPlan = (&'static GridFolder, Vec<&'static str>);
+/// [`folder_plans`] returns and [`keyfile`] renders.
+///
+/// Fields:
+/// * `folder` - the folder itself, one of [`FOLDERS`].
+/// * `members` - the known applications this install really puts in it, in
+///   [`KNOWN_APPS`] order.
+struct FolderPlan {
+    folder: &'static GridFolder,
+    members: Vec<&'static str>,
+}
+
+impl FolderPlan {
+    /// Whether the folder is worth *showing* now.
+    ///
+    /// Every folder is written whatever this returns: `categories=` is the
+    /// only thing that can file an application installed months later, and
+    /// this seed runs once, at install time. Below [`MIN_FOLDER_APPS`] the
+    /// folder is written *empty* instead — no `apps` key, its own members in
+    /// `excluded-apps`, its id out of `app-picker-layout` — and GNOME Shell
+    /// destroys a folder icon holding nothing (`AppDisplay._loadApps`), so the
+    /// first login looks exactly as it did when such a folder was not written
+    /// at all.
+    ///
+    /// # Returns
+    /// `true` from [`MIN_FOLDER_APPS`] members up.
+    fn shown(&self) -> bool {
+        self.members.len() >= MIN_FOLDER_APPS
+    }
+}
 /// Seeds the primary user's dconf database with an arranged GNOME app grid
 /// and a pre-filled dash.
 ///
@@ -549,7 +577,7 @@ impl Task for GnomeGridTask {
             return Ok(());
         }
 
-        let folders = wanted_folders(&ctx.config.apps);
+        let folders = folder_plans(&ctx.config.apps);
         let keyfile = keyfile(
             &favorites(&ctx.config.apps),
             &root_layout(&ctx.config.apps, &folders),
@@ -798,6 +826,13 @@ fn members(folder: &GridFolder, apps: &AppSelection) -> Vec<&'static str> {
 /// The `excluded-apps` key of one folder.
 ///
 /// * `folder` - the folder to compute it for.
+/// * `orphans` - applications filed in this very folder that must stay on the
+///   root grid, which is how a folder below [`MIN_FOLDER_APPS`] is kept empty.
+///   Pass `&[]` for a folder that is shown. It must hold the folder's
+///   **installed** members only, never its whole potential membership from
+///   [`KNOWN_APPS`]: excluding an application the install does not contain yet
+///   would blacklist it from the folder for good, which is the very thing
+///   writing every folder exists to avoid.
 ///
 /// # Returns
 /// Every known application this folder's categories would claim although it
@@ -811,52 +846,74 @@ fn members(folder: &GridFolder, apps: &AppSelection) -> Vec<&'static str> {
 /// `Utility` respectively, and filed in `System` on purpose, which is what
 /// takes them out of the utilities and off the root grid.
 ///
-/// Deliberately independent of the selection: excluding an application the
-/// install does not contain costs nothing, and a key that does not move with
-/// the answers keeps two identical installs byte-identical.
-fn excluded_apps(folder: &GridFolder) -> Vec<&'static str> {
+/// Excluding an application the install does not contain costs nothing, so the
+/// list is the same whatever the user ticked — except for `orphans`, the one
+/// part that does follow the answers. Two installs answering the same way are
+/// still byte-identical.
+fn excluded_apps(folder: &GridFolder, orphans: &[&str]) -> Vec<&'static str> {
     KNOWN_APPS
         .iter()
-        .filter(|app| !matches!(app.placement, Placement::Folder(id) if id == folder.id))
+        .filter(|app| {
+            !matches!(app.placement, Placement::Folder(id) if id == folder.id)
+                || orphans.contains(&app.id)
+        })
         .filter(|app| categories_intersect(app.categories, folder.categories))
         .map(|app| app.id)
         .collect()
 }
 
-/// The folders worth creating for one application selection.
+/// The folders to write for one application selection.
 ///
 /// * `apps` - the cards ticked at the application step.
 ///
 /// # Returns
-/// Every folder holding at least [`MIN_FOLDER_APPS`] known applications, in
-/// [`FOLDERS`] order, each with those applications. A folder below the
-/// threshold is left out and its lone application stays on the root grid,
-/// where it is one click closer.
-fn wanted_folders(apps: &AppSelection) -> Vec<FolderPlan> {
+/// One plan per [`FOLDERS`] entry, in table order — so `folder-children` is
+/// byte-stable — each with the applications this install really puts in it.
+/// Every folder is written: a folder below [`MIN_FOLDER_APPS`] is the one an
+/// application installed months later needs most, and only
+/// [`FolderPlan::shown`] decides whether it holds anything at the first login.
+fn folder_plans(apps: &AppSelection) -> Vec<FolderPlan> {
     FOLDERS
         .iter()
-        .map(|folder| (folder, members(folder, apps)))
-        .filter(|(_, members)| members.len() >= MIN_FOLDER_APPS)
+        .map(|folder| FolderPlan {
+            folder,
+            members: members(folder, apps),
+        })
         .collect()
 }
 
 /// The root grid, in the order its icons are placed on the first page.
 ///
 /// * `apps` - the cards ticked at the application step.
-/// * `folders` - the folders kept, as [`wanted_folders`] chose them.
+/// * `folders` - every folder, as [`folder_plans`] built them.
 ///
 /// # Returns
-/// The installed root-grid entries of [`KNOWN_APPS`], then the kept folder
-/// ids, then — left to GNOME Shell, which appends them itself — everything
-/// else the target holds. An application whose folder was dropped below the
-/// threshold is in that last group.
+/// The installed root-grid entries of [`KNOWN_APPS`], then the applications
+/// whose folder stays below [`MIN_FOLDER_APPS`] — a folder nobody can see is
+/// no place for them — then the shown folder ids, then, left to GNOME Shell
+/// which appends them itself, everything else the target holds. One
+/// [`KNOWN_APPS`] pass yields the first two groups in table order, the root
+/// entries coming first in the table.
 fn root_layout(apps: &AppSelection, folders: &[FolderPlan]) -> Vec<&'static str> {
+    let orphaned = |folder_id: &str| {
+        folders
+            .iter()
+            .any(|plan| plan.folder.id == folder_id && !plan.shown())
+    };
     KNOWN_APPS
         .iter()
-        .filter(|app| matches!(app.placement, Placement::Root))
         .filter(|app| is_visible(app, apps))
+        .filter(|app| match app.placement {
+            Placement::Root => true,
+            Placement::Folder(id) => orphaned(id),
+        })
         .map(|app| app.id)
-        .chain(folders.iter().map(|(folder, _)| folder.id))
+        .chain(
+            folders
+                .iter()
+                .filter(|plan| plan.shown())
+                .map(|plan| plan.folder.id),
+        )
         .collect()
 }
 
@@ -891,17 +948,23 @@ fn gvariant_layout(items: &[&str]) -> String {
 ///
 /// * `favorites` - dash favourites, as [`favorites`] derived them.
 /// * `layout` - root-grid order, as [`root_layout`] derived it.
-/// * `folders` - folders to create and their contents, as [`wanted_folders`]
-///   chose them.
+/// * `folders` - every folder and its contents, as [`folder_plans`] built
+///   them.
 ///
 /// # Returns
 /// The keyfile text. Groups are emitted in a fixed order so two installs
-/// answering the same way produce the same bytes. Each folder gets `apps`
-/// (its order), `categories` (what keeps filing applications nobody listed)
-/// and `excluded-apps` (what keeps it from claiming an application filed
-/// elsewhere). Folder names are always written with `translate=true`, so
-/// GNOME Shell localizes them itself — see [`GridFolder`]'s `directory` field
-/// for why that lookup cannot fail.
+/// answering the same way produce the same bytes. Every folder gets
+/// `categories` (what keeps filing applications nobody listed) and
+/// `excluded-apps` (what keeps it from claiming an application filed
+/// elsewhere); only a [`FolderPlan::shown`] folder also gets `apps`, its
+/// order. A folder below the threshold is therefore written and empty — its
+/// own members are in its `excluded-apps` — which is how it can file a later
+/// install without showing a single icon behind one click today. The key is
+/// left unset rather than written as `apps=[]`: `get_strv` answers `[]`
+/// either way, and GNOME Shell writes the key itself on the first drag.
+/// Folder names are always written with `translate=true`, so GNOME Shell
+/// localizes them itself — see [`GridFolder`]'s `directory` field for why that
+/// lookup cannot fail.
 fn keyfile(favorites: &[&str], layout: &[&str], folders: &[FolderPlan]) -> String {
     let mut out = String::new();
     if !favorites.is_empty() || !layout.is_empty() {
@@ -917,21 +980,28 @@ fn keyfile(favorites: &[&str], layout: &[&str], folders: &[FolderPlan]) -> Strin
     if folders.is_empty() {
         return out;
     }
-    let ids = folders.iter().map(|(f, _)| f.id).collect::<Vec<_>>();
+    let ids = folders
+        .iter()
+        .map(|plan| plan.folder.id)
+        .collect::<Vec<_>>();
     out.push_str("[org/gnome/desktop/app-folders]\n");
     out.push_str(&format!("folder-children={}\n", gvariant_list(&ids)));
-    for (folder, members) in folders {
+    for plan in folders {
+        let folder = plan.folder;
         out.push_str(&format!(
             "\n[org/gnome/desktop/app-folders/folders/{}]\n",
             folder.id
         ));
         out.push_str(&format!("name='{}'\ntranslate=true\n", folder.directory));
-        out.push_str(&format!("apps={}\n", gvariant_list(members)));
+        if plan.shown() {
+            out.push_str(&format!("apps={}\n", gvariant_list(&plan.members)));
+        }
         out.push_str(&format!(
             "categories={}\n",
             gvariant_list(folder.categories)
         ));
-        let excluded = excluded_apps(folder);
+        let orphans: &[&str] = if plan.shown() { &[] } else { &plan.members };
+        let excluded = excluded_apps(folder, orphans);
         if !excluded.is_empty() {
             out.push_str(&format!("excluded-apps={}\n", gvariant_list(&excluded)));
         }
@@ -943,8 +1013,14 @@ fn keyfile(favorites: &[&str], layout: &[&str], folders: &[FolderPlan]) -> Strin
 mod tests {
     use super::*;
 
+    /// The folders a selection really *shows*, in table order — every folder
+    /// is written now, so this is what the grid looks like at the first login.
     fn folder_ids(apps: &AppSelection) -> Vec<&'static str> {
-        wanted_folders(apps).iter().map(|(f, _)| f.id).collect()
+        folder_plans(apps)
+            .iter()
+            .filter(|plan| plan.shown())
+            .map(|plan| plan.folder.id)
+            .collect()
     }
 
     /// What GNOME Shell would really show in `folder` for one known
@@ -954,7 +1030,7 @@ mod tests {
             return true;
         }
         categories_intersect(app.categories, folder.categories)
-            && !excluded_apps(folder).contains(&app.id)
+            && !excluded_apps(folder, &[]).contains(&app.id)
     }
 
     #[test]
@@ -1029,8 +1105,8 @@ mod tests {
 
     #[test]
     fn a_single_application_is_left_on_the_root_grid() {
-        // Blender alone does not justify a Graphics folder; GIMP, Krita and
-        // Inkscape do.
+        // Blender alone does not justify *showing* the Graphics folder; GIMP,
+        // Krita and Inkscape do. The folder is written either way.
         assert!(
             !folder_ids(&AppSelection::from_cards([AppCard::Modeling3D])).contains(&"Graphics")
         );
@@ -1075,12 +1151,12 @@ mod tests {
     #[test]
     fn steam_leads_the_games_folder() {
         let apps = AppSelection::from_cards([AppCard::Base, AppCard::Gaming]);
-        let folders = wanted_folders(&apps);
+        let folders = folder_plans(&apps);
         let games = folders
             .iter()
-            .find(|(f, _)| f.id == "Games")
-            .expect("the gaming card creates the folder");
-        assert_eq!(games.1[0], "steam.desktop");
+            .find(|plan| plan.folder.id == "Games")
+            .expect("the gaming card fills the folder");
+        assert_eq!(games.members[0], "steam.desktop");
         let text = keyfile(&[], &[], &folders);
         assert!(text.contains("apps=['steam.desktop', 'net.lutris.Lutris.desktop'"));
     }
@@ -1145,25 +1221,36 @@ mod tests {
     #[test]
     fn the_root_layout_puts_the_applications_before_the_folders() {
         let apps = AppSelection::from_cards([AppCard::Base, AppCard::Gaming]);
-        let folders = wanted_folders(&apps);
+        let folders = folder_plans(&apps);
         let layout = root_layout(&apps, &folders);
         assert_eq!(layout[0], "firefox.desktop");
-        let roots = KNOWN_APPS
-            .iter()
-            .filter(|app| matches!(app.placement, Placement::Root))
-            .count();
-        assert_eq!(
-            layout.iter().position(|id| *id == "AudioVideo"),
-            Some(roots)
-        );
         assert_eq!(layout.last(), Some(&"System"));
+
+        // Papers and Loupe are orphans of two folders the base pack leaves
+        // below the threshold, so they sit between the root staples and the
+        // folders — but every application still comes before every folder.
+        let is_folder = |id: &str| FOLDERS.iter().any(|folder| folder.id == id);
+        let first_folder = layout
+            .iter()
+            .position(|id| is_folder(id))
+            .expect("the layout ends with the shown folders");
+        assert!(layout[..first_folder].iter().all(|id| !is_folder(id)));
+        assert!(layout[first_folder..].iter().all(|id| is_folder(id)));
+        assert_eq!(
+            layout[..first_folder]
+                .iter()
+                .rev()
+                .take(2)
+                .collect::<Vec<_>>(),
+            vec![&"org.gnome.Loupe.desktop", &"org.gnome.Papers.desktop"]
+        );
     }
 
     #[test]
     fn the_root_layout_skips_what_is_not_installed() {
         let bare = AppSelection::from_cards([]);
         assert_eq!(
-            root_layout(&bare, &wanted_folders(&bare)),
+            root_layout(&bare, &folder_plans(&bare)),
             vec!["org.gnome.Software.desktop", "System"]
         );
     }
@@ -1171,11 +1258,14 @@ mod tests {
     #[test]
     fn keyfile_holds_every_half() {
         let apps = AppSelection::from_cards([AppCard::Base, AppCard::Gaming]);
-        let folders = wanted_folders(&apps);
+        let folders = folder_plans(&apps);
         let text = keyfile(&favorites(&apps), &root_layout(&apps, &folders), &folders);
         assert!(text.contains("favorite-apps=['firefox.desktop'"));
         assert!(text.contains("app-picker-layout=[{'firefox.desktop': <{'position': <0>}>,"));
-        assert!(text.contains("folder-children=['AudioVideo', 'Games', 'Utilities', 'System']"));
+        assert!(text.contains(
+            "folder-children=['Office', 'Graphics', 'AudioVideo', 'Games', \
+             'Development', 'Utilities', 'System']"
+        ));
         assert!(text.contains("[org/gnome/desktop/app-folders/folders/Games]"));
         assert!(text.contains("name='Game.directory'\ntranslate=true\n"));
         assert!(text.contains("categories=['Game']"));
@@ -1185,12 +1275,124 @@ mod tests {
     #[test]
     fn nothing_selected_writes_the_root_layout_and_the_system_folder() {
         let bare = AppSelection::from_cards([]);
-        let folders = wanted_folders(&bare);
+        let folders = folder_plans(&bare);
         let text = keyfile(&favorites(&bare), &root_layout(&bare, &folders), &folders);
         assert!(text.starts_with("[org/gnome/shell]"));
-        assert!(text.contains("folder-children=['System']"));
+        assert!(text.contains(
+            "folder-children=['Office', 'Graphics', 'AudioVideo', 'Games', \
+             'Development', 'Utilities', 'System']"
+        ));
         assert!(
             text.contains("apps=['org.gnome.Settings.desktop', 'org.gnome.Extensions.desktop']")
         );
+    }
+
+    /// One folder group of a keyfile, from just after its header to the next
+    /// group — what GNOME really reads for that folder.
+    fn folder_group<'a>(text: &'a str, id: &str) -> &'a str {
+        let header = format!("[org/gnome/desktop/app-folders/folders/{id}]\n");
+        let start = text.find(&header).expect("the folder is written") + header.len();
+        let rest = &text[start..];
+        match rest.find("\n[") {
+            Some(end) => &rest[..end],
+            None => rest,
+        }
+    }
+
+    /// The selections every "whatever the selection" test runs over.
+    fn selection_matrix() -> Vec<AppSelection> {
+        vec![
+            AppSelection::from_cards([]),
+            AppSelection::from_cards([AppCard::Base]),
+            AppSelection::from_cards([AppCard::Base, AppCard::Modeling3D]),
+            AppSelection::from_cards([AppCard::Base, AppCard::Gaming, AppCard::Graphics]),
+        ]
+    }
+
+    #[test]
+    fn every_folder_is_written_whatever_the_selection() {
+        for apps in selection_matrix() {
+            let plans = folder_plans(&apps);
+            assert_eq!(plans.len(), FOLDERS.len());
+            let text = keyfile(&[], &root_layout(&apps, &plans), &plans);
+            for folder in FOLDERS {
+                assert!(
+                    text.contains(&format!(
+                        "[org/gnome/desktop/app-folders/folders/{}]",
+                        folder.id
+                    )),
+                    "{} is not written",
+                    folder.id
+                );
+            }
+        }
+    }
+
+    #[test]
+    fn a_folder_below_the_threshold_is_written_but_empty() {
+        let modeling = AppSelection::from_cards([AppCard::Modeling3D]);
+        let plans = folder_plans(&modeling);
+        let graphics = plans
+            .iter()
+            .find(|plan| plan.folder.id == "Graphics")
+            .expect("every folder is planned");
+        assert!(!graphics.shown());
+
+        let group = keyfile(&[], &[], &plans);
+        let group = folder_group(&group, "Graphics");
+        assert!(group.contains("categories=['Graphics']"));
+        // `excluded-apps=` ends in the same three characters, so the key has
+        // to be matched at the start of its line.
+        assert!(!group.contains("\napps="), "the folder claims {group}");
+        assert!(group.contains("'blender.desktop'"));
+    }
+
+    #[test]
+    fn a_folder_below_the_threshold_keeps_its_member_on_the_root_grid() {
+        let modeling = AppSelection::from_cards([AppCard::Modeling3D]);
+        let plans = folder_plans(&modeling);
+        let layout = root_layout(&modeling, &plans);
+        assert!(layout.contains(&"blender.desktop"));
+        assert!(!layout.contains(&"Graphics"));
+
+        let text = keyfile(&[], &layout, &plans);
+        assert!(text.contains("'blender.desktop': <{'position'"));
+        assert!(!text.contains("'Graphics': <{'position'"));
+    }
+
+    #[test]
+    fn a_folder_below_the_threshold_still_claims_a_later_install() {
+        // The whole point of writing a folder nobody can see yet: Blender
+        // alone leaves Graphics hidden, but GIMP installed months later is
+        // still filed by the folder's categories. Pre-excluding a member the
+        // install does not contain is what would blacklist it for good.
+        let modeling = AppSelection::from_cards([AppCard::Modeling3D]);
+        let graphics = FOLDERS
+            .iter()
+            .find(|folder| folder.id == "Graphics")
+            .expect("the graphics folder exists");
+        let excluded = excluded_apps(graphics, &members(graphics, &modeling));
+        assert!(excluded.contains(&"blender.desktop"));
+        assert!(!excluded.contains(&"gimp.desktop"));
+        assert!(!excluded.contains(&"krita.desktop"));
+    }
+
+    #[test]
+    fn a_suppressed_folder_claims_none_of_its_installed_members() {
+        for apps in selection_matrix() {
+            for plan in folder_plans(&apps) {
+                if plan.shown() {
+                    continue;
+                }
+                let excluded = excluded_apps(plan.folder, &plan.members);
+                for id in &plan.members {
+                    assert!(
+                        excluded.contains(id),
+                        "{id} would make the hidden folder {} appear",
+                        plan.folder.id
+                    );
+                }
+            }
+        }
     }
 }
