@@ -5,17 +5,13 @@
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
     naersk.url = "github:nix-community/naersk";
     naersk.inputs.nixpkgs.follows = "nixpkgs";
-    modulix-core-utils = {
-      url = "github:Modulix-OS/modulix-core-utils";
-      flake = false;
-    };
     # Branding only (modulixos/branding.nix + assets/). Deliberately not
     # `follows`-ing nixpkgs: no mxpkgs package output is ever evaluated here,
     # so there is no closure to keep in sync.
     mxpkgs.url = "github:Modulix-OS/mxpkgs";
   };
 
-  outputs = { self, nixpkgs, naersk, modulix-core-utils, mxpkgs }:
+  outputs = { self, nixpkgs, naersk, mxpkgs }:
     let
       supportedSystems = [ "x86_64-linux" "aarch64-linux" ];
       forAllSystems = f: builtins.listToAttrs (map (system: {
@@ -115,12 +111,10 @@
           naerskLib = pkgs.callPackage naersk { };
           modulixos-installer = pkgs.callPackage ./nix/package.nix {
             inherit naerskLib;
-            modulixCoreUtilsSrc = modulix-core-utils;
             self = ./.;
           };
           modulixos-installer-debug = pkgs.callPackage ./nix/package.nix {
             inherit naerskLib;
-            modulixCoreUtilsSrc = modulix-core-utils;
             self = ./.;
             release = false;
           };

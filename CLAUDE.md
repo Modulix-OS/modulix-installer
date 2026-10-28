@@ -605,11 +605,38 @@ the wizard ran in (that needs a new `InitParams` field in core-utils).
 
 ## Contract with `modulix-core-utils`
 
-Direct `path` dependency (decided):
+Git dependency on the GitHub repository, pinned by tag (decided):
 
 ```toml
-modulix-core-utils = { path = "../modulix-core-utils", features = ["init", "filesystem", "detect-hardware", "user", "locale"] }
+modulix-core-utils = { git = "https://github.com/Modulix-OS/modulix-core-utils", tag = "v1.0.2", features = ["init", "filesystem", "detect-hardware", "user", "locale"] }
 ```
+
+It used to be `path = "../modulix-core-utils"`, which only built under Nix because
+`nix/package.nix` assembled a `mergedSrc` — a `runCommand` copying `self` and the
+`modulix-core-utils` flake input side by side so the relative path resolved. That hack is
+gone, along with the flake input, the `root`/`--manifest-path` juggling it forced and the
+`modulixCoreUtilsSrc` argument: `src = self` now, and `Cargo.lock` is the single source of
+truth for the compiled rev.
+
+- naersk needs nothing extra for a git dependency: `findGitDependencies` (naersk's
+  `lib.nix`) reads every `git+` source out of `Cargo.lock` and `builtins.fetchGit`s it with
+  `ref = refs/tags/<tag>` plus the locked rev — no `outputHashes`, no vendor hash to keep.
+- Bumping the tag is `cargo update -p modulix-core-utils` and nothing on the Nix side.
+  `mxpkgs` still carries its own `modulix-core-utils` as a transitive flake input; that one
+  is unrelated to what this crate compiles against.
+- **Local development against a sibling checkout** uses `.cargo/config.toml` (gitignored
+  via `/.cargo/`):
+  ```toml
+  [patch."https://github.com/Modulix-OS/modulix-core-utils"]
+  modulix-core-utils = { path = "../modulix-core-utils" }
+  ```
+  `nix build` is unaffected — `src = self` on a git flake does not see gitignored files.
+  **The trap:** any `cargo` command run with the patch active rewrites `Cargo.lock`, dropping
+  the `source = "git+…"` line and pulling in whatever uncommitted dependency bumps the
+  sibling checkout carries (that is where the `rnix 0.15`/`rowan 0.17` entries came from —
+  versions the tag does not require). A lock committed in that state builds something other
+  than the tag. Before every commit, `git diff Cargo.lock` must show the `source` line and
+  `cargo metadata --locked` must pass.
 
 - **`CONFIG_DIRECTORY`** (`modulix-core-utils/src/lib.rs`) is `/etc/modulix-os/` in release, `<repo>/test/` in debug — a real NixOS fixture repo used by examples/tests. See `modulix-core-utils/CLAUDE.md` for details.
 - **`BuildCommand::as_str()`** collapses to `"build-vm"` for every variant in debug builds — a debug run never touches the host, it builds a VM image instead. Only release builds actually run `nixos-install`.

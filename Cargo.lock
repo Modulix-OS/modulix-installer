@@ -977,7 +977,8 @@ dependencies = [
 
 [[package]]
 name = "modulix-core-utils"
-version = "0.1.0"
+version = "1.0.2"
+source = "git+https://github.com/Modulix-OS/modulix-core-utils?tag=v1.0.2#60dabb2123a84625f3ff94913635ac26ecc2f4e6"
 dependencies = [
  "const_format",
  "git2",
@@ -987,6 +988,7 @@ dependencies = [
  "rowan",
  "serde",
  "serde_json",
+ "tokio",
 ]
 
 [[package]]

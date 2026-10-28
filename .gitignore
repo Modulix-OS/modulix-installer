@@ -3,3 +3,6 @@
 /result-*
 modulixos-vm-disk.qcow2
 modulixos-vm-tpm/
+
+# Local cargo override (patch core-utils git dep to a sibling checkout)
+/.cargo/

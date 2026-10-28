@@ -2,26 +2,14 @@
   lib,
   pkgs,
   naerskLib,
-  modulixCoreUtilsSrc,
   self,
   release ? true,
 }:
 
-let
-  mergedSrc = pkgs.runCommand "modulixos-installer-src" { } ''
-    mkdir -p $out
-    cp -r ${self} $out/modulixos-installer
-    cp -r ${modulixCoreUtilsSrc} $out/modulix-core-utils
-    chmod -R u+w $out
-  '';
-in
 naerskLib.buildPackage {
-  src = mergedSrc;
-  root = "${mergedSrc}/modulixos-installer";
+  src = self;
   singleStep = true;
   inherit release;
-  cargoBuildOptions = def: def ++ [ "--manifest-path" "modulixos-installer/Cargo.toml" ];
-  cargoTestOptions = def: def ++ [ "--manifest-path" "modulixos-installer/Cargo.toml" ];
 
   nativeBuildInputs = with pkgs; [
     pkg-config
@@ -50,7 +38,7 @@ naerskLib.buildPackage {
   doCheck = true;
 
   postInstall = ''
-    for po in ${mergedSrc}/modulixos-installer/po/*.po; do
+    for po in ${self}/po/*.po; do
       lang=$(basename "$po" .po)
       dest="$out/share/locale/$lang/LC_MESSAGES/modulixos-installer.mo"
       mkdir -p "$(dirname "$dest")"

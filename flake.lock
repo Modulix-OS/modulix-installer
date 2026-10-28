@@ -207,22 +207,6 @@
       }
     },
     "modulix-core-utils": {
-      "flake": false,
-      "locked": {
-        "lastModified": 1792755248,
-        "narHash": "sha256-Yyd1Bdj4aoHPLdg13VTVZle3CXRQ4zdaFihmqhtzUvo=",
-        "owner": "Modulix-OS",
-        "repo": "modulix-core-utils",
-        "rev": "170a5fed7ffe8fa878ddf85e895ad2d0d7859804",
-        "type": "github"
-      },
-      "original": {
-        "owner": "Modulix-OS",
-        "repo": "modulix-core-utils",
-        "type": "github"
-      }
-    },
-    "modulix-core-utils_2": {
       "inputs": {
         "naersk": "naersk",
         "nixpkgs": [
@@ -244,7 +228,7 @@
         "type": "github"
       }
     },
-    "modulix-core-utils_3": {
+    "modulix-core-utils_2": {
       "inputs": {
         "naersk": "naersk_2",
         "nixpkgs": [
@@ -270,7 +254,7 @@
     "modulix-daemon": {
       "inputs": {
         "flake-utils": "flake-utils_2",
-        "modulix-core-utils": "modulix-core-utils_3",
+        "modulix-core-utils": "modulix-core-utils_2",
         "nixpkgs": "nixpkgs_4"
       },
       "locked": {
@@ -293,7 +277,7 @@
         "firefox-addons": "firefox-addons",
         "gnome-software-plugin": "gnome-software-plugin",
         "home-manager": "home-manager",
-        "modulix-core-utils": "modulix-core-utils_2",
+        "modulix-core-utils": "modulix-core-utils",
         "modulix-daemon": "modulix-daemon",
         "nix-cachyos-kernel": "nix-cachyos-kernel",
         "nixpkgs": "nixpkgs_6",
@@ -538,7 +522,6 @@
     },
     "root": {
       "inputs": {
-        "modulix-core-utils": "modulix-core-utils",
         "mxpkgs": "mxpkgs",
         "naersk": "naersk_3",
         "nixpkgs": "nixpkgs_7"
