@@ -1,7 +1,9 @@
 use crate::config::{DesktopEnvironment, InstallConfig};
 use crate::i18n::tr;
 use crate::mx;
-use crate::steps::card_layout::{CARD_SPACING, PAGE_MARGIN, add_column_breakpoint, grid_width};
+use crate::steps::card_layout::{
+    CARD_SPACING, PAGE_MARGIN, add_column_breakpoint, grid_width, vertical_scroller,
+};
 use crate::steps::{AdvanceHook, Step, StepId, ValidityTracker};
 use adw::prelude::*;
 use std::cell::Cell;
@@ -334,11 +336,7 @@ impl DesktopEnvironmentStep {
             );
         }
 
-        let scrolled = gtk::ScrolledWindow::builder()
-            .hscrollbar_policy(gtk::PolicyType::Never)
-            .vexpand(true)
-            .child(&bin)
-            .build();
+        let scrolled = vertical_scroller(&bin);
 
         Self {
             widget: scrolled.upcast(),

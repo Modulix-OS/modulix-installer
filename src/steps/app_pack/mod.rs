@@ -3,6 +3,7 @@ use crate::i18n::tr;
 use crate::mx;
 use crate::steps::card_layout::{
     CARD_SPACING, PAGE_MARGIN, add_column_breakpoint, column_min_width, grid_width,
+    vertical_scroller,
 };
 use crate::steps::{Step, StepId, ValidityTracker};
 use adw::prelude::*;
@@ -533,11 +534,7 @@ impl AppPackStep {
         add_column_breakpoint(&bin, &grid, &clamp, TWO_COL_MIN, 2, CARD_MAX_WIDTH);
         add_column_breakpoint(&bin, &grid, &clamp, THREE_COL_MIN, 3, CARD_MAX_WIDTH);
 
-        let scrolled = gtk::ScrolledWindow::builder()
-            .hscrollbar_policy(gtk::PolicyType::Never)
-            .vexpand(true)
-            .child(&bin)
-            .build();
+        let scrolled = vertical_scroller(&bin);
 
         Self {
             widget: scrolled.upcast(),

@@ -8,6 +8,11 @@
 //! step-8-sized cards do not fit the logical width the kiosk guarantees (see
 //! `nix/kiosk-module.nix`). Only the spacing, the page margin and the
 //! breakpoint plumbing are common, so only those live here.
+//!
+//! [`vertical_scroller`] goes one page further than the two card steps: the
+//! review page (`finish::summary`) is built on the same
+//! `adw::BreakpointBin` sandwich and scrolls — or fails to — for exactly the
+//! same reason, so it uses that helper too.
 
 use adw::prelude::*;
 
@@ -82,4 +87,46 @@ pub(crate) fn add_column_breakpoint(
         Some(&grid_width(columns, card_max).to_value()),
     );
     bin.add_breakpoint(breakpoint);
+}
+
+/// Wraps a card page's `adw::BreakpointBin` in a vertically scrolling view.
+///
+/// Not the same thing as handing the bin straight to a
+/// `gtk::ScrolledWindow`, which is what these pages used to do and which
+/// never scrolled: that wraps a non-scrollable child in a `gtk::Viewport`
+/// whose vertical scroll policy is `Minimum`, and such a viewport allocates
+/// its child `MAX(viewport height, child minimum)` and publishes that same
+/// value as the vertical adjustment's upper bound. An `adw::BreakpointBin`
+/// carrying at least one breakpoint reports a minimum height of 0, so the
+/// only minimum left is its own `height-request`; once that fits, the upper
+/// bound equals the page size — no scrollbar, dead wheel — while the bin's
+/// own allocation refuses to squeeze its child and overflows instead,
+/// logging `… exceeds AdwBreakpointBin height`. The cards are clipped at
+/// full size rather than shrunk.
+///
+/// `Natural` makes the viewport allocate `MAX(viewport height, child
+/// natural)` instead: the page scrolls as soon as the content needs more
+/// room, and is allocated exactly the viewport height whenever it does not,
+/// so the surplus the cards' expanding icons centre in is unaffected.
+///
+/// The horizontal policy stays `Minimum` on purpose: the bin's natural width
+/// is a full row of cards at [`grid_width`], and requesting that under a
+/// `Never` horizontal scrollbar policy would clip the page sideways.
+///
+/// # Parameters
+/// * `bin` - the page's `adw::BreakpointBin`, which becomes the scrolled
+///   content.
+///
+/// # Returns
+/// The `gtk::ScrolledWindow` to use as the page's widget.
+pub(crate) fn vertical_scroller(bin: &adw::BreakpointBin) -> gtk::ScrolledWindow {
+    let viewport = gtk::Viewport::builder()
+        .vscroll_policy(gtk::ScrollablePolicy::Natural)
+        .child(bin)
+        .build();
+    gtk::ScrolledWindow::builder()
+        .hscrollbar_policy(gtk::PolicyType::Never)
+        .vexpand(true)
+        .child(&viewport)
+        .build()
 }

@@ -17,7 +17,9 @@ use crate::engine::plan::{self, PartitionPlan, PlanError, PlanInput, PlanOp};
 use crate::finish::progress::ProgressPage;
 use crate::i18n::tr;
 use crate::steps::app_pack::{card_title, variant_label};
-use crate::steps::card_layout::{CARD_SPACING, PAGE_MARGIN, column_min_width, grid_width};
+use crate::steps::card_layout::{
+    CARD_SPACING, PAGE_MARGIN, column_min_width, grid_width, vertical_scroller,
+};
 use crate::widgets::disk_bar::human_bytes;
 use crate::{bridge, mx};
 use adw::prelude::*;
@@ -461,9 +463,13 @@ impl SummaryPage {
             .child(&content)
             .build();
 
-        // `vexpand` all the way down to `content`: without it the scrolled
-        // window allocates the box its natural height and there is no spare
-        // room for `columns` to centre in, nor any bottom for the button.
+        // What gives `columns` spare room to centre in, and the button a
+        // bottom to sit at, is `vexpand(true)` on the scrolled window itself:
+        // it is the only expanding child of `page_box`, between the banner and
+        // the pinned button row. The `vexpand` here and on `clamp` only
+        // propagate that flag back down; the viewport inside the scrolled
+        // window ignores expand flags entirely and allocates the height
+        // `vertical_scroller` computes.
         let bin = adw::BreakpointBin::builder()
             .width_request(COLUMN_MIN_WIDTH + 2 * PAGE_MARGIN)
             .height_request(400)
@@ -472,11 +478,7 @@ impl SummaryPage {
             .build();
         add_two_column_breakpoint(&bin, &columns, &clamp);
 
-        let scrolled = gtk::ScrolledWindow::builder()
-            .hscrollbar_policy(gtk::PolicyType::Never)
-            .vexpand(true)
-            .child(&bin)
-            .build();
+        let scrolled = vertical_scroller(&bin);
 
         // The banner stays edge-to-edge: `adw::Banner` draws its own background
         // across the full width, and the page margins live on `content`.
