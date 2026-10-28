@@ -218,6 +218,8 @@ impl DesktopEnvironment {
                 "gnome-extension-manager",
                 "gnome-tour",
                 "resources",
+                "gnome-calendar",
+                "gnome-contacts",
             ],
             DesktopEnvironment::Plasma => &[
                 "kdePackages.dolphin",
@@ -228,6 +230,11 @@ impl DesktopEnvironment {
                 "kdePackages.kate",
                 "kdePackages.haruna",
                 "kdePackages.plasma-systemmonitor",
+                "kdePackages.kcalc",
+                "kdePackages.partitionmanager",
+                "kdePackages.spectacle",
+                "kdePackages.calindori",
+                "kdePackages.filelight",
             ],
             DesktopEnvironment::Xfce => &[
                 "xfce.thunar",
