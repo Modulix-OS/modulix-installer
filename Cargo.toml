@@ -16,7 +16,7 @@ adw = { package = "libadwaita", version = "0.9.2", features = [
     "gtk_v4_18",
 ] }
 libc = "0.2"
-modulix-core-utils = { git = "https://github.com/Modulix-OS/modulix-core-utils", tag = "v1.0.2", features = [
+modulix-core-utils = { git = "https://github.com/Modulix-OS/modulix-core-utils", tag = "v1.0.3", features = [
     "init",
     "filesystem",
     "detect-hardware",

@@ -608,7 +608,7 @@ the wizard ran in (that needs a new `InitParams` field in core-utils).
 Git dependency on the GitHub repository, pinned by tag (decided):
 
 ```toml
-modulix-core-utils = { git = "https://github.com/Modulix-OS/modulix-core-utils", tag = "v1.0.2", features = ["init", "filesystem", "detect-hardware", "user", "locale"] }
+modulix-core-utils = { git = "https://github.com/Modulix-OS/modulix-core-utils", tag = "v1.0.3", features = ["init", "filesystem", "detect-hardware", "user", "locale"] }
 ```
 
 It used to be `path = "../modulix-core-utils"`, which only built under Nix because
@@ -632,11 +632,11 @@ truth for the compiled rev.
   ```
   `nix build` is unaffected — `src = self` on a git flake does not see gitignored files.
   **The trap:** any `cargo` command run with the patch active rewrites `Cargo.lock`, dropping
-  the `source = "git+…"` line and pulling in whatever uncommitted dependency bumps the
-  sibling checkout carries (that is where the `rnix 0.15`/`rowan 0.17` entries came from —
-  versions the tag does not require). A lock committed in that state builds something other
-  than the tag. Before every commit, `git diff Cargo.lock` must show the `source` line and
-  `cargo metadata --locked` must pass.
+  the `source = "git+…"` line and replacing the dependency with the sibling checkout's
+  current state — its version number, and whatever dependency bumps it carries that the
+  tagged release does not. A lock committed like that builds something other than the tag,
+  and nothing in the diff says so. Before every commit, `git diff Cargo.lock` must show the
+  `source = "git+…"` line with the expected tag, and `cargo metadata --locked` must pass.
 
 - **`CONFIG_DIRECTORY`** (`modulix-core-utils/src/lib.rs`) is `/etc/modulix-os/` in release, `<repo>/test/` in debug — a real NixOS fixture repo used by examples/tests. See `modulix-core-utils/CLAUDE.md` for details.
 - **`BuildCommand::as_str()`** collapses to `"build-vm"` for every variant in debug builds — a debug run never touches the host, it builds a VM image instead. Only release builds actually run `nixos-install`.
