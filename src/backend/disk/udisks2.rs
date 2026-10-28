@@ -3,7 +3,7 @@ use super::{DiskBackend, DiskInfo, FormatFs, PartitionInfo, PartitionKind, Table
 use crate::mx;
 use async_trait::async_trait;
 use std::collections::HashMap;
-use zbus::zvariant::{ObjectPath, OwnedObjectPath, OwnedValue};
+use zbus::{ObjectPath, OwnedObjectPath, OwnedVariant, Variant};
 
 const SERVICE: &str = "org.freedesktop.UDisks2";
 const MANAGER_PATH: &str = "/org/freedesktop/UDisks2";
@@ -20,7 +20,7 @@ trait PartitionTable {
         size: u64,
         type_: &str,
         name: &str,
-        options: HashMap<&str, zbus::zvariant::Value<'_>>,
+        options: HashMap<&str, Variant<'_>>,
     ) -> zbus::Result<OwnedObjectPath>;
 }
 
@@ -30,14 +30,10 @@ trait PartitionTable {
 )]
 trait Partition {
     #[zbus(name = "Delete")]
-    fn delete(&self, options: HashMap<&str, zbus::zvariant::Value<'_>>) -> zbus::Result<()>;
+    fn delete(&self, options: HashMap<&str, Variant<'_>>) -> zbus::Result<()>;
 
     #[zbus(name = "Resize")]
-    fn resize(
-        &self,
-        size: u64,
-        options: HashMap<&str, zbus::zvariant::Value<'_>>,
-    ) -> zbus::Result<()>;
+    fn resize(&self, size: u64, options: HashMap<&str, Variant<'_>>) -> zbus::Result<()>;
 }
 
 #[zbus::proxy(
@@ -49,11 +45,7 @@ trait Block {
     /// `"gpt"`, or `"empty"` wipes and (re)initializes the table instead of
     /// formatting a filesystem — that's the documented UDisks2 behavior.
     #[zbus(name = "Format")]
-    fn format(
-        &self,
-        type_: &str,
-        options: HashMap<&str, zbus::zvariant::Value<'_>>,
-    ) -> zbus::Result<()>;
+    fn format(&self, type_: &str, options: HashMap<&str, Variant<'_>>) -> zbus::Result<()>;
 }
 
 /// udisks2-backed disk enumeration/manipulation. `DiskInfo::path` /
@@ -74,8 +66,8 @@ impl Udisks2Backend {
 
     async fn managed_objects(&self) -> mx::Result<zbus::fdo::ManagedObjects> {
         let manager = zbus::fdo::ObjectManagerProxy::builder(&self.connection)
-            .destination(SERVICE)?
-            .path(MANAGER_PATH)?
+            .destination(SERVICE)
+            .path(MANAGER_PATH)
             .build()
             .await?;
         Ok(manager.get_managed_objects().await?)
@@ -83,17 +75,17 @@ impl Udisks2Backend {
 }
 
 fn prop<'a>(
-    props: &'a HashMap<zbus::names::OwnedInterfaceName, HashMap<String, OwnedValue>>,
+    props: &'a HashMap<zbus::names::OwnedInterfaceName, HashMap<String, OwnedVariant>>,
     interface: &str,
     key: &str,
-) -> Option<&'a OwnedValue> {
+) -> Option<&'a OwnedVariant> {
     props
         .iter()
         .find(|(name, _)| name.as_str() == interface)
         .and_then(|(_, values)| values.get(key))
 }
 
-fn device_path(bytes: &OwnedValue) -> Option<String> {
+fn device_path(bytes: &OwnedVariant) -> Option<String> {
     let raw: Vec<u8> = bytes.clone().try_into().ok()?;
     let end = raw.iter().position(|b| *b == 0).unwrap_or(raw.len());
     String::from_utf8(raw[..end].to_vec()).ok()
@@ -370,7 +362,7 @@ impl DiskBackend for Udisks2Backend {
             TableKind::None => "empty",
         };
         let proxy = BlockProxy::builder(&self.connection)
-            .path(disk)?
+            .path(disk)
             .build()
             .await?;
         proxy.format(type_, HashMap::new()).await?;
@@ -385,7 +377,7 @@ impl DiskBackend for Udisks2Backend {
         kind: PartitionKind,
     ) -> mx::Result<String> {
         let proxy = PartitionTableProxy::builder(&self.connection)
-            .path(disk)?
+            .path(disk)
             .build()
             .await?;
         let created = proxy
@@ -402,7 +394,7 @@ impl DiskBackend for Udisks2Backend {
 
     async fn delete_partition(&self, partition: &str) -> mx::Result<()> {
         let proxy = PartitionProxy::builder(&self.connection)
-            .path(partition)?
+            .path(partition)
             .build()
             .await?;
         proxy.delete(HashMap::new()).await?;
@@ -411,7 +403,7 @@ impl DiskBackend for Udisks2Backend {
 
     async fn resize_partition(&self, partition: &str, new_size_bytes: u64) -> mx::Result<()> {
         let proxy = PartitionProxy::builder(&self.connection)
-            .path(partition)?
+            .path(partition)
             .build()
             .await?;
         proxy.resize(new_size_bytes, HashMap::new()).await?;
@@ -425,12 +417,12 @@ impl DiskBackend for Udisks2Backend {
         label: Option<&str>,
     ) -> mx::Result<()> {
         let proxy = BlockProxy::builder(&self.connection)
-            .path(partition)?
+            .path(partition)
             .build()
             .await?;
         let mut options = HashMap::new();
         if let Some(label) = label {
-            options.insert("label", zbus::zvariant::Value::from(label));
+            options.insert("label", Variant::from(label));
         }
         proxy.format(fs.as_mkfs_type(), options).await?;
         Ok(())

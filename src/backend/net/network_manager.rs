@@ -8,7 +8,7 @@ use futures_util::StreamExt;
 use std::collections::HashMap;
 use std::path::PathBuf;
 use std::time::Duration;
-use zbus::zvariant::{ObjectPath, OwnedObjectPath, OwnedValue, Value};
+use zbus::{ObjectPath, OwnedObjectPath, OwnedVariant, Variant};
 
 const DEVICE_TYPE_ETHERNET: u32 = 1;
 const DEVICE_TYPE_WIFI: u32 = 2;
@@ -22,7 +22,7 @@ const SCAN_TIMEOUT: Duration = Duration::from_secs(10);
 /// settings section (`connection`, `802-11-wireless`, …). Secrets are not in
 /// there — they come back from `GetSecrets` only — which is fine here: the
 /// keyfile this backend points at still carries them.
-type ProfileSettings = HashMap<String, HashMap<String, OwnedValue>>;
+type ProfileSettings = HashMap<String, HashMap<String, OwnedVariant>>;
 
 #[zbus::proxy(
     interface = "org.freedesktop.NetworkManager",
@@ -36,7 +36,7 @@ trait Manager {
     #[zbus(name = "AddAndActivateConnection")]
     fn add_and_activate_connection(
         &self,
-        connection: HashMap<&str, HashMap<&str, Value<'_>>>,
+        connection: HashMap<&str, HashMap<&str, Variant<'_>>>,
         device: &ObjectPath<'_>,
         specific_object: &ObjectPath<'_>,
     ) -> zbus::Result<(OwnedObjectPath, OwnedObjectPath)>;
@@ -78,7 +78,7 @@ trait Device {
 )]
 trait Wireless {
     #[zbus(name = "RequestScan")]
-    fn request_scan(&self, options: HashMap<&str, Value<'_>>) -> zbus::Result<()>;
+    fn request_scan(&self, options: HashMap<&str, Variant<'_>>) -> zbus::Result<()>;
 
     #[zbus(name = "GetAllAccessPoints")]
     fn get_all_access_points(&self) -> zbus::Result<Vec<OwnedObjectPath>>;
@@ -261,21 +261,21 @@ fn profile_ssid(settings: &ProfileSettings) -> Option<String> {
     profile_string(settings, "connection", "id")
 }
 
-fn wireless_settings(request: &WifiConnectRequest) -> HashMap<&str, HashMap<&str, Value<'_>>> {
-    let mut wireless: HashMap<&str, Value<'_>> = HashMap::new();
-    wireless.insert("ssid", Value::from(request.ssid.as_bytes().to_vec()));
+fn wireless_settings(request: &WifiConnectRequest) -> HashMap<&str, HashMap<&str, Variant<'_>>> {
+    let mut wireless: HashMap<&str, Variant<'_>> = HashMap::new();
+    wireless.insert("ssid", Variant::from(request.ssid.as_bytes().to_vec()));
     if request.hidden {
-        wireless.insert("hidden", Value::from(true));
+        wireless.insert("hidden", Variant::from(true));
     }
 
-    let mut connection: HashMap<&str, HashMap<&str, Value<'_>>> = HashMap::new();
+    let mut connection: HashMap<&str, HashMap<&str, Variant<'_>>> = HashMap::new();
     connection.insert("802-11-wireless", wireless);
 
     if let Some(key_mgmt) = key_mgmt_for(request.security) {
-        let mut security: HashMap<&str, Value<'_>> = HashMap::new();
-        security.insert("key-mgmt", Value::from(key_mgmt));
+        let mut security: HashMap<&str, Variant<'_>> = HashMap::new();
+        security.insert("key-mgmt", Variant::from(key_mgmt));
         if let Some(password) = &request.password {
-            security.insert("psk", Value::from(password.as_str()));
+            security.insert("psk", Variant::from(password.as_str()));
         }
         connection.insert("802-11-wireless-security", security);
     }
@@ -329,7 +329,7 @@ impl NetworkManagerBackend {
         let mut matching = Vec::new();
         for path in manager.get_devices().await? {
             let device = DeviceProxy::builder(&self.connection)
-                .path(&path)?
+                .path(&path)
                 .build()
                 .await?;
             if device.device_type().await? == device_type {
@@ -355,12 +355,12 @@ impl NetworkManagerBackend {
         ssid: &str,
     ) -> mx::Result<Option<OwnedObjectPath>> {
         let wireless = WirelessProxy::builder(&self.connection)
-            .path(device_path)?
+            .path(device_path)
             .build()
             .await?;
         for ap_path in wireless.get_all_access_points().await? {
             let ap = AccessPointProxy::builder(&self.connection)
-                .path(&ap_path)?
+                .path(&ap_path)
                 .build()
                 .await?;
             let ssid_bytes = ap.ssid().await.unwrap_or_default();
@@ -379,10 +379,7 @@ impl NetworkManagerBackend {
     /// string of failed 4-way handshakes can get this MAC blacklisted by some
     /// APs. `nmcli device wifi connect` does the same cleanup on failure.
     async fn discard_profile(&self, profile_path: &OwnedObjectPath) {
-        let Ok(builder) = SettingsConnectionProxy::builder(&self.connection).path(profile_path)
-        else {
-            return;
-        };
+        let builder = SettingsConnectionProxy::builder(&self.connection).path(profile_path);
         if let Ok(settings) = builder.build().await {
             let _ = settings.delete().await;
         }
@@ -390,7 +387,7 @@ impl NetworkManagerBackend {
 
     async fn await_activation(&self, active_path: &OwnedObjectPath) -> mx::Result<()> {
         let active = ActiveConnectionProxy::builder(&self.connection)
-            .path(active_path)?
+            .path(active_path)
             .build()
             .await?;
         // Subscribe before reading the current state: a transition landing in
@@ -480,7 +477,7 @@ impl NetworkBackend for NetworkManagerBackend {
     async fn is_ethernet_connected(&self) -> mx::Result<bool> {
         for path in self.devices_of_type(DEVICE_TYPE_ETHERNET).await? {
             let device = DeviceProxy::builder(&self.connection)
-                .path(&path)?
+                .path(&path)
                 .build()
                 .await?;
             if device.state().await? == DEVICE_STATE_ACTIVATED {
@@ -493,7 +490,7 @@ impl NetworkBackend for NetworkManagerBackend {
     async fn scan_wifi(&self) -> mx::Result<Vec<WifiAccessPoint>> {
         let device_path = self.first_wifi_device().await?;
         let wireless = WirelessProxy::builder(&self.connection)
-            .path(&device_path)?
+            .path(&device_path)
             .build()
             .await?;
 
@@ -519,7 +516,7 @@ impl NetworkBackend for NetworkManagerBackend {
         let mut access_points = Vec::new();
         for ap_path in wireless.get_all_access_points().await? {
             let ap = AccessPointProxy::builder(&self.connection)
-                .path(&ap_path)?
+                .path(&ap_path)
                 .build()
                 .await?;
             let ssid_bytes = ap.ssid().await.unwrap_or_default();
@@ -591,9 +588,7 @@ impl NetworkBackend for NetworkManagerBackend {
         let settings = SettingsProxy::new(&self.connection).await?;
         let mut profiles = Vec::new();
         for path in settings.list_connections().await? {
-            let Ok(builder) = SettingsConnectionProxy::builder(&self.connection).path(&path) else {
-                continue;
-            };
+            let builder = SettingsConnectionProxy::builder(&self.connection).path(&path);
             let Ok(profile) = builder.build().await else {
                 continue;
             };
@@ -638,12 +633,12 @@ impl NetworkBackend for NetworkManagerBackend {
 mod tests {
     use super::*;
 
-    fn settings(entries: &[(&str, &str, Value<'static>)]) -> ProfileSettings {
+    fn settings(entries: &[(&str, &str, Variant<'static>)]) -> ProfileSettings {
         let mut sections: ProfileSettings = HashMap::new();
         for (section, key, value) in entries {
             sections.entry(section.to_string()).or_default().insert(
                 key.to_string(),
-                OwnedValue::try_from(value.clone()).expect("value is convertible"),
+                OwnedVariant::try_from(value.clone()).expect("value is convertible"),
             );
         }
         sections
@@ -651,7 +646,7 @@ mod tests {
 
     #[test]
     fn profile_string_reads_connection_type() {
-        let sections = settings(&[("connection", "type", Value::from("802-11-wireless"))]);
+        let sections = settings(&[("connection", "type", Variant::from("802-11-wireless"))]);
         assert_eq!(
             profile_string(&sections, "connection", "type").as_deref(),
             Some("802-11-wireless")
@@ -665,20 +660,20 @@ mod tests {
         let sections = settings(&[(
             "802-11-wireless",
             "ssid",
-            Value::from(b"Caf\xc3\xa9".to_vec()),
+            Variant::from(b"Caf\xc3\xa9".to_vec()),
         )]);
         assert_eq!(profile_ssid(&sections).as_deref(), Some("Café"));
     }
 
     #[test]
     fn profile_ssid_falls_back_to_the_connection_id() {
-        let sections = settings(&[("connection", "id", Value::from("Home"))]);
+        let sections = settings(&[("connection", "id", Variant::from("Home"))]);
         assert_eq!(profile_ssid(&sections).as_deref(), Some("Home"));
     }
 
     #[test]
     fn profile_ssid_is_none_without_either_key() {
-        let sections = settings(&[("connection", "type", Value::from("802-11-wireless"))]);
+        let sections = settings(&[("connection", "type", Variant::from("802-11-wireless"))]);
         assert_eq!(profile_ssid(&sections), None);
     }
 

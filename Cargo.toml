@@ -37,7 +37,10 @@ tokio = { version = "1.54.1", features = [
 ] }
 unicode-normalization = "0.1"
 webkit6 = "0.6.1"
-zbus = "5"
+zbus = { version = "6", default-features = false, features = [
+    "tokio",
+    "proxy",
+] }
 qrcode = { version = "0.14.1", default-features = false }
 zeroize = { version = "1.9.1", features = ["alloc"] }
 
