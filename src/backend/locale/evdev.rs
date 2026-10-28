@@ -34,7 +34,7 @@ pub fn parse_evdev_xml(xml: &str) -> Vec<KeyboardLayout> {
     loop {
         match reader.read_event_into(&mut buf) {
             Ok(Event::Start(e)) => {
-                let name = String::from_utf8_lossy(e.name().as_ref()).into_owned();
+                let name = e.name().as_ref().to_owned();
                 match name.as_str() {
                     "layout" => {
                         current_layout = Some(LayoutBuilder::default());
@@ -47,11 +47,7 @@ pub fn parse_evdev_xml(xml: &str) -> Vec<KeyboardLayout> {
                 tag_stack.push(name);
             }
             Ok(Event::Text(t)) => {
-                let text = std::str::from_utf8(&t)
-                    .ok()
-                    .and_then(|s| unescape(s).ok())
-                    .map(|s| s.into_owned())
-                    .unwrap_or_default();
+                let text = unescape(&t).map(|s| s.into_owned()).unwrap_or_default();
                 if let Some(tag) = tag_stack.last().map(String::as_str) {
                     if let Some(variant) = current_variant.as_mut() {
                         match tag {
@@ -69,7 +65,7 @@ pub fn parse_evdev_xml(xml: &str) -> Vec<KeyboardLayout> {
                 }
             }
             Ok(Event::End(e)) => {
-                let name = String::from_utf8_lossy(e.name().as_ref()).into_owned();
+                let name = e.name().as_ref().to_owned();
                 tag_stack.pop();
                 match name.as_str() {
                     "variant" => {

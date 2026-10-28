@@ -23,7 +23,7 @@ modulix-core-utils = { git = "https://github.com/Modulix-OS/modulix-core-utils",
     "user",
     "locale",
 ] }
-quick-xml = "0.41.0"
+quick-xml = "0.42.0"
 regex = "1.13.1"
 serde = { version = "1.0.229", features = ["derive"] }
 serde_json = "1.0.154"
