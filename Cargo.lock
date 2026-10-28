@@ -811,6 +811,7 @@ dependencies = [
 [[package]]
 name = "modulix-core-utils"
 version = "1.0.3"
+source = "git+https://github.com/Modulix-OS/modulix-core-utils?tag=v1.0.3#d6859e835f78fbb5af4c2bdae03dabde8a59b721"
 dependencies = [
  "const_format",
  "git2",
