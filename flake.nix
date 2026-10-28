@@ -5,9 +5,6 @@
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
     naersk.url = "github:nix-community/naersk";
     naersk.inputs.nixpkgs.follows = "nixpkgs";
-    # Branding only (modulixos/branding.nix + assets/). Deliberately not
-    # `follows`-ing nixpkgs: no mxpkgs package output is ever evaluated here,
-    # so there is no closure to keep in sync.
     mxpkgs.url = "github:Modulix-OS/mxpkgs";
   };
 
