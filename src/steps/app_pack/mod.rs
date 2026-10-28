@@ -127,7 +127,7 @@ const ICON_BOX_PX: i32 = 96;
 /// Side of one tile of a collage. Deliberately not `ICON_BOX_PX / 2`: at half
 /// size the grouped icons read as clutter rather than as the applications they
 /// name, so a collage is allowed to be wider and taller than a lone icon.
-const ICON_TILE_PX: i32 = 72;
+const ICON_TILE_PX: i32 = 64;
 
 /// Gap between the tiles of a collage.
 const ICON_COLLAGE_SPACING: i32 = 6;
