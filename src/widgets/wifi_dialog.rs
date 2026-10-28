@@ -92,6 +92,7 @@ fn build_dialog(
         let row = adw::EntryRow::builder()
             .title(tr("Network name (SSID)"))
             .text(prefill.ssid.as_str())
+            .activates_default(true)
             .build();
         group.add(&row);
         row
@@ -110,6 +111,7 @@ fn build_dialog(
     let password_row = adw::PasswordEntryRow::builder()
         .title(tr("Password"))
         .text(prefill.password.as_str())
+        .activates_default(true)
         .build();
     group.add(&password_row);
 
