@@ -95,6 +95,8 @@ impl Writer {
     ///
     /// * `ev` - event to record. [`ProgressEvent::Progress`] and
     ///   [`ProgressEvent::Indeterminate`] carry no text and are skipped.
+    ///   [`ProgressEvent::Warning`] is prefixed `WARNING:`, so a log read
+    ///   back after a reboot distinguishes it from the lines around it.
     ///
     /// # Post-conditions
     /// The line reached `stderr`. It also reached the live log unless no file
@@ -105,6 +107,7 @@ impl Writer {
             ProgressEvent::Started { task } => format!("==> {task}"),
             ProgressEvent::Finished { task } => format!("<== {task}"),
             ProgressEvent::Log(l) => l.clone(),
+            ProgressEvent::Warning(w) => format!("WARNING: {w}"),
             ProgressEvent::Progress { .. } | ProgressEvent::Indeterminate(_) => return,
         };
         eprintln!("[install] {line}");

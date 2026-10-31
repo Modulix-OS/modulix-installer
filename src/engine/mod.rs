@@ -24,6 +24,14 @@ pub enum ProgressEvent {
     /// (`NixosInstallTask`), so the bar does not sit frozen for the whole
     /// `nixos-install`.
     Indeterminate(bool),
+    /// A best-effort stage that did not do its job, on an install that is
+    /// otherwise succeeding. Unlike a `Log` line — which scrolls past inside
+    /// a collapsed expander — this one is collected by `finish::progress` and
+    /// shown next to "Installation complete", because the user has to act on
+    /// it: it means the installed system is missing something they asked for.
+    /// The pipeline still returns `Ok(())`; a warning never fails an install
+    /// already on disk.
+    Warning(String),
     Finished {
         task: String,
     },

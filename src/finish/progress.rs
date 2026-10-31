@@ -58,6 +58,21 @@ pub struct ProgressPage {
     failure: std::rc::Rc<std::cell::RefCell<(String, Vec<String>)>>,
     log_scroller: gtk::ScrolledWindow,
     slideshow: std::rc::Rc<Slideshow>,
+    /// Warning text inside [`ProgressPage::warning_box`]. Separate from
+    /// `result_label` so "Installation complete" keeps its `title-4` weight
+    /// while the warnings read as body text under it.
+    warning_label: gtk::Label,
+    /// Orange strip holding `warning_label`, shown on the success path only
+    /// and only when the run produced at least one
+    /// [`ProgressEvent::Warning`]. It sits in the outcome row's left column,
+    /// so it reads as a card beside "Restart now" rather than as one more
+    /// line of body text that the eye slides past — same `.mx-warning-strip`
+    /// treatment as the partitioning step's NTFS warning.
+    warning_box: gtk::Box,
+    /// Every warning the run emitted, in arrival order. Collected rather than
+    /// rendered on the fly: the outcome row does not exist on screen until the
+    /// pipeline ends, and a warning is only worth showing next to a success.
+    warnings: std::rc::Rc<std::cell::RefCell<Vec<String>>>,
 }
 
 impl ProgressPage {
@@ -82,8 +97,27 @@ impl ProgressPage {
             .xalign(0.0)
             .hexpand(true)
             .build();
+        // Same wrapping as `result_label`, and the whole strip hidden until
+        // there is something to say: a success with no warning must look
+        // exactly as it did before this existed.
+        let warning_label = gtk::Label::builder()
+            .wrap(true)
+            .wrap_mode(gtk::pango::WrapMode::WordChar)
+            .selectable(true)
+            .xalign(0.0)
+            .hexpand(true)
+            .build();
+        let warning_icon = gtk::Image::from_icon_name("dialog-warning-symbolic");
+        warning_icon.set_pixel_size(16);
+        warning_icon.set_valign(gtk::Align::Start);
+        let warning_box = gtk::Box::new(gtk::Orientation::Horizontal, 12);
+        warning_box.append(&warning_icon);
+        warning_box.append(&warning_label);
+        warning_box.add_css_class("mx-warning-strip");
+        warning_box.set_visible(false);
         let result_text = gtk::Box::new(gtk::Orientation::Vertical, 6);
         result_text.append(&result_label);
+        result_text.append(&warning_box);
         let result_scroller = gtk::ScrolledWindow::builder()
             .child(&result_text)
             .hexpand(true)
@@ -200,6 +234,9 @@ impl ProgressPage {
             failure: std::rc::Rc::new(std::cell::RefCell::new((String::new(), Vec::new()))),
             log_scroller,
             slideshow,
+            warning_label,
+            warning_box,
+            warnings: std::rc::Rc::new(std::cell::RefCell::new(Vec::new())),
         };
         this.wire_reboot_button(&this.restart_button);
         this.wire_reboot_button(&this.quit_button);
@@ -277,6 +314,9 @@ impl ProgressPage {
         self.status_label.set_visible(true);
         self.progress_bar.set_visible(true);
         self.result_label.remove_css_class("title-4");
+        self.warning_box.set_visible(false);
+        self.warning_label.set_label("");
+        self.warnings.borrow_mut().clear();
         self.log_scroller.set_min_content_height(180);
         self.retranslate();
         self.slideshow.start();
@@ -351,6 +391,15 @@ impl ProgressPage {
                             this.progress_bar.set_fraction(fraction);
                         }
                         ProgressEvent::Indeterminate(on) => this.set_pulsing(on),
+                        ProgressEvent::Warning(line) => {
+                            // Translated on arrival, like `Started`: the
+                            // tasks emit untranslated msgids because they run
+                            // off the GTK thread. The log keeps the English
+                            // one, so a log read back after a reboot stays
+                            // single-language.
+                            this.append_log(&format!("\u{26a0} {line}"));
+                            this.warnings.borrow_mut().push(tr(&line));
+                        }
                         ProgressEvent::Finished { task } => {
                             this.append_log(&format!("\u{2713} {task}"));
                         }
@@ -375,6 +424,7 @@ impl ProgressPage {
                         this.progress_bar.set_visible(false);
                         this.result_label.add_css_class("title-4");
                         this.result_label.set_label(&tr("Installation complete"));
+                        this.show_warnings();
                         this.restart_button.set_visible(true);
                     }
                     Ok(Err(e)) => this.show_failure(&mx::render(&e)),
@@ -511,6 +561,30 @@ impl ProgressPage {
         self.qr_button.set_visible(true);
         self.reconfigure_button.set_visible(true);
         self.quit_button.set_visible(true);
+    }
+
+    /// Renders the warnings the run collected, under "Installation complete".
+    ///
+    /// Called on the success path only. A failed install has a failure
+    /// message to show instead, and whatever best-effort stage also gave up
+    /// along the way is not what the user needs to read first.
+    ///
+    /// # Post-conditions
+    /// With no warning, nothing changes and the outcome row looks exactly as
+    /// it did before this existed. With at least one, `warning_box` appears
+    /// in the outcome row — an orange strip beside "Restart now", listing them
+    /// one per line — and the log expander is opened, the same thing
+    /// [`ProgressPage::show_failure`] does, because a warning only ever says
+    /// that something is missing and the log is where the detail is.
+    fn show_warnings(&self) {
+        let warnings = self.warnings.borrow();
+        if warnings.is_empty() {
+            return;
+        }
+
+        self.warning_label.set_label(&warnings.join("\n"));
+        self.warning_box.set_visible(true);
+        self.log_expander.set_expanded(true);
     }
 
     /// Connects the failure-page "Error report QR code" button: it reads the

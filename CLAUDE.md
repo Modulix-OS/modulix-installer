@@ -171,6 +171,18 @@ Pipeline: `PartitionTask` → `EncryptTask` → `FormatTask` → `MountTask` →
 
 `ProgressEvent::Indeterminate(bool)` lets a stage with no fraction of its own (`nixos-install`) put the progress bar in pulse mode.
 
+`ProgressEvent::Warning(String)` is the one thing a *successful* install can carry besides
+"Installation complete". A best-effort stage that gave up used to emit a plain `report()` log
+line — `"<what>: skipped (<reason>)"`, structurally indistinguishable from every other line,
+inside a **collapsed** expander nothing on the success path ever opened — so the user was never
+told. A `Warning` is collected by `finish::progress` into `ProgressPage::warnings`, `tr`-ed on
+arrival (tasks run off the GTK thread, so they emit untranslated msgids like `Task::label` does)
+and rendered in a second label of the outcome row, which also opens the log expander. The
+pipeline still returns `Ok(())`: a warning never fails an install already on disk. It is for the
+narrow case where the installed system is missing something the user asked for and has to act on
+it — only `SecureBootTask` raises one today. `install_log` prefixes it `WARNING:` so a log read
+back after a reboot keeps the distinction.
+
 ### Directory layout
 
 ```
