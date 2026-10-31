@@ -87,9 +87,19 @@
             self = ./.;
             release = false;
           };
+          modulixos-installer-windowed = pkgs.callPackage ./nix/package.nix {
+            inherit naerskLib;
+            self = ./.;
+            release = false;
+            windowControls = true;
+          };
           rawIsoImage = self.nixosConfigurations."modulixos-iso-${system}".config.system.build.isoImage;
         in {
-          inherit modulixos-installer modulixos-installer-debug;
+          inherit
+            modulixos-installer
+            modulixos-installer-debug
+            modulixos-installer-windowed
+            ;
           default = modulixos-installer;
           iso = pkgs.callPackage ./nix/iso-checksum.nix { isoImage = rawIsoImage; };
         });

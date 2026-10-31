@@ -3,6 +3,9 @@ name = "modulixos-installer"
 version = "1.0.2"
 edition = "2024"
 
+[features]
+window-controls = []
+
 [dependencies]
 async-channel = "2.5.0"
 async-trait = "0.1.92"

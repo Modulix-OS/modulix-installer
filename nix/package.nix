@@ -4,12 +4,18 @@
   naerskLib,
   self,
   release ? true,
+  windowControls ? false,
 }:
 
 naerskLib.buildPackage {
   src = self;
   singleStep = true;
   inherit release;
+
+  cargoBuildOptions =
+    x: x ++ lib.optionals windowControls [ "--features" "window-controls" ];
+  cargoTestOptions =
+    x: x ++ lib.optionals windowControls [ "--features" "window-controls" ];
 
   nativeBuildInputs = with pkgs; [
     pkg-config

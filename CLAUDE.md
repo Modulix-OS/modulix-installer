@@ -67,6 +67,12 @@ cargo test                                  # pure logic only — swap sizing, p
 cargo run                                   # no CLI flags: connects the REAL backends
 cargo run -- --fake-disks=multi-disk        # debug build only: synthetic disks, see below
 cargo run -- --fake-error=list              # prints the --fake-error= catalog and exits
+cargo run --features window-controls -- --fake-disks=multi-disk
+                                            # same, but windowed: the `window-controls` feature
+                                            # (off by default) restores the title bar's close
+                                            # button and skips `window.fullscreen()`, so a run on
+                                            # a normal desktop can be closed and resized instead
+                                            # of leaving `pkill` as the only way out
 ```
 
 **`cargo run` with no flags enumerates your real disks — never press Install.** udisks2 and
@@ -98,6 +104,7 @@ Exercising the wizard against **real hardware/VM disks** end to end — booting 
 unlock, hibernation resume, the EFI boot entry — is still what the VM is for:
 
 ```bash
+nix build .#modulixos-installer-windowed   # debug build with `--features window-controls`
 nix build .#iso     # the live ISO (nix/iso.nix) — the result carries iso/*.iso plus a
                     # `sha256sum -c`-ready iso/*.iso.sha256 (nix/iso-checksum.nix)
 nix run  .#vm       # boot that ISO in qemu: UEFI, scratch 40 GiB disk, swtpm, virgl on
@@ -606,7 +613,15 @@ at all.
 
 **Exactly one `HeaderBar` exists in the wizard** — `app.rs`'s, wrapping the whole
 `NavigationView`, with both sets of title buttons off (nothing in a sway kiosk can act on
-minimise/maximise/close). The summary and progress pages deliberately carry no `ToolbarView` of
+minimise/maximise/close). The end set and `window.fullscreen()` are both conditioned on the
+`window-controls` cargo feature (`Cargo.toml`, `cfg!` in `app.rs` — an expression, not an
+attribute, so both variants always compile), which is **off by default** and therefore absent
+from the ISO: `flake.nix`'s `specialArgs.installerPkg` is `modulixos-installer`, and only the
+extra `modulixos-installer-windowed` package passes `windowControls = true` down to
+`nix/package.nix`'s `cargoBuildOptions`/`cargoTestOptions`. `build_fatal_window` follows the same
+rule, which it did not use to — its bare `adw::HeaderBar::new()` left `show-end-title-buttons` at
+its `true` default, so the one window that is supposed to be a dead end drew a close button in
+the kiosk. The summary and progress pages deliberately carry no `ToolbarView` of
 their own; two header bars used to stack, each drawing its own window controls. Consequences:
 the outer header's title has to be re-set from the visible page (`content_page.set_title`, in the
 `visible-page` handler _and_ in the retranslate hook, which also re-titles the step

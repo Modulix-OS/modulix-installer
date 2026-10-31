@@ -113,7 +113,8 @@ fn partitioning_fingerprint(cfg: &InstallConfig) -> String {
     )
 }
 
-/// Builds and presents the installer window, fullscreen.
+/// Builds and presents the installer window, fullscreen unless the
+/// `window-controls` feature is enabled.
 ///
 /// * `app` - the running application.
 /// * `backends` - subsystem backends every step and task acts through.
@@ -232,10 +233,13 @@ pub fn build_window(app: &adw::Application, backends: Backends, runtime: tokio::
 
     // Nothing can act on a minimise/maximise/close button: the session is a
     // single fullscreen app under a sway kiosk with no window decorations and
-    // no way back to a desktop.
+    // no way back to a desktop. The `window-controls` feature is off by default
+    // for exactly that reason, and only ever turned on for a run on a normal
+    // desktop, where a window that can be neither closed nor resized leaves
+    // killing the process as the only way out.
     let header = adw::HeaderBar::new();
     header.set_show_start_title_buttons(false);
-    header.set_show_end_title_buttons(false);
+    header.set_show_end_title_buttons(cfg!(feature = "window-controls"));
     header.pack_start(&prev_button);
     header.pack_end(&next_button);
     header.pack_end(&a11y_button);
@@ -770,12 +774,15 @@ pub fn build_window(app: &adw::Application, backends: Backends, runtime: tokio::
         *advance_hook.borrow_mut() = Box::new(move || advance());
     }
 
-    window.fullscreen();
+    if !cfg!(feature = "window-controls") {
+        window.fullscreen();
+    }
     window.present();
 }
 
 /// Builds and presents the only window shown when a backend could not be
-/// reached: a fullscreen error page whose single action is to quit.
+/// reached: an error page whose single action is to quit, fullscreen unless the
+/// `window-controls` feature is enabled.
 ///
 /// A dialog would not do. An `adw::AlertDialog` needs a parent window, so it
 /// could only ever appear on top of a wizard that has no working backend
@@ -823,8 +830,12 @@ pub fn build_fatal_window(app: &adw::Application, reason: &str) {
         .child(&body)
         .build();
 
+    let header = adw::HeaderBar::new();
+    header.set_show_start_title_buttons(false);
+    header.set_show_end_title_buttons(cfg!(feature = "window-controls"));
+
     let toolbar = adw::ToolbarView::new();
-    toolbar.add_top_bar(&adw::HeaderBar::new());
+    toolbar.add_top_bar(&header);
     toolbar.set_content(Some(&status));
 
     let window = adw::ApplicationWindow::builder()
@@ -838,7 +849,9 @@ pub fn build_fatal_window(app: &adw::Application, reason: &str) {
         move |_| app.quit()
     });
 
-    window.fullscreen();
+    if !cfg!(feature = "window-controls") {
+        window.fullscreen();
+    }
     window.present();
 }
 
