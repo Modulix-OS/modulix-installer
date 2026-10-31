@@ -85,6 +85,9 @@ msgstr ""
 msgid "Change the configuration"
 msgstr ""
 
+msgid "Checking secure boot"
+msgstr ""
+
 msgid "Checking…"
 msgstr ""
 
@@ -585,6 +588,18 @@ msgid "Scanning…"
 msgstr ""
 
 msgid "Screen magnifier"
+msgstr ""
+
+msgid ""
+"Secure Boot could not be set up: no keys were enrolled and the bootloader is "
+"unsigned. Leave Secure Boot disabled in the firmware setup menu, or the "
+"installed system will not start."
+msgstr ""
+
+msgid ""
+"Secure Boot was set up but the result could not be verified. Run `sbctl "
+"status` on the installed system before enabling Secure Boot in the firmware "
+"setup menu."
 msgstr ""
 
 msgid "Secured network, signal {level} of 4"

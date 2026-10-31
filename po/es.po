@@ -92,6 +92,9 @@ msgstr "Dirección del portal cautivo desconocida"
 msgid "Change the configuration"
 msgstr "Cambiar la configuración"
 
+msgid "Checking secure boot"
+msgstr "Comprobando el arranque seguro"
+
 msgid "Checking…"
 msgstr "Comprobando…"
 
@@ -616,6 +619,24 @@ msgstr "Buscando…"
 
 msgid "Screen magnifier"
 msgstr "Lupa de pantalla"
+
+msgid ""
+"Secure Boot could not be set up: no keys were enrolled and the bootloader is "
+"unsigned. Leave Secure Boot disabled in the firmware setup menu, or the "
+"installed system will not start."
+msgstr ""
+"No se ha podido configurar el arranque seguro: no se ha inscrito ninguna "
+"clave y el gestor de arranque no está firmado. Deje el arranque seguro "
+"desactivado en el menú del firmware, o el sistema instalado no arrancará."
+
+msgid ""
+"Secure Boot was set up but the result could not be verified. Run `sbctl "
+"status` on the installed system before enabling Secure Boot in the firmware "
+"setup menu."
+msgstr ""
+"El arranque seguro se ha configurado, pero no se ha podido verificar el "
+"resultado. Ejecute `sbctl status` en el sistema instalado antes de activar "
+"el arranque seguro en el menú del firmware."
 
 msgid "Secured network, signal {level} of 4"
 msgstr "Red protegida, señal {level} de 4"

@@ -107,6 +107,13 @@ pub struct PipelineState {
     /// entries only for the mount points it walks, so a swap-only container
     /// is one it never reports.
     pub luks_swap_device: Option<String>,
+    /// Whether `InitConfigTask` found the firmware in Setup Mode and
+    /// therefore let `init` declare `mx.bootloader.secureBoot.enable`.
+    /// `SecureBootTask` needs it recorded here rather than probed again:
+    /// enrolling a Platform Key is what takes the firmware *out* of Setup
+    /// Mode, so after `nixos-install` the live state no longer says whether
+    /// an enrollment was attempted or merely never applicable.
+    pub secure_boot_requested: bool,
 }
 
 /// Everything a [`Task`] needs: the backends it acts through, the answers
@@ -213,6 +220,10 @@ impl Pipeline {
 ///   target mounted — `/mnt/home` included, when `/home` is a partition of
 ///   its own — and the home directory the install's own activation created.
 ///   Same window as the two stages above, i.e. before `PostInstallTask`.
+/// * `SecureBootTask` reads the target back through `nixos-enter`, so it
+///   needs `/mnt` mounted, and it needs `NixosInstallTask` to have run —
+///   that is where the key enrollment happens. Nothing after it depends on
+///   it: it only reads.
 /// * `WifiProfileTask` writes into `/mnt/etc`, so it needs the target
 ///   mounted; it is placed in the same window as the two stages around it
 ///   rather than right after `MountTask` only so that the directory
@@ -230,6 +241,7 @@ pub fn full_pipeline() -> Pipeline {
         Box::new(tasks::FlatpakRemoteTask),
         Box::new(tasks::WifiProfileTask),
         Box::new(tasks::GnomeGridTask),
+        Box::new(tasks::SecureBootTask),
         Box::new(tasks::PostInstallTask),
     ])
 }

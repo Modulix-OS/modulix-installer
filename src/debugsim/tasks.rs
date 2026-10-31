@@ -288,6 +288,54 @@ impl Task for FakeWifiProfileTask {
     }
 }
 
+/// Stands in for `SecureBootTask`. The real one `nixos-enter`s into `/mnt` to
+/// run `sbctl status`, which a `--fake-disks=` run must not do: `/mnt` is the
+/// developer's own machine there. It does not read the firmware either — the
+/// `SetupMode` variable it would consult belongs to the machine running the
+/// debug build, and reporting that state would say nothing about the install
+/// being simulated.
+///
+/// Reports the enrolled path by default, and the warning path under
+/// `--fake-error=secure-boot:not-enrolled`, which is the only way to exercise
+/// `finish::progress`'s warning row without a firmware in Setup Mode.
+pub struct FakeSecureBootTask {
+    faults: Arc<FaultPlan>,
+}
+
+#[async_trait]
+impl Task for FakeSecureBootTask {
+    fn label(&self) -> String {
+        "Checking secure boot".to_string()
+    }
+
+    fn weight(&self) -> u32 {
+        1
+    }
+
+    /// Always `Ok(())`, like the real task: a warning never fails an install.
+    async fn run(&self, _ctx: &TaskCtx, tx: &ProgressSink) -> mx::Result<()> {
+        if self.faults.is(Fault::SecureBootNotEnrolled) {
+            let _ = tx
+                .send(ProgressEvent::Log(
+                    "secure boot: sbctl reports setup_mode=true, secure_boot=false".to_string(),
+                ))
+                .await;
+            let _ = tx
+                .send(ProgressEvent::Warning(
+                    crate::engine::tasks::WARNING_NOT_ENROLLED.to_string(),
+                ))
+                .await;
+            return Ok(());
+        }
+        let _ = tx
+            .send(ProgressEvent::Log(
+                "secure boot: skipped (a debug build never reads the firmware)".to_string(),
+            ))
+            .await;
+        Ok(())
+    }
+}
+
 pub struct FakePostInstallTask {
     faults: Arc<FaultPlan>,
 }
@@ -359,6 +407,9 @@ pub fn fake_pipeline(faults: Arc<FaultPlan>) -> Pipeline {
         }),
         Box::new(FakeWifiProfileTask),
         Box::new(FakeGnomeGridTask {
+            faults: faults.clone(),
+        }),
+        Box::new(FakeSecureBootTask {
             faults: faults.clone(),
         }),
         Box::new(FakePostInstallTask { faults }),
@@ -552,5 +603,29 @@ mod tests {
         let (tx, _rx) = async_channel::unbounded();
 
         fake_pipeline(faults).run(&ctx, &tx).await.unwrap();
+    }
+
+    /// The fault must leave the pipeline succeeding *and* put exactly one
+    /// `Warning` on the channel: a warning that failed the install, or an
+    /// install that swallowed the warning, are both the bug this stage exists
+    /// to prevent.
+    #[tokio::test]
+    async fn secure_boot_fault_warns_without_failing_the_install() {
+        let (backends, faults) =
+            backends(&[DiskScenario::Linux], Some(Fault::SecureBootNotEnrolled));
+        let config = config_for("/dev/fake0", PartitionMode::EntireDisk);
+        let ctx = TaskCtx::with_uefi(backends, config, true);
+        let (tx, rx) = async_channel::unbounded();
+
+        fake_pipeline(faults).run(&ctx, &tx).await.unwrap();
+        drop(tx);
+
+        let warnings: Vec<String> = std::iter::from_fn(|| rx.try_recv().ok())
+            .filter_map(|event| match event {
+                ProgressEvent::Warning(w) => Some(w),
+                _ => None,
+            })
+            .collect();
+        assert_eq!(warnings, vec![crate::engine::tasks::WARNING_NOT_ENROLLED]);
     }
 }

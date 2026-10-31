@@ -6,6 +6,7 @@ use crate::engine::{
 use crate::mx;
 use async_trait::async_trait;
 use modulix_core_utils::init::{Desktop, InitParams, LuksInit, init};
+use modulix_core_utils::secure_boot::{self, FirmwareState};
 
 /// Writes the NixOS configuration repository of the target system through
 /// `modulix_core_utils::init::init`.
@@ -56,6 +57,8 @@ impl Task for InitConfigTask {
     async fn run(&self, ctx: &TaskCtx, tx: &ProgressSink) -> mx::Result<()> {
         let desktop = Desktop::parse(ctx.config.desktop_environment.as_nix_str())?;
         let (luks, resume_device) = luks_and_resume(ctx).await?;
+        let firmware = secure_boot::firmware_state();
+        let secure_boot_requested = matches!(firmware, Ok(FirmwareState::SetupMode));
         let params = InitParams {
             root: INSTALL_ROOT.to_string(),
             hostname: ctx.config.user.hostname.clone(),
@@ -83,9 +86,23 @@ impl Task for InitConfigTask {
                 .collect(),
             luks,
             resume_device,
+            secure_boot: true,
             config_dir: Some(CONFIG_REPO.to_string()),
             debug: false,
         };
+
+        // Recorded before anything is built, because enrolling a Platform Key
+        // is what takes the firmware out of Setup Mode: once `nixos-install`
+        // has run, the live state can no longer say whether an enrollment was
+        // attempted. `SecureBootTask` reads this back to decide whether the
+        // outcome is worth verifying.
+        ctx.state.lock().await.secure_boot_requested = secure_boot_requested;
+        let _ = tx
+            .send(ProgressEvent::Log(format!(
+                "secure boot: {}",
+                firmware_summary(&firmware)
+            )))
+            .await;
 
         let _ = tx
             .send(ProgressEvent::Log(format!(
@@ -109,6 +126,33 @@ impl Task for InitConfigTask {
             ))
             .await;
         Ok(())
+    }
+}
+
+/// Untranslated one-line description of the firmware's Secure Boot state, for
+/// the install log.
+///
+/// Logged whatever the state is, including the uninteresting ones: a user who
+/// expected Secure Boot and did not get it needs the log to say why, and the
+/// only alternative — saying nothing on the paths that change nothing — is
+/// exactly what makes a silent no-op impossible to diagnose after a reboot.
+///
+/// * `state` - what `secure_boot::firmware_state` returned.
+///
+/// # Returns
+/// A sentence naming the state and whether the option will be declared.
+fn firmware_summary(state: &modulix_core_utils::mx::Result<FirmwareState>) -> String {
+    match state {
+        Ok(FirmwareState::SetupMode) => {
+            "the firmware is in setup mode, enabling it and enrolling keys".to_string()
+        }
+        Ok(FirmwareState::UserMode) => {
+            "not enabled (the firmware already has a platform key enrolled)".to_string()
+        }
+        Ok(FirmwareState::NotUefi) => {
+            "not enabled (this machine did not boot in UEFI mode)".to_string()
+        }
+        Err(e) => format!("not enabled (the firmware state could not be read: {e})"),
     }
 }
 

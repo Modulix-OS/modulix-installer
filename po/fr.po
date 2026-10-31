@@ -92,6 +92,9 @@ msgstr "Adresse du portail captif inconnue"
 msgid "Change the configuration"
 msgstr "Modifier la configuration"
 
+msgid "Checking secure boot"
+msgstr "Vérification du démarrage sécurisé"
+
 msgid "Checking…"
 msgstr "Vérification…"
 
@@ -618,6 +621,25 @@ msgstr "Recherche en cours…"
 
 msgid "Screen magnifier"
 msgstr "Loupe d'écran"
+
+msgid ""
+"Secure Boot could not be set up: no keys were enrolled and the bootloader is "
+"unsigned. Leave Secure Boot disabled in the firmware setup menu, or the "
+"installed system will not start."
+msgstr ""
+"Le démarrage sécurisé n'a pas pu être configuré : aucune clé n'a été enrôlée "
+"et le chargeur d'amorçage n'est pas signé. Laissez le démarrage sécurisé "
+"désactivé dans le menu du micrologiciel, sinon le système installé ne "
+"démarrera pas."
+
+msgid ""
+"Secure Boot was set up but the result could not be verified. Run `sbctl "
+"status` on the installed system before enabling Secure Boot in the firmware "
+"setup menu."
+msgstr ""
+"Le démarrage sécurisé a été configuré mais le résultat n'a pas pu être "
+"vérifié. Lancez `sbctl status` sur le système installé avant d'activer le "
+"démarrage sécurisé dans le menu du micrologiciel."
 
 msgid "Secured network, signal {level} of 4"
 msgstr "Réseau sécurisé, signal {level} sur 4"

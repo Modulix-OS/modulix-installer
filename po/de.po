@@ -93,6 +93,9 @@ msgstr "Adresse des Captive Portals unbekannt"
 msgid "Change the configuration"
 msgstr "Konfiguration ändern"
 
+msgid "Checking secure boot"
+msgstr "Secure Boot wird überprüft"
+
 msgid "Checking…"
 msgstr "Wird geprüft …"
 
@@ -626,6 +629,24 @@ msgstr "Suche läuft …"
 
 msgid "Screen magnifier"
 msgstr "Bildschirmlupe"
+
+msgid ""
+"Secure Boot could not be set up: no keys were enrolled and the bootloader is "
+"unsigned. Leave Secure Boot disabled in the firmware setup menu, or the "
+"installed system will not start."
+msgstr ""
+"Secure Boot konnte nicht eingerichtet werden: Es wurden keine Schlüssel "
+"registriert und der Bootloader ist nicht signiert. Lassen Sie Secure Boot im "
+"Firmware-Menü deaktiviert, sonst startet das installierte System nicht."
+
+msgid ""
+"Secure Boot was set up but the result could not be verified. Run `sbctl "
+"status` on the installed system before enabling Secure Boot in the firmware "
+"setup menu."
+msgstr ""
+"Secure Boot wurde eingerichtet, aber das Ergebnis konnte nicht überprüft "
+"werden. Führen Sie `sbctl status` auf dem installierten System aus, bevor "
+"Sie Secure Boot im Firmware-Menü aktivieren."
 
 msgid "Secured network, signal {level} of 4"
 msgstr "Gesichertes Netzwerk, Signal {level} von 4"

@@ -31,11 +31,12 @@ pub enum Fault {
     PasswdChpasswd,
     FlatpakRemoteAdd,
     GnomeGridCompile,
+    SecureBootNotEnrolled,
     PostUmountBusy,
 }
 
 impl Fault {
-    pub const ALL: [Fault; 23] = [
+    pub const ALL: [Fault; 24] = [
         Fault::PartitionUnmountBusy,
         Fault::PartitionCreateTable,
         Fault::PartitionCreate,
@@ -58,6 +59,7 @@ impl Fault {
         Fault::PasswdChpasswd,
         Fault::FlatpakRemoteAdd,
         Fault::GnomeGridCompile,
+        Fault::SecureBootNotEnrolled,
         Fault::PostUmountBusy,
     ];
 
@@ -85,11 +87,12 @@ impl Fault {
             Fault::PasswdChpasswd => "passwd:chpasswd",
             Fault::FlatpakRemoteAdd => "flatpak:remote-add",
             Fault::GnomeGridCompile => "gnome-grid:compile",
+            Fault::SecureBootNotEnrolled => "secure-boot:not-enrolled",
             Fault::PostUmountBusy => "post:umount-busy",
         }
     }
 
-    /// One-line description for `--fake-error=list`. Notes the three faults
+    /// One-line description for `--fake-error=list`. Notes the four faults
     /// that must **not** fail the install, since they trip best-effort steps.
     pub fn description(self) -> &'static str {
         match self {
@@ -128,6 +131,9 @@ impl Fault {
             }
             Fault::GnomeGridCompile => {
                 "dconf compile fails to seed the GNOME app grid (NON-BLOCKING: the install still succeeds)"
+            }
+            Fault::SecureBootNotEnrolled => {
+                "the secure boot keys were not enrolled during nixos-install (NON-BLOCKING: the install still succeeds, with a warning)"
             }
             Fault::PostUmountBusy => {
                 "the final umount fails (NON-BLOCKING: the install still succeeds)"

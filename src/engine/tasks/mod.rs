@@ -11,6 +11,7 @@ pub(crate) mod mount;
 mod nixos_install;
 mod partition;
 mod post_install;
+mod secure_boot;
 mod set_passwords;
 mod wifi_profile;
 
@@ -24,6 +25,10 @@ pub use mount::MountTask;
 pub use nixos_install::NixosInstallTask;
 pub use partition::PartitionTask;
 pub use post_install::PostInstallTask;
+pub use secure_boot::SecureBootTask;
+/// `pub(crate)`, not private: `debugsim::tasks::FakeSecureBootTask` emits the
+/// very same warning, and two copies of a translated sentence drift.
+pub(crate) use secure_boot::WARNING_NOT_ENROLLED;
 pub use set_passwords::SetPasswordsTask;
 pub use wifi_profile::WifiProfileTask;
 
