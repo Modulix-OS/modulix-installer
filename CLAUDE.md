@@ -608,7 +608,7 @@ the wizard ran in (that needs a new `InitParams` field in core-utils).
 Git dependency on the GitHub repository, pinned by tag (decided):
 
 ```toml
-modulix-core-utils = { git = "https://github.com/Modulix-OS/modulix-core-utils", tag = "v1.0.3", features = ["init", "filesystem", "detect-hardware", "user", "locale"] }
+modulix-core-utils = { git = "https://github.com/Modulix-OS/modulix-core-utils", tag = "v1.1.2", features = ["init", "filesystem", "detect-hardware", "user", "locale", "secure-boot"] }
 ```
 
 It used to be `path = "../modulix-core-utils"`, which only built under Nix because
