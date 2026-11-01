@@ -204,7 +204,6 @@ impl DesktopEnvironment {
     fn base_pack_packages(self) -> &'static [&'static str] {
         match self {
             DesktopEnvironment::Gnome => &[
-                "nautilus",
                 "gnome-console",
                 "papers",
                 "loupe",
@@ -222,7 +221,6 @@ impl DesktopEnvironment {
                 "gnome-contacts",
             ],
             DesktopEnvironment::Plasma => &[
-                "kdePackages.dolphin",
                 "kdePackages.konsole",
                 "kdePackages.okular",
                 "kdePackages.gwenview",
@@ -237,7 +235,6 @@ impl DesktopEnvironment {
                 "kdePackages.filelight",
             ],
             DesktopEnvironment::Xfce => &[
-                "xfce.thunar",
                 "xfce.xfce4-terminal",
                 "atril",
                 "xfce.ristretto",
@@ -247,7 +244,6 @@ impl DesktopEnvironment {
                 "htop",
             ],
             DesktopEnvironment::Lxqt => &[
-                "lxqt.pcmanfm-qt",
                 "lxqt.qterminal",
                 "qpdfview",
                 "lxqt.lximage-qt",
